@@ -1,0 +1,55 @@
+use crate::Ast;
+
+grammar;
+
+// Lexer
+match {
+    r"\s*" => { },
+    r"/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+/|(//.*)" => { },
+
+    // keywords
+    ";" => SEMICOLON,
+    "{" => OPEN,
+    "}" => CLOSE,
+    "||" => OR,
+    "&&" => AND,
+    "!=" => NEQ,
+    "==" => EQ,
+    ">"  => GREATER,
+    "<"  => LESS,
+    ">=" => GREATEREQ,
+    "<=" =< LESSEQ,
+    "*"  => MULTIPLY,
+    "/"  => DIVIDE,
+    "%"  => MODULE,
+    "+"  => PLUS,
+    "if" => IF,
+    "else" => ELSE,
+    "(" => LPAREN,
+    ")" => RPAREN,
+    "let" => LET,
+    "in" => IN,
+    "print" => PRINT,
+    "[" => RBRACKET,
+    "]" => LBRACKET,
+    "true" => TRUE,
+    "false" => FALSE,
+
+    r"[_A-Za-z][_A-Za-z0-9]*" => IDENTIFIER,
+    r"[-]?[0-9]+" => NUMBER,
+    // TODO FLOATS
+    r#""([^\\"]|\\[~ntr\\"])*""# => STRING_LITERAL,
+}
+
+
+// Parser
+
+pub TopLevel: AST = {
+    <expressions: TopLevelExpressions> => AST::top(expressions),
+                                       => AST::top(vec![AST::null()]),                                    
+}
+
+TopLevelExpressions: Vec<AST> = {
+    <element: TopLevelExpression<"open">> <elements: (SEMICOLON)
+}
+
