@@ -1,10 +1,22 @@
-use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+
+#[derive(Debug, Clone)]
+pub enum Opcode {
+    Add,
+    Sub,
+    Mul,
+    Div,
+}
+
+#[derive(Debug, Clone)]
+pub struct Identifier(pub String);
+
+#[derive(Debug, Clone)]
 pub enum AST {
     Integer(i32),
     Float(f32),
-    Unitialized,
+    Bool(bool),
+    NoneVal,
 
     Variable { name: Identifier, value: Box<AST> },
     List { size: Box<AST>, values: Vec<Box<AST>> },
@@ -26,4 +38,31 @@ pub enum AST {
     Conditional { guard: Box<AST>, consequent: Box<AST>, alternative: Box<AST> },
 
     Print { format: String, arguments: Vec<Box<AST>> },
+    Operator {op: Opcode, arguments: Vec<Box<AST>>},
+}
+
+pub trait IntoBoxed {
+    type Into;
+    fn into_boxed(self) -> Self::Into;
+}
+
+impl IntoBoxed for AST {
+    type Into = Box<Self>;
+    fn into_boxed(self) -> Self::Into {
+        Box::new(self)
+    }
+}
+
+impl IntoBoxed for Vec<AST> {
+    type Into = Vec<Box<AST>>;
+    fn into_boxed(self) -> Self::Into {
+        self.into_iter().map(|ast| ast.into_boxed()).collect()
+    }
+}
+
+impl IntoBoxed for Option<AST> {
+    type Into = Option<Box<AST>>;
+    fn into_boxed(self) -> Self::Into {
+        self.map(|ast| ast.into_boxed())
+    }
 }

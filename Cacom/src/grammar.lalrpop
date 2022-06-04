@@ -1,4 +1,7 @@
-use crate::Ast;
+use crate::ast::{AST, Opcode, IntoBoxed};
+use crate::grammar::AST::NoneVal;
+use std::collections::VecDeque;
+use std::str::FromStr;
 
 grammar;
 
@@ -18,11 +21,12 @@ match {
     ">"  => GREATER,
     "<"  => LESS,
     ">=" => GREATEREQ,
-    "<=" =< LESSEQ,
+    "<=" => LESSEQ,
     "*"  => MULTIPLY,
     "/"  => DIVIDE,
     "%"  => MODULE,
     "+"  => PLUS,
+    "-" => MINUS,
     "if" => IF,
     "else" => ELSE,
     "(" => LPAREN,
@@ -41,15 +45,49 @@ match {
     r#""([^\\"]|\\[~ntr\\"])*""# => STRING_LITERAL,
 }
 
-
-// Parser
-
 pub TopLevel: AST = {
-    <expressions: TopLevelExpressions> => AST::top(expressions),
-                                       => AST::top(vec![AST::null()]),                                    
+    <toplevel: TopLevelExpressions> => AST::Top(toplevel.into_boxed()),
+                                    => AST::Top(vec![NoneVal.into_boxed()]),
 }
 
 TopLevelExpressions: Vec<AST> = {
-    <element: TopLevelExpression<"open">> <elements: (SEMICOLON)
+    <first: TopLevelExpression> <others: (SEMICOLON <TopLevelExpression>)*> SEMICOLON? => {
+        let mut all = VecDeque::from(others);
+        all.push_front(first);
+        Vec::from(all)
+    }
 }
 
+TopLevelExpression: AST = {
+    Expr => <>,
+}
+
+Expr: AST = {
+    <left:Expr> <op:ExprOp> <right:Factor> => AST::Operator{op: op, arguments: vec![Box::new(left), Box::new(right)]},
+    Factor,
+}
+
+Factor: AST = {
+    <left:Factor> <op:TermOp> <right:Term> => AST::Operator{op: op, arguments: vec![Box::new(left), Box::new(right)]},
+    Term,
+}
+
+ExprOp: Opcode = {
+    PLUS => Opcode::Add,
+    MINUS => Opcode::Sub,
+}
+
+TermOp: Opcode = {
+    MULTIPLY => Opcode::Mul,
+    DIVIDE => Opcode::Div,
+}
+
+Term: AST = {
+    // TODO: floats
+    Number => <>,
+    LPAREN <Expr> RPAREN,
+}
+
+Number: AST = {
+    NUMBER => AST::Integer(i32::from_str(<>).unwrap()),
+}
