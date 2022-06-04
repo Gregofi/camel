@@ -1,4 +1,4 @@
-# Camel
+# :camel: Camel
 
 Camel is a dynamic scripting language. It is primarily meant as a toy project for learning interpreters and Rust programming language. The project is split into two main parts, the Camel Compiler (Cacom) and the Camel Bytecode interpreter (Caby).
 
