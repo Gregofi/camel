@@ -68,7 +68,6 @@ TopLevelExpressions: Vec<AST> = {
     }
 }
 
-// FIXME: Currently possible to write something like (1 + def foo...)
 TopLevelExpression: AST = {
     AExpr => <>,
     FunDecl => <>,
