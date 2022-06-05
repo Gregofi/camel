@@ -1,3 +1,9 @@
+/**
+ * The lexer and some of the grammar rules were inspired
+ * by Konrad Siek FML Language intepreter, thanks Konrad!
+ * https://github.com/kondziu
+ */
+
 use crate::ast::{AST, Opcode, IntoBoxed};
 use crate::grammar::AST::NoneVal;
 use std::collections::VecDeque;
