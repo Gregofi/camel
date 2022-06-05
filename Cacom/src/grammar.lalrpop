@@ -72,7 +72,6 @@ TopLevelExpressions: Vec<AST> = {
 TopLevelExpression: AST = {
     AExpr => <>,
     FunDecl => <>,
-    Block => <>,
 }
 
 Expressions: Vec<AST> = {
@@ -85,12 +84,17 @@ Expressions: Vec<AST> = {
 
 Expression: AST = {
     AExpr => <>,
-    Block => <>,
 }
 
 AExpr: AST = {
     <left:AExpr> <op:ExprOp> <right:Factor> => AST::Operator{op: op, arguments: vec![Box::new(left), Box::new(right)]},
     Factor,
+}
+
+Acceptance: AST = {
+    Number => <>,
+    LPAREN <expr: AExpr> RPAREN => expr,
+    Block => <>,
 }
 
 Factor: AST = {
@@ -110,8 +114,7 @@ TermOp: Opcode = {
 
 Term: AST = {
     // TODO: floats
-    Number => <>,
-    LPAREN <AExpr> RPAREN,
+    Acceptance => <>,
 }
 
 Number: AST = {
