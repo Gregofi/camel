@@ -81,6 +81,9 @@ Expressions: Vec<AST> = {
     }
 }
 
+// Those are 'top' level expression in block,
+// do not put things that can appear in operations
+// (ie. in binary operations, conditions and so on...)
 Expression: AST = {
     AExpr => <>,
 }
