@@ -7,17 +7,19 @@ grammar;
 
 // Lexer
 match {
+    // Comments, those we ignore
     r"\s*" => { },
     r"/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+/|(//.*)" => { },
 
     // keywords
     ";" => SEMICOLON,
-    "{" => OPEN,
-    "}" => CLOSE,
+    "{" => CURLYBOPEN,
+    "}" => CURLYBCLOSE,
     "||" => OR,
     "&&" => AND,
     "!=" => NEQ,
     "==" => EQ,
+    "="  => ASSIGN,
     ">"  => GREATER,
     "<"  => LESS,
     ">=" => GREATEREQ,
@@ -38,6 +40,8 @@ match {
     "]" => LBRACKET,
     "true" => TRUE,
     "false" => FALSE,
+    "def" => DEF,
+    "," => COMMA,
 
     r"[_A-Za-z][_A-Za-z0-9]*" => IDENTIFIER,
     r"[-]?[0-9]+" => NUMBER,
@@ -58,12 +62,28 @@ TopLevelExpressions: Vec<AST> = {
     }
 }
 
+// FIXME: Currently possible to write something like (1 + def foo...)
 TopLevelExpression: AST = {
-    Expr => <>,
+    AExpr => <>,
+    FunDecl => <>,
+    Block => <>,
 }
 
-Expr: AST = {
-    <left:Expr> <op:ExprOp> <right:Factor> => AST::Operator{op: op, arguments: vec![Box::new(left), Box::new(right)]},
+Expressions: Vec<AST> = {
+    <first: Expression> <others: (SEMICOLON <Expression>)*> SEMICOLON? => {
+        let mut all = VecDeque::from(others);
+        all.push_front(first);
+        Vec::from(all)
+    }
+}
+
+Expression: AST = {
+    AExpr => <>,
+    Block => <>,
+}
+
+AExpr: AST = {
+    <left:AExpr> <op:ExprOp> <right:Factor> => AST::Operator{op: op, arguments: vec![Box::new(left), Box::new(right)]},
     Factor,
 }
 
@@ -85,9 +105,30 @@ TermOp: Opcode = {
 Term: AST = {
     // TODO: floats
     Number => <>,
-    LPAREN <Expr> RPAREN,
+    LPAREN <AExpr> RPAREN,
 }
 
 Number: AST = {
     NUMBER => AST::Integer(i32::from_str(<>).unwrap()),
+}
+
+Block: AST = {
+    CURLYBOPEN <expressions: Expressions> CURLYBCLOSE => AST::Block(expressions.into_boxed()),
+    CURLYBOPEN CURLYBCLOSE => AST::NoneVal,
+}
+
+FunDecl: AST = {
+    DEF <name: Identifier> <parameters: Parameters> ASSIGN <body: Expression> => {
+        AST::Function{name, parameters, body: body.into_boxed()}
+    }
+}
+
+Identifier: String = IDENTIFIER => <>.to_string();
+
+Parameters: Vec<String> = {
+    LPAREN <elements: (<Identifier> COMMA)*> <element: Identifier?> RPAREN =>
+        match element {
+            None => elements,
+            Some(e) => { let mut elements = elements; elements.push(e); elements }
+        }
 }

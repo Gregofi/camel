@@ -9,27 +9,24 @@ pub enum Opcode {
 }
 
 #[derive(Debug, Clone)]
-pub struct Identifier(pub String);
-
-#[derive(Debug, Clone)]
 pub enum AST {
     Integer(i32),
     Float(f32),
     Bool(bool),
     NoneVal,
 
-    Variable { name: Identifier, value: Box<AST> },
+    Variable { name: String, value: Box<AST> },
     List { size: Box<AST>, values: Vec<Box<AST>> },
 
-    AccessVariable { name: Identifier },
+    AccessVariable { name: String },
     AccessList { list: Box<AST>, index: Box<AST> },
 
-    AssignVariable { name: Identifier, value: Box<AST> },
+    AssignVariable { name: String, value: Box<AST> },
     AssignList { list: Box<AST>, index: Box<AST>, value: Box<AST> },
 
-    Function { name: Identifier, parameters: Vec<Identifier>, body: Box<AST> },
+    Function { name: String, parameters: Vec<String>, body: Box<AST> },
 
-    CallFunction { name: Identifier, arguments: Vec<Box<AST>> },
+    CallFunction { name: String, arguments: Vec<Box<AST>> },
 
     Top(Vec<Box<AST>>),
     Block(Vec<Box<AST>>),
