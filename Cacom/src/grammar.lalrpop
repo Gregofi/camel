@@ -48,6 +48,7 @@ match {
     "false" => FALSE,
     "def" => DEF,
     "," => COMMA,
+    "return" => RETURN,
 
     r"[_A-Za-z][_A-Za-z0-9]*" => IDENTIFIER,
     r"[-]?[0-9]+" => NUMBER,
@@ -87,6 +88,7 @@ Expressions: Vec<AST> = {
 // here belongs for example while or for cycle.
 Expression: AST = {
     AExpr => <>, // All subexpressions - contains binaryop, ifs, calls and so on.
+    Return => <>,
 }
 
 AExpr: AST = {
@@ -156,4 +158,8 @@ Conditional: AST = {
                     AST::Conditional{guard: guard.into_boxed(),
                             then_branch: then.into_boxed(),
                             else_branch: None}
+}
+
+Return: AST = {
+    RETURN <expr: AExpr> => AST::Return(expr.into_boxed())
 }

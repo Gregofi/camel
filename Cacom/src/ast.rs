@@ -36,6 +36,8 @@ pub enum AST {
 
     Print { format: String, arguments: Vec<Box<AST>> },
     Operator {op: Opcode, arguments: Vec<Box<AST>>},
+
+    Return(Box<AST>),
 }
 
 pub trait IntoBoxed {

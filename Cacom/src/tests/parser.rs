@@ -27,4 +27,6 @@ fn parse_test() {
     assert!(TopLevelParser::new().parse("if (1) { 1 }").is_ok());
     assert!(TopLevelParser::new().parse("if (1) { 1 } else { 2 }").is_ok());
 
+    assert!(TopLevelParser::new().parse("return 1").is_err());
+    assert!(TopLevelParser::new().parse("def foo(a, b) = return 1").is_ok());
 }
