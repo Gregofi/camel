@@ -32,7 +32,7 @@ pub enum AST {
     Block(Vec<Box<AST>>),
     While { guard: Box<AST>, body: Box<AST> },
 
-    Conditional { guard: Box<AST>, consequent: Box<AST>, alternative: Box<AST> },
+    Conditional { guard: Box<AST>, then_branch: Box<AST>, else_branch: Option<Box<AST>> },
 
     Print { format: String, arguments: Vec<Box<AST>> },
     Operator {op: Opcode, arguments: Vec<Box<AST>>},

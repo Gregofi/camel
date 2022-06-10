@@ -24,5 +24,7 @@ fn parse_test() {
     assert!(TopLevelParser::new().parse("1 + {1}").is_ok());
     assert!(TopLevelParser::new().parse("{1;2} + {3;4} * {5}").is_ok());
     assert!(TopLevelParser::new().parse("1 + def foo(a, b)").is_err());
+    TopLevelParser::new().parse("if(1) { 1; }").expect("");
+    assert!(TopLevelParser::new().parse("if (1) { 1; }").is_ok());
 
 }

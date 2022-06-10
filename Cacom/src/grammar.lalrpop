@@ -84,8 +84,9 @@ Expressions: Vec<AST> = {
 // Those are 'top' level expression in block,
 // do not put things that can appear in operations
 // (ie. in binary operations, conditions and so on...)
+// here belongs for example while or for cycle.
 Expression: AST = {
-    AExpr => <>,
+    AExpr => <>, // All subexpressions - contains binaryop, ifs, calls and so on.
 }
 
 AExpr: AST = {
@@ -97,6 +98,7 @@ Acceptance: AST = {
     Number => <>,
     LPAREN <expr: AExpr> RPAREN => expr,
     Block => <>,
+    Conditional => <>
 }
 
 Factor: AST = {
@@ -142,4 +144,16 @@ Parameters: Vec<String> = {
             None => elements,
             Some(e) => { let mut elements = elements; elements.push(e); elements }
         }
+}
+
+Conditional: AST = {
+    IF <guard: AExpr> <then: Block> ELSE <els: Block> =>
+                    AST::Conditional{guard: guard.into_boxed(),
+                            then_branch: then.into_boxed(),
+                            else_branch: Some(els.into_boxed())},
+
+    IF <guard: AExpr> <then: Block> =>
+                    AST::Conditional{guard: guard.into_boxed(),
+                            then_branch: then.into_boxed(),
+                            else_branch: None}
 }
