@@ -35,7 +35,7 @@ pub enum AST {
     Conditional { guard: Box<AST>, then_branch: Box<AST>, else_branch: Option<Box<AST>> },
 
     Print { format: String, arguments: Vec<Box<AST>> },
-    Operator {op: Opcode, arguments: Vec<Box<AST>>},
+    Operator { op: Opcode, arguments: Vec<Box<AST>> },
 
     Return(Box<AST>),
 }
