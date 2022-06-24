@@ -5,6 +5,7 @@ lalrpop_mod!(pub grammar); // synthesized by LALRPOP
 mod ast;
 mod tests;
 mod compiler;
+mod bytecode;
 
 fn main() {
     println!("Hello, world!");
