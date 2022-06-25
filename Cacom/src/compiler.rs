@@ -69,7 +69,6 @@ fn _compile(ast: &AST, code: &mut Code, drop: bool) -> Result<(),  &'static str>
             then_branch,
             else_branch,
         } => todo!(),
-        AST::Print { format, arguments } => todo!(),
         AST::Operator { op, arguments } => {
             check_operator_arity(op, arguments.len())?;
             match op {
@@ -80,6 +79,7 @@ fn _compile(ast: &AST, code: &mut Code, drop: bool) -> Result<(),  &'static str>
             }
         },
         AST::Return(_) => todo!(),
+        AST::String(_) => todo!(),
     }
     code.add_cond(Bytecode::Drop, drop);
     Ok(())

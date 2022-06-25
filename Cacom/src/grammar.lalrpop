@@ -96,11 +96,12 @@ AExpr: AST = {
     Factor,
 }
 
-Acceptance: AST = {
+LowPrio: AST = {
     Number => <>,
+    String => AST::String(<>),
     LPAREN <expr: AExpr> RPAREN => expr,
     Block => <>,
-    Conditional => <>
+    Conditional => <>,
 }
 
 Factor: AST = {
@@ -120,11 +121,15 @@ TermOp: Opcode = {
 
 Term: AST = {
     // TODO: floats
-    Acceptance => <>,
+    LowPrio => <>,
 }
 
 Number: AST = {
     NUMBER => AST::Integer(i32::from_str(<>).unwrap()),
+}
+
+String: String = {
+    <s:STRING_LITERAL> => s[1..s.len()-1].to_string(),
 }
 
 Block: AST = {

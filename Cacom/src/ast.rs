@@ -14,6 +14,7 @@ pub enum AST {
     Float(f32),
     Bool(bool),
     NoneVal,
+    String(String),
 
     Variable { name: String, value: Box<AST> },
     List { size: Box<AST>, values: Vec<Box<AST>> },
@@ -34,7 +35,6 @@ pub enum AST {
 
     Conditional { guard: Box<AST>, then_branch: Box<AST>, else_branch: Option<Box<AST>> },
 
-    Print { format: String, arguments: Vec<Box<AST>> },
     Operator { op: Opcode, arguments: Vec<Box<AST>> },
 
     Return(Box<AST>),
