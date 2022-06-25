@@ -54,12 +54,16 @@ pub struct Code {
 }
 
 impl Code {
+    pub fn new() -> Self {
+        Self { insert_point: vec![] }
+    }
+
     pub fn add(&mut self, bytecode: Bytecode) {
         self.insert_point.push(bytecode);
     }
 
     pub fn add_cond(&mut self, bytecode: Bytecode, cond: bool) {
-        if (cond) {
+        if cond {
             self.add(bytecode);
         }
     }

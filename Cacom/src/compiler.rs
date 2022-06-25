@@ -1,5 +1,33 @@
 use crate::ast::{AST, Opcode};
 use crate::bytecode::{Bytecode, Code};
+use crate::serializable::{self, Serializable};
+
+enum Location {
+    Global,
+    Local, // TODO: Environment
+}
+
+struct Context {
+    
+}
+
+pub struct Program {
+    // constant_pool,
+    code: Code,
+}
+
+impl Program {
+    pub fn new() -> Self {
+        Self { code: Code::new() }
+    }
+}
+
+impl Serializable for Program {
+    fn serialize(&self, f: &mut std::fs::File) -> std::io::Result<()> {
+        self.code.serialize(f)?;
+        Ok(())
+    }
+}
 
 fn check_operator_arity(op: &Opcode, len: usize) -> Result<(), &'static str> {
     let arity = match op {
@@ -15,7 +43,7 @@ fn check_operator_arity(op: &Opcode, len: usize) -> Result<(), &'static str> {
     }
 }
 
-fn compile(ast: &AST, code: &mut Code, drop: bool) -> Result<(),  &'static str> {
+fn _compile(ast: &AST, code: &mut Code, drop: bool) -> Result<(),  &'static str> {
     match ast {
         AST::Integer(val) => code.add(Bytecode::PushInt(*val)),
         AST::Float(_) => todo!(),
@@ -55,4 +83,12 @@ fn compile(ast: &AST, code: &mut Code, drop: bool) -> Result<(),  &'static str> 
     }
     code.add_cond(Bytecode::Drop, drop);
     Ok(())
+}
+
+pub fn compile(ast: &AST) -> Result<Program, &'static str> {
+    let mut code = Code::new();
+
+    _compile(ast, &mut code, false)?;
+
+    Ok(Program{code})
 }
