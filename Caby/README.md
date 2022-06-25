@@ -7,8 +7,10 @@ Bytecode is split into three parts
 ### Constant pool
 
 This is a table of constant values that will not change in the program. Following items are located here:
-- String literals
+#### String literals
+`0x01 | length - 8 bytes | the string`
 - Functions
+`0x00 | name - 4 bytes index to constant pool | parameters count - 1 byte | locals - 2 bytes | code length (in instructions) - 8 bytes | code ...`
 - Classes, methods and member variables
 - Enums
 - And whatnot

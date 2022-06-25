@@ -2,13 +2,11 @@ use std::io;
 use std::io::prelude::*;
 use std::fs::File;
 
-pub type ConstantPoolIndex = u32;
-pub type FrameIndex = u16;
+use crate::serializable::Serializable;
 
-trait Serializable {
-    /// Serialize into raw bytes
-    fn serialize(&self, f: &mut File) -> io::Result<()>;
-}
+pub type ConstantPoolIndex = u32;
+
+pub type FrameIndex = u16;
 
 pub enum Bytecode {
     PushShort(i8),
@@ -72,7 +70,10 @@ impl Code {
 }
 
 impl Serializable for Code {
+    /// Serializes the code into file in format: size - u8 | ins ...
+    /// The size is not the size in bytes but number of instructions!
     fn serialize(&self, f: &mut File) -> io::Result<()> {
+        f.write_all(&(self.insert_point.len() as u64).to_le_bytes())?;
         for instruction in &self.insert_point {
             instruction.serialize(f)?;
         }

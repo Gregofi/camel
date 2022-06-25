@@ -6,6 +6,8 @@ mod ast;
 mod tests;
 mod compiler;
 mod bytecode;
+mod objects;
+mod serializable;
 
 fn main() {
     println!("Hello, world!");
