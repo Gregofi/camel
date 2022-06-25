@@ -33,4 +33,5 @@ fn parse_test() {
     assert!(TopLevelParser::new().parse("if(1) 1").is_err());
 
     assert!(TopLevelParser::new().parse("\"Hello, World!\"").is_ok());
+    assert!(TopLevelParser::new().parse("\"Hello\" + \" World!\"").is_ok());
 }
