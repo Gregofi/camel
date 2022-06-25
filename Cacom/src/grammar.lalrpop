@@ -41,7 +41,6 @@ match {
     ")" => RPAREN,
     "let" => LET,
     "in" => IN,
-    "print" => PRINT,
     "[" => RBRACKET,
     "]" => LBRACKET,
     "true" => TRUE,
@@ -88,7 +87,7 @@ Expressions: Vec<AST> = {
 // here belongs for example while or for cycle.
 Expression: AST = {
     AExpr => <>, // All subexpressions - contains binaryop, ifs, calls and so on.
-    Return => <>,
+    Return => <>,   
 }
 
 AExpr: AST = {
@@ -99,9 +98,17 @@ AExpr: AST = {
 LowPrio: AST = {
     Number => <>,
     String => AST::String(<>),
+    Call => <>,
     LPAREN <expr: AExpr> RPAREN => expr,
     Block => <>,
     Conditional => <>,
+}
+
+Call: AST = {
+    <function: Identifier> LPAREN <arguments: Arguments> RPAREN => {
+        AST::CallFunction{ name: function, arguments: arguments }
+    }
+    // TODO: Method calls over objects, lists, strings and so on.
 }
 
 Factor: AST = {
@@ -151,6 +158,15 @@ Parameters: Vec<String> = {
             None => elements,
             Some(e) => { let mut elements = elements; elements.push(e); elements }
         }
+}
+
+Arguments: Vec<Box<AST>> = {
+    <elements: (<AExpr> COMMA)*> <element: AExpr?> => {
+        match element {
+            None => elements.into_iter().map(|x| x.into_boxed()).collect(),
+            Some(e) => { let mut elements = elements; elements.push(e); elements.into_iter().map(|x| x.into_boxed()).collect() }
+        }
+    }
 }
 
 Conditional: AST = {

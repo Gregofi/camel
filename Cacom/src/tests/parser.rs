@@ -34,4 +34,11 @@ fn parse_test() {
 
     assert!(TopLevelParser::new().parse("\"Hello, World!\"").is_ok());
     assert!(TopLevelParser::new().parse("\"Hello\" + \" World!\"").is_ok());
+
+
+    assert!(TopLevelParser::new().parse("foo();").is_ok());
+    assert!(TopLevelParser::new().parse("foo(1, 2);").is_ok());
+    assert!(TopLevelParser::new().parse("print(\"Hi\");").is_ok());
+    assert!(TopLevelParser::new().parse("print(\"{} + {} = {}\", 1, 2, 1 + 2);").is_ok());
+
 }
