@@ -35,7 +35,28 @@ fun max(lst) {
 println("", max([1, 2, 5, 3, 1]));
 ```
 
-The language has C-like syntax but supports advanced constructs such as objects, inheritance, exceptions, lists, strings and so on. It basically aims to be a more C-like Python with better scoping rules.
+The language has C-like syntax but supports advanced constructs such as objects, lists, strings and so on. It basically aims to be a more C-like Python with better scoping rules.
+
+Followinhg features will hopefully be implemented:
+- Algebraic data types -> Pattern matching with enums
+- Fully interpolated strings
+- Explicit types
+- Some other way of managing errors without the use of exceptions (use adt?)
+- Closures
+- Dictionaries
+- Sets
+
+Following features are considered
+- Exceptions - Honestly, I just don't like them for error handling. IMO much better way is the Rust way.
+- Inheritance - I feel like inheritance often makes classes unecessary complex. Use composition instead.
+- Operator overloading - Honestly, this goes either way. It certainly compacts code and sometimes improves
+                         readibility. But coming from scala, it can be abused.
+
+### Standard library
+
+Language itself should also contain standard library. This is however far future.
+Many of the language specific things will probably be implemented straight in C
+(such as string operations).
 
 ## Camel Compiler
 
