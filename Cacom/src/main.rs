@@ -82,7 +82,7 @@ fn export_action(input_file: &String) {
         .expect("Unable to parse file");
 
     let bytecode = compile(&ast).expect("Compilation error");
-
+    bytecode
 
 }
 
@@ -100,6 +100,10 @@ fn main() {
             let output_file = sub_matches.get_one::<String>("output-file").unwrap();
             compile_action(input_file, output_file);
         },
+        Some(("export", sub_matches)) => {
+            let input_file = sub_matches.get_one::<String>("input-file").unwrap();
+            export_action(input_file);
+        }
         Some((name, _)) => {
             unreachable!("Unsupported subcommand '{}'", name)
         }
