@@ -27,8 +27,7 @@ impl ConstantPool {
     }
 
     pub fn new() -> Self {
-        let c: Self;
-        c
+        ConstantPool { data: Vec::new() }
     }
 }
 
