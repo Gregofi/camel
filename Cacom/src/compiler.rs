@@ -1,7 +1,8 @@
 use std::fmt;
 
-use crate::ast::{AST, Opcode};
-use crate::bytecode::{Bytecode, Code};
+use crate::ast::{Opcode, AST};
+use crate::bytecode::{Bytecode, Code, ConstantPoolIndex};
+use crate::objects::{ConstantPool, Object};
 use crate::serializable::{self, Serializable};
 
 enum Location {
@@ -9,13 +10,19 @@ enum Location {
     Local, // TODO: Environment
 }
 
-struct Context {
-    
+pub struct Context {
+    constant_pool: ConstantPool,
 }
 
 pub struct Program {
     // constant_pool,
     code: Code,
+}
+
+impl Context {
+    pub fn new() -> Self {
+        Context { constant_pool: ConstantPool::new() }
+    }
 }
 
 impl Program {
@@ -55,7 +62,12 @@ fn check_operator_arity(op: &Opcode, len: usize) -> Result<(), &'static str> {
 /// Inner compile function, compile the AST into bytecode which is inserted into Code.
 /// If the result is not intended to be keeped on stack (param drop is true) then
 /// a Drop instruction will be generated at the end.
-fn _compile(ast: &AST, code: &mut Code, drop: bool) -> Result<(),  &'static str> {
+fn _compile(
+    ast: &AST,
+    code: &mut Code,
+    context: &mut Context,
+    drop: bool,
+) -> Result<(), &'static str> {
     match ast {
         AST::Integer(val) => code.add(Bytecode::PushInt(*val)),
         AST::Float(_) => todo!(),
@@ -72,8 +84,26 @@ fn _compile(ast: &AST, code: &mut Code, drop: bool) -> Result<(),  &'static str>
             parameters,
             body,
         } => todo!(),
-        AST::CallFunction { name, arguments } => todo!(),
-        AST::Top(_) => todo!(),
+        AST::CallFunction { name, arguments } => {
+            for arg in arguments {
+                _compile(arg, code, context, false)?;
+            }
+
+            let str_index: ConstantPoolIndex = context
+                .constant_pool
+                .add(Object::from(name.clone()))
+                .try_into()
+                .expect("Constant pool is full");
+            code.add(Bytecode::CallFunc {
+                index: str_index,
+                arg_cnt: arguments.len().try_into().unwrap(),
+            })
+        }
+        AST::Top(stmts) => {
+            for stmt in stmts {
+                _compile(stmt, code, context, true)?;
+            }
+        }
         AST::Block(_) => todo!(),
         AST::While { guard, body } => todo!(),
         AST::Conditional {
@@ -89,7 +119,7 @@ fn _compile(ast: &AST, code: &mut Code, drop: bool) -> Result<(),  &'static str>
                 Opcode::Mul => code.add(Bytecode::Imul),
                 Opcode::Div => code.add(Bytecode::Idiv),
             }
-        },
+        }
         AST::Return(_) => todo!(),
         AST::String(_) => todo!(),
     }
@@ -99,8 +129,9 @@ fn _compile(ast: &AST, code: &mut Code, drop: bool) -> Result<(),  &'static str>
 
 pub fn compile(ast: &AST) -> Result<Program, &'static str> {
     let mut code = Code::new();
+    let mut context = Context::new();
 
-    _compile(ast, &mut code, false)?;
+    _compile(ast, &mut code, &mut context ,false)?;
 
-    Ok(Program{code})
+    Ok(Program { code })
 }
