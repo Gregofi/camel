@@ -1,4 +1,4 @@
-
+use std::fmt;
 
 #[derive(Debug, Clone)]
 pub enum Opcode {
@@ -38,6 +38,94 @@ pub enum AST {
     Operator { op: Opcode, arguments: Vec<Box<AST>> },
 
     Return(Box<AST>),
+}
+
+impl fmt::Display for Opcode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
+            Opcode::Add => "+",
+            Opcode::Sub  => "-",
+            Opcode::Mul => "*",
+            Opcode::Div => "/",
+        })
+    }
+}
+
+impl AST {
+    fn dump(&self) {
+        fn _dump(ast: &AST, offset: String) {
+            print!("{}", offset);
+            match ast {
+                AST::Integer(val) => println!("Integer: {}", val),
+                AST::Float(val) => println!("Float: {}", val),
+                AST::Bool(val) => println!("Bool: {}", val),
+                AST::NoneVal => println!("Unit"),
+                AST::String(val) => println!("String: {}", val),
+                AST::Variable { name, value } => {
+                    println!("Variable: {}", name);
+                    _dump(value, offset + " ");
+                }
+                AST::List { size, values } => {
+                    println!("List:");
+                    _dump(size, offset.clone() + " ");
+                    for val in values {
+                        _dump(val, offset.clone() + " ");
+                    }
+                },
+                AST::AccessVariable { name } => todo!(),
+                AST::AccessList { list, index } => todo!(),
+                AST::AssignVariable { name, value } => todo!(),
+                AST::AssignList { list, index, value } => todo!(),
+                AST::Function { name, parameters, body } => {
+                    print!("Function: {} [", &name);
+                    for param in parameters {
+                        print!("{} ", param);
+                    }
+                    println!("]");
+                    _dump(body, offset + " ");
+                },
+                AST::CallFunction { name, arguments } => {
+                    println!("Call: {}", name);
+                    for arg in arguments {
+                        _dump(arg, offset.clone() + " ");
+                    }
+                },
+                AST::Top(vals) => {
+                    for stmt in vals {
+                        _dump(stmt, String::from(""));
+                    }
+                },
+                AST::Block(vals) => {
+                    for stmt in vals {
+                        _dump(stmt, offset.clone());
+                    }
+                },
+                AST::While { guard, body } => {
+                    println!("While: ");
+                    _dump(guard, offset.clone() + " ");
+                    _dump(body, offset.clone() + " ")
+                },
+                AST::Conditional { guard, then_branch, else_branch } => {
+                    println!("If: ");
+                    _dump(guard, offset.clone() + " ");
+                    _dump(&then_branch, offset.clone() + " ");
+                    if else_branch.is_some() {
+                        _dump(else_branch.as_ref().unwrap(), offset.clone() + " ");
+                    }
+                },
+                AST::Operator { op, arguments } => {
+                    println!("Operator: {}", op);
+                    for arg in arguments {
+                        _dump(arg, offset.clone() + " ");
+                    }
+                },
+                AST::Return(expr) => {
+                    println!("Return: ");
+                    _dump(expr, offset.clone() + " ");
+                },
+            }
+        }
+    }
 }
 
 pub trait IntoBoxed {
