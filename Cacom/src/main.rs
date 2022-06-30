@@ -29,6 +29,7 @@ fn cli() -> Command<'static> {
 
     // TODO: input file should probably not be passed like that.
     let matches = App::new("Cacom")
+            .subcommand_required(true)
             .subcommand(SubCommand::with_name("dump-ast")
                 .about("Dumps the AST of the source file")
                 .arg(input_file.clone()))
@@ -45,7 +46,7 @@ fn cli() -> Command<'static> {
     matches
 }
 
-fn compile_action(input_file: &String, output_file: &String) {    
+fn compile_action(input_file: &String, output_file: &String) {
     let f = fs::read_to_string(input_file).expect("Couldn't read file");
     let mut out_f = fs::File::create(output_file).expect("Cannot open output file");
 
