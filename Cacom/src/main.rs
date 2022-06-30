@@ -82,8 +82,7 @@ fn export_action(input_file: &String) {
         .expect("Unable to parse file");
 
     let bytecode = compile(&ast).expect("Compilation error");
-    bytecode
-
+    println!("{}", bytecode);
 }
 
 fn main() {
