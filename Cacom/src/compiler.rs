@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::ast::{AST, Opcode};
 use crate::bytecode::{Bytecode, Code};
 use crate::serializable::{self, Serializable};
@@ -26,6 +28,12 @@ impl Serializable for Program {
     fn serialize(&self, f: &mut std::fs::File) -> std::io::Result<()> {
         self.code.serialize(f)?;
         Ok(())
+    }
+}
+
+impl fmt::Display for Program {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.code.fmt(f)
     }
 }
 
