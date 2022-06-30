@@ -87,6 +87,15 @@ pub struct Code {
     insert_point: Vec<Bytecode>,
 }
 
+impl fmt::Display for Code {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for ins in &self.insert_point {
+            write!(f, "{}\n", ins)?;
+        }
+        Ok(())
+    }
+}
+
 impl Code {
     pub fn new() -> Self {
         Self { insert_point: vec![] }
