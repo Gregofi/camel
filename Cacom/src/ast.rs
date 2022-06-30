@@ -52,7 +52,7 @@ impl fmt::Display for Opcode {
 }
 
 impl AST {
-    fn dump(&self) {
+    pub fn dump(&self) {
         fn _dump(ast: &AST, offset: String) {
             print!("{}", offset);
             match ast {
@@ -125,6 +125,7 @@ impl AST {
                 },
             }
         }
+        _dump(self, String::from(""));
     }
 }
 

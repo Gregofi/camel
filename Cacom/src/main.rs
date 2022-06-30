@@ -1,12 +1,10 @@
-use std::env;
-use std::fs;
-use std::io;
-
-use clap::Parser;
-use clap::Clap;
-
 #[macro_use]
 extern crate lalrpop_util;
+extern crate clap;
+
+use std::fs;
+
+use clap::{Arg, App, SubCommand, Command};
 
 use crate::compiler::compile;
 use crate::grammar::TopLevelParser;
@@ -21,60 +19,35 @@ mod objects;
 mod serializable;
 mod tests;
 
-#[derive(Clap, Debug)]
-#[clap(version = crate_version!(), author = crate_authors!())]
-enum Action {
-    Compile(CompileAction),
-    ASTDump(ASTDumpAction),
-    Disassemble(DisassembleAction),
+fn cli() -> Command<'static> {
+    let input_file = Arg::new("input-file")
+                                .short('i')
+                                .long("input-file")
+                                .required(true)
+                                .value_name("INPUTFILE")
+                                .help("Camel source code");
+
+    // TODO: input file should probably not be passed like that.
+    let matches = App::new("Cacom")
+            .subcommand(SubCommand::with_name("dump-ast")
+                .about("Dumps the AST of the source file")
+                .arg(input_file.clone()))
+            .subcommand(SubCommand::with_name("compile")
+                .about("Compile the source file into Caby bytecode")
+                .arg(input_file)
+                .arg(Arg::new("output-file")
+                    .short('o')
+                    .long("output-file")
+                    .required(false)
+                    .value_name("OUTPUTFILE")
+                    .help("The Caby bytecode output file"))
+            );
+    matches
 }
 
-impl Action {
-    pub fn act(&self) {
-        match self {
-            Action::Compile(action) => action.compile(),
-            Action::ASTDump(action) => action.dump(),
-            Action::Disassemble(action) => action.dissasemble(),
-        }
-    }
-}
-struct CompileAction {}
-
-impl CompileAction {
-    fn compile(&self) {}
-}
-
-struct ASTDumpAction {}
-
-impl ASTDumpAction {
-    fn dump(&self) {}
-}
-
-struct DisassembleAction {}
-
-impl DisassembleAction {
-    fn disassemble(&self) {}
-}
-
-fn main() {
-    let args: Vec<String> = env::args().collect();
-    let mut file_name: Option<String> = None;
-    let mut output_name: String = String::from("a.caby");
-
-    // TODO: Create proper parser with actions
-    for arg in args {
-        match arg {
-            _ => file_name = Some(arg),
-        }
-    }
-
-    if file_name == None {
-        panic!("No file to compile!");
-    }
-
-    let mut out_f = fs::File::create(output_name).expect("Cannot open output file");
-
-    let f = fs::read_to_string(file_name.unwrap()).expect("Couldn't read file");
+fn compile_action(input_file: &String, output_file: &String) {    
+    let f = fs::read_to_string(input_file).expect("Couldn't read file");
+    let mut out_f = fs::File::create(output_file).expect("Cannot open output file");
 
     let ast = TopLevelParser::new()
         .parse(&f)
@@ -85,4 +58,35 @@ fn main() {
     bytecode
         .serialize(&mut out_f)
         .expect("Unable to write to output file");
+}
+
+fn dump_action(input_file: &String) {
+    let f = fs::read_to_string(input_file).expect("Couldn't read file");
+
+    let ast = TopLevelParser::new()
+        .parse(&f)
+        .expect("Unable to parse file");
+
+    ast.dump();
+}
+
+fn main() {
+
+    let matches = cli().get_matches();
+
+    match matches.subcommand() {
+        Some(("dump-ast", sub_matches)) => {
+            let file = sub_matches.get_one::<String>("INPUTFILE").unwrap();
+            dump_action(file);
+        },
+        Some(("compile", sub_matches)) => {
+            let input_file = sub_matches.get_one::<String>("INPUTFILE").unwrap();
+            let output_file = sub_matches.get_one::<String>("OUTPUTFILE").unwrap();
+            compile_action(input_file, output_file);
+        },
+        Some((name, _)) => {
+            unreachable!("Unsupported subcommand '{}'", name)
+        }
+        None => {}
+    }
 }
