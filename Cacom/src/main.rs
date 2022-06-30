@@ -24,7 +24,7 @@ fn cli() -> Command<'static> {
                                 .short('i')
                                 .long("input-file")
                                 .required(true)
-                                .value_name("INPUTFILE")
+                                .value_name("INPUT-FILE")
                                 .help("Camel source code");
 
     // TODO: input file should probably not be passed like that.
@@ -40,7 +40,7 @@ fn cli() -> Command<'static> {
                     .short('o')
                     .long("output-file")
                     .required(false)
-                    .value_name("OUTPUTFILE")
+                    .value_name("OUTPUT-FILE")
                     .help("The Caby bytecode output file"))
             );
     matches
@@ -77,12 +77,12 @@ fn main() {
 
     match matches.subcommand() {
         Some(("dump-ast", sub_matches)) => {
-            let file = sub_matches.get_one::<String>("INPUTFILE").unwrap();
+            let file = sub_matches.get_one::<String>("input-file").unwrap();
             dump_action(file);
         },
         Some(("compile", sub_matches)) => {
-            let input_file = sub_matches.get_one::<String>("INPUTFILE").unwrap();
-            let output_file = sub_matches.get_one::<String>("OUTPUTFILE").unwrap();
+            let input_file = sub_matches.get_one::<String>("input-file").unwrap();
+            let output_file = sub_matches.get_one::<String>("output-file").unwrap();
             compile_action(input_file, output_file);
         },
         Some((name, _)) => {
