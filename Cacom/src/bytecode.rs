@@ -1,3 +1,4 @@
+use std::fmt;
 use std::io;
 use std::io::prelude::*;
 use std::fs::File;
@@ -47,6 +48,39 @@ pub enum Bytecode {
 
     Drop,
     Dup,
+}
+
+impl fmt::Display for Bytecode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Bytecode::PushShort(v) => write!(f, "Push short: {}", v),
+            Bytecode::PushInt(v) => write!(f, "Push int: {}", v),
+            Bytecode::PushLong(v) => write!(f, "Push long: {}", v),
+            Bytecode::PushBool(v) => write!(f, "Push bool: {}", v),
+            Bytecode::PushLiteral(v) => write!(f, "Push literal: {}", v),
+            Bytecode::PushUnit => write!(f, "Push unit"),
+            Bytecode::GetLocal(v) => write!(f, "Get local: {}", v),
+            Bytecode::SetLocal(v) => write!(f, "Set local: {}", v),
+            Bytecode::CallFunc { index, arg_cnt } => write!(f, "Call function {}: {}", index, arg_cnt),
+            Bytecode::Ret => write!(f, "Ret"),
+            Bytecode::Label(v) => write!(f, "{}:", v),
+            Bytecode::JmpShort(v) => write!(f, "JmpShort: {}", v),
+            Bytecode::Jmp(v) => write!(f, "Jmp: {}", v),
+            Bytecode::JmpLong(v) => write!(f, "JmpLong: {}", v),
+            Bytecode::BranchShort(v) => write!(f, "BranchShort: {}", v),
+            Bytecode::Branch(v) => write!(f, "Branch: {}", v),
+            Bytecode::BranchLong(v) => write!(f, "BranchLong: {}", v),
+            Bytecode::Print { string, arg_cnt } => write!(f, "Print {}: {}", string, arg_cnt),
+            Bytecode::Iadd => write!(f, "Iadd"),
+            Bytecode::Isub => write!(f, "Isub"),
+            Bytecode::Imul => write!(f, "Imul"),
+            Bytecode::Idiv => write!(f, "Idiv"),
+            Bytecode::Iand => write!(f, "Iand"),
+            Bytecode::Ior => write!(f, "Ior"),
+            Bytecode::Drop => write!(f, "Drop"),
+            Bytecode::Dup => write!(f, "Dup"),
+        }
+    }
 }
 
 pub struct Code {
