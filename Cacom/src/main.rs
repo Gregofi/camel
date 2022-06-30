@@ -41,11 +41,10 @@ fn cli() -> Command<'static> {
                     .long("output-file")
                     .required(false)
                     .value_name("OUTPUT-FILE")
-                    .help("The Caby bytecode output file"))
+                    .help("The Caby bytecode output file")))
             .subcommand(SubCommand::with_name("export")
                 .about("Compile camel source to bytecode and print it to standard output in human readable format")
-                .arg(input_file.clone()))
-            );
+                .arg(input_file.clone()));
     matches
 }
 
