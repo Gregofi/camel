@@ -51,6 +51,10 @@ fn check_operator_arity(op: &Opcode, len: usize) -> Result<(), &'static str> {
     }
 }
 
+///
+/// Inner compile function, compile the AST into bytecode which is inserted into Code.
+/// If the result is not intended to be keeped on stack (param drop is true) then
+/// a Drop instruction will be generated at the end.
 fn _compile(ast: &AST, code: &mut Code, drop: bool) -> Result<(),  &'static str> {
     match ast {
         AST::Integer(val) => code.add(Bytecode::PushInt(*val)),
