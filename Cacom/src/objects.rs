@@ -18,6 +18,20 @@ pub enum Object {
     },
 }
 
+pub struct ConstantPool{data: Vec<Object>}
+
+impl ConstantPool {
+    pub fn add(&mut self, obj: Object) -> usize {
+        self.data.push(obj);
+        self.data.len() - 1
+    }
+
+    pub fn new() -> Self {
+        let c: Self;
+        c
+    }
+}
+
 impl Object {
     fn byte_encode(&self) -> u8 {
         match self {
