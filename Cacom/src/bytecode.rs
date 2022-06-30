@@ -85,7 +85,6 @@ impl Serializable for Code {
     }
 }
 
-
 impl Bytecode {
     fn byte_encode(&self) -> u8 {
         match self {
