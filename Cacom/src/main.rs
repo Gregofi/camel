@@ -35,13 +35,16 @@ fn cli() -> Command<'static> {
                 .arg(input_file.clone()))
             .subcommand(SubCommand::with_name("compile")
                 .about("Compile the source file into Caby bytecode")
-                .arg(input_file)
+                .arg(input_file.clone())
                 .arg(Arg::new("output-file")
                     .short('o')
                     .long("output-file")
                     .required(false)
                     .value_name("OUTPUT-FILE")
                     .help("The Caby bytecode output file"))
+            .subcommand(SubCommand::with_name("export")
+                .about("Compile camel source to bytecode and print it to standard output in human readable format")
+                .arg(input_file.clone()))
             );
     matches
 }
@@ -69,6 +72,18 @@ fn dump_action(input_file: &String) {
         .expect("Unable to parse file");
 
     ast.dump();
+}
+
+fn export_action(input_file: &String) {
+    let f = fs::read_to_string(input_file).expect("Couldn't read file");
+
+    let ast = TopLevelParser::new()
+        .parse(&f)
+        .expect("Unable to parse file");
+
+    let bytecode = compile(&ast).expect("Compilation error");
+
+
 }
 
 fn main() {
