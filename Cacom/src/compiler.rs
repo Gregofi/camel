@@ -21,7 +21,9 @@ pub struct Program {
 
 impl Context {
     pub fn new() -> Self {
-        Context { constant_pool: ConstantPool::new() }
+        Context {
+            constant_pool: ConstantPool::new(),
+        }
     }
 }
 
@@ -121,7 +123,14 @@ fn _compile(
             }
         }
         AST::Return(_) => todo!(),
-        AST::String(_) => todo!(),
+        AST::String(lit) => {
+            let str_index: ConstantPoolIndex = context
+                .constant_pool
+                .add(Object::from(lit.clone()))
+                .try_into()
+                .expect("Constant pool is full");
+            code.add(Bytecode::PushLiteral(str_index));
+        }
     }
     code.add_cond(Bytecode::Drop, drop);
     Ok(())
@@ -131,7 +140,7 @@ pub fn compile(ast: &AST) -> Result<Program, &'static str> {
     let mut code = Code::new();
     let mut context = Context::new();
 
-    _compile(ast, &mut code, &mut context ,false)?;
+    _compile(ast, &mut code, &mut context, false)?;
 
     Ok(Program { code })
 }
