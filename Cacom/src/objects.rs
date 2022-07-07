@@ -1,12 +1,15 @@
 use std::io;
 use std::io::prelude::*;
 use std::fs::File;
+use std::collections::HashMap;
 
 use crate::bytecode::{ConstantPoolIndex, FrameIndex, Code};
 use crate::serializable::Serializable;
 
+#[derive(PartialEq)]
 pub struct Range{begin: u64, length: u64}
 
+#[derive(PartialEq)]
 pub enum Object {
     String(String),
     Function{
@@ -22,6 +25,15 @@ pub struct ConstantPool{data: Vec<Object>}
 
 impl ConstantPool {
     pub fn add(&mut self, obj: Object) -> usize {
+        // Check if the item was already added before, if so, just return its index.
+        if self.data.contains(&obj) {
+            let pos = self.data.iter().position(|item| *item == obj)
+            if pos.is_some() {
+                return pos.unwrap();
+            }
+        }
+
+        // Else push it back
         self.data.push(obj);
         self.data.len() - 1
     }
