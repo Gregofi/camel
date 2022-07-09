@@ -120,58 +120,66 @@ impl AST {
                     for val in values {
                         _dump(val, offset.clone() + " ");
                     }
-                },
+                }
                 AST::AccessVariable { name } => todo!(),
                 AST::AccessList { list, index } => todo!(),
                 AST::AssignVariable { name, value } => todo!(),
                 AST::AssignList { list, index, value } => todo!(),
-                AST::Function { name, parameters, body } => {
+                AST::Function {
+                    name,
+                    parameters,
+                    body,
+                } => {
                     print!("Function: {} [", &name);
                     for param in parameters {
                         print!("{} ", param);
                     }
                     println!("]");
                     _dump(body, offset + " ");
-                },
+                }
                 AST::CallFunction { name, arguments } => {
                     println!("Call: {}", name);
                     for arg in arguments {
                         _dump(arg, offset.clone() + " ");
                     }
-                },
+                }
                 AST::Top(vals) => {
                     for stmt in vals {
                         _dump(stmt, String::from(""));
                     }
-                },
+                }
                 AST::Block(vals) => {
                     for stmt in vals {
                         _dump(stmt, offset.clone());
                     }
-                },
+                }
                 AST::While { guard, body } => {
                     println!("While: ");
                     _dump(guard, offset.clone() + " ");
                     _dump(body, offset.clone() + " ")
-                },
-                AST::Conditional { guard, then_branch, else_branch } => {
+                }
+                AST::Conditional {
+                    guard,
+                    then_branch,
+                    else_branch,
+                } => {
                     println!("If: ");
                     _dump(guard, offset.clone() + " ");
                     _dump(&then_branch, offset.clone() + " ");
                     if else_branch.is_some() {
                         _dump(else_branch.as_ref().unwrap(), offset.clone() + " ");
                     }
-                },
+                }
                 AST::Operator { op, arguments } => {
                     println!("Operator: {}", op);
                     for arg in arguments {
                         _dump(arg, offset.clone() + " ");
                     }
-                },
+                }
                 AST::Return(expr) => {
                     println!("Return: ");
                     _dump(expr, offset.clone() + " ");
-                },
+                }
             }
         }
         _dump(self, String::from(""));
