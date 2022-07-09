@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt;
 use std::io;
 use std::io::prelude::*;
@@ -112,13 +113,16 @@ impl fmt::Display for Bytecode {
 }
 
 pub struct Code {
-    insert_point: Vec<Bytecode>,
+    code: HashMap<ConstantPoolIndex, Vec<Bytecode>>,
 }
 
 impl fmt::Display for Code {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for ins in &self.insert_point {
-            write!(f, "{}\n", ins)?;
+        for (idx, bytecode) in &self.code {
+            writeln!(f, "{}", idx)?;
+            for ins in bytecode {
+                writeln!(f, " {}", ins)?;
+            }
         }
         Ok(())
     }
@@ -126,39 +130,35 @@ impl fmt::Display for Code {
 
 impl Code {
     pub fn new() -> Self {
-        Self { insert_point: vec![] }
+        Self { code: HashMap::new() }
     }
 
-    pub fn add(&mut self, bytecode: Bytecode) -> usize {
-        self.insert_point.push(bytecode);
-        self.insert_point.len() - 1
+    pub fn add_function(&mut self, at: ConstantPoolIndex) {
+        self.code.insert(at, vec![]);
     }
 
-    pub fn add_cond(&mut self, bytecode: Bytecode, cond: bool) {
+    pub fn add(&mut self, at: ConstantPoolIndex, bytecode: Bytecode) -> usize {
+        self.code.get_mut(&at).expect("No function by the index").push(bytecode);
+        self.code.get_mut(&at).expect("No function by the index").len() - 1
+    }
+
+    pub fn add_cond(&mut self, at: ConstantPoolIndex, bytecode: Bytecode, cond: bool) {
         if cond {
-            self.add(bytecode);
+            self.add(at, bytecode);
         }
-    }
-
-    /// Updates jump instruction destination 'at' with new 'destination'
-    /// panics if out of range or the instruction isn't jump or branch.
-    pub fn update_jmp(&mut self, at: usize, dest: usize) {
-        let ins = self.insert_point.get_mut(at).unwrap();
-        ins.update_jump(dest);
-    }
-
-    pub fn len(&self) -> usize {
-        self.insert_point.len()
     }
 }
 
 impl Serializable for Code {
     /// Serializes the code into file in format: size - u8 | ins ...
     /// The size is not the size in bytes but number of instructions!
+    /// Also, the index to constant pool is NOT serialized at all in this.
     fn serialize(&self, f: &mut File) -> io::Result<()> {
-        f.write_all(&(self.insert_point.len() as u64).to_le_bytes())?;
-        for instruction in &self.insert_point {
-            instruction.serialize(f)?;
+        for (idx, code) in &self.code {
+            f.write_all(&(code.len() as u64).to_le_bytes())?;
+            for instruction in code {
+                instruction.serialize(f)?;
+            }
         }
         Ok(())
     }
