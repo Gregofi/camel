@@ -6,6 +6,11 @@ pub enum Opcode {
     Sub,
     Mul,
     Div,
+    Less,
+    LessEq,
+    Greater,
+    GreaterEq,
+    Eq,
 }
 
 #[derive(Debug, Clone)]
@@ -16,38 +21,82 @@ pub enum AST {
     NoneVal,
     String(String),
 
-    Variable { name: String, value: Box<AST> },
-    List { size: Box<AST>, values: Vec<Box<AST>> },
+    Variable {
+        name: String,
+        value: Box<AST>,
+    },
+    List {
+        size: Box<AST>,
+        values: Vec<Box<AST>>,
+    },
 
-    AccessVariable { name: String },
-    AccessList { list: Box<AST>, index: Box<AST> },
+    AccessVariable {
+        name: String,
+    },
+    AccessList {
+        list: Box<AST>,
+        index: Box<AST>,
+    },
 
-    AssignVariable { name: String, value: Box<AST> },
-    AssignList { list: Box<AST>, index: Box<AST>, value: Box<AST> },
+    AssignVariable {
+        name: String,
+        value: Box<AST>,
+    },
+    AssignList {
+        list: Box<AST>,
+        index: Box<AST>,
+        value: Box<AST>,
+    },
 
-    Function { name: String, parameters: Vec<String>, body: Box<AST> },
+    Function {
+        name: String,
+        parameters: Vec<String>,
+        body: Box<AST>,
+    },
 
-    CallFunction { name: String, arguments: Vec<Box<AST>> },
+    CallFunction {
+        name: String,
+        arguments: Vec<Box<AST>>,
+    },
 
     Top(Vec<Box<AST>>),
     Block(Vec<Box<AST>>),
-    While { guard: Box<AST>, body: Box<AST> },
+    While {
+        guard: Box<AST>,
+        body: Box<AST>,
+    },
 
-    Conditional { guard: Box<AST>, then_branch: Box<AST>, else_branch: Option<Box<AST>> },
+    Conditional {
+        guard: Box<AST>,
+        then_branch: Box<AST>,
+        else_branch: Option<Box<AST>>,
+    },
 
-    Operator { op: Opcode, arguments: Vec<Box<AST>> },
+    Operator {
+        op: Opcode,
+        arguments: Vec<Box<AST>>,
+    },
 
     Return(Box<AST>),
 }
 
 impl fmt::Display for Opcode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            Opcode::Add => "+",
-            Opcode::Sub  => "-",
-            Opcode::Mul => "*",
-            Opcode::Div => "/",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                Opcode::Add => "+",
+                Opcode::Sub => "-",
+                Opcode::Mul => "*",
+                Opcode::Div => "/",
+                Opcode::Less => "<",
+                Opcode::LessEq => "<=",
+                Opcode::Greater => ">",
+                Opcode::GreaterEq => ">=",
+                Opcode::Eq => "==",
+            }
+        )
     }
 }
 

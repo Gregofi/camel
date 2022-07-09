@@ -44,6 +44,11 @@ pub enum Bytecode {
     Idiv,
     Iand,
     Ior,
+    Iless,
+    Ilesseq,
+    Igreater,
+    Igreatereq,
+    Ieq,
     // Rest of binary operations
 
     Drop,
@@ -189,6 +194,11 @@ impl Serializable for Bytecode {
             Bytecode::Idiv => { },
             Bytecode::Iand => { },
             Bytecode::Ior => { },
+            Bytecode::Iless => { },
+            Bytecode::Ilesseq => { },
+            Bytecode::Igreater => { },
+            Bytecode::Igreatereq => { },
+            Bytecode::Ieq => { },
             Bytecode::Drop => { },
             Bytecode::Dup => { },
             Bytecode::PushUnit => { },
