@@ -118,6 +118,7 @@ LowPrio: AST = {
     LPAREN <expr: Expr> RPAREN => expr,
     Block => <>,
     Conditional => <>,
+    Identifier => AST::AccessVariable{name: <>},
 }
 
 Call: AST = {
