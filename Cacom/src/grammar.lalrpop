@@ -69,12 +69,13 @@ TopLevelExpressions: Vec<AST> = {
 }
 
 TopLevelExpression: AST = {
-    AExpr => <>,
+    // FIXME: This permits 'return' in top level
+    Statement => <>,
     FunDecl => <>,
 }
 
-Expressions: Vec<AST> = {
-    <first: Expression> <others: (SEMICOLON <Expression>)*> SEMICOLON? => {
+Statements: Vec<AST> = {
+    <first: Statement> <others: (SEMICOLON <Statement>)*> SEMICOLON? => {
         let mut all = VecDeque::from(others);
         all.push_front(first);
         Vec::from(all)
@@ -85,9 +86,14 @@ Expressions: Vec<AST> = {
 // do not put things that can appear in operations
 // (ie. in binary operations, conditions and so on...)
 // here belongs for example while or for cycle.
-Expression: AST = {
-    AExpr => <>, // All subexpressions - contains binaryop, ifs, calls and so on.
-    Return => <>,   
+Statement: AST = {
+    Expr => <>, // All subexpressions - contains binaryop, ifs, calls and so on.
+    Return => <>,
+}
+
+Expr: AST = {
+    <left:Expr> <op:LogicalOp> <right: AExpr> => AST::Operator{op: op, arguments: vec![Box::new(left), Box::new(right)]},
+    AExpr,
 }
 
 AExpr: AST = {
@@ -95,11 +101,21 @@ AExpr: AST = {
     Factor,
 }
 
+Factor: AST = {
+    <left:Factor> <op:TermOp> <right:Term> => AST::Operator{op: op, arguments: vec![Box::new(left), Box::new(right)]},
+    Term,
+}
+
+Term: AST = {
+    // TODO: floats
+    LowPrio => <>,
+}
+
 LowPrio: AST = {
     Number => <>,
     String => AST::String(<>),
     Call => <>,
-    LPAREN <expr: AExpr> RPAREN => expr,
+    LPAREN <expr: Expr> RPAREN => expr,
     Block => <>,
     Conditional => <>,
 }
@@ -111,9 +127,12 @@ Call: AST = {
     // TODO: Method calls over objects, lists, strings and so on.
 }
 
-Factor: AST = {
-    <left:Factor> <op:TermOp> <right:Term> => AST::Operator{op: op, arguments: vec![Box::new(left), Box::new(right)]},
-    Term,
+LogicalOp: Opcode = {
+    LESS => Opcode::Less,
+    LESSEQ => Opcode::LessEq,
+    GREATER => Opcode::Greater,
+    GREATEREQ => Opcode::GreaterEq,
+    EQ => Opcode::Eq,
 }
 
 ExprOp: Opcode = {
@@ -126,11 +145,6 @@ TermOp: Opcode = {
     DIVIDE => Opcode::Div,
 }
 
-Term: AST = {
-    // TODO: floats
-    LowPrio => <>,
-}
-
 Number: AST = {
     NUMBER => AST::Integer(i32::from_str(<>).unwrap()),
 }
@@ -140,12 +154,12 @@ String: String = {
 }
 
 Block: AST = {
-    CURLYBOPEN <expressions: Expressions> CURLYBCLOSE => AST::Block(expressions.into_boxed()),
+    CURLYBOPEN <expressions: Statements> CURLYBCLOSE => AST::Block(expressions.into_boxed()),
     CURLYBOPEN CURLYBCLOSE => AST::NoneVal,
 }
 
 FunDecl: AST = {
-    DEF <name: Identifier> <parameters: Parameters> ASSIGN <body: Expression> => {
+    DEF <name: Identifier> <parameters: Parameters> ASSIGN <body: Statement> => {
         AST::Function{name, parameters, body: body.into_boxed()}
     }
 }
@@ -161,7 +175,7 @@ Parameters: Vec<String> = {
 }
 
 Arguments: Vec<Box<AST>> = {
-    <elements: (<AExpr> COMMA)*> <element: AExpr?> => {
+    <elements: (<Expr> COMMA)*> <element: Expr?> => {
         match element {
             None => elements.into_iter().map(|x| x.into_boxed()).collect(),
             Some(e) => { let mut elements = elements; elements.push(e); elements.into_iter().map(|x| x.into_boxed()).collect() }
@@ -170,17 +184,17 @@ Arguments: Vec<Box<AST>> = {
 }
 
 Conditional: AST = {
-    IF <guard: AExpr> <then: Block> ELSE <els: Block> =>
+    IF <guard: Expr> <then: Block> ELSE <els: Block> =>
                     AST::Conditional{guard: guard.into_boxed(),
                             then_branch: then.into_boxed(),
                             else_branch: Some(els.into_boxed())},
 
-    IF <guard: AExpr> <then: Block> =>
+    IF <guard: Expr> <then: Block> =>
                     AST::Conditional{guard: guard.into_boxed(),
                             then_branch: then.into_boxed(),
                             else_branch: None}
 }
 
 Return: AST = {
-    RETURN <expr: AExpr> => AST::Return(expr.into_boxed())
+    RETURN <expr: Expr> => AST::Return(expr.into_boxed())
 }

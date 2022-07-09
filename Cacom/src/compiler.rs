@@ -3,7 +3,7 @@ use std::fmt;
 use crate::ast::{Opcode, AST};
 use crate::bytecode::{Bytecode, Code, ConstantPoolIndex};
 use crate::objects::{ConstantPool, Object};
-use crate::serializable::{self, Serializable};
+use crate::serializable::Serializable;
 
 enum Location {
     Global,
@@ -15,7 +15,7 @@ pub struct Context {
 }
 
 pub struct Program {
-    // constant_pool,
+    constant_pool: ConstantPool,
     code: Code,
 }
 
@@ -24,12 +24,6 @@ impl Context {
         Context {
             constant_pool: ConstantPool::new(),
         }
-    }
-}
-
-impl Program {
-    pub fn new() -> Self {
-        Self { code: Code::new() }
     }
 }
 
@@ -42,6 +36,7 @@ impl Serializable for Program {
 
 impl fmt::Display for Program {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.constant_pool.fmt(f)?;
         self.code.fmt(f)
     }
 }
@@ -76,10 +71,15 @@ fn _compile(
     drop: bool,
 ) -> Result<(), &'static str> {
     match ast {
-        AST::Integer(val) => code.add(Bytecode::PushInt(*val)),
+        AST::Integer(val) => {
+            code.add(Bytecode::PushInt(*val));
+        },
         AST::Float(_) => todo!(),
-        AST::Bool(val) => code.add(Bytecode::PushBool(*val)),
-        AST::NoneVal => unimplemented!(), // TODO: Think about if we really want null values, some kind of Optional class would probably be better.
+        AST::Bool(val) => {
+            code.add(Bytecode::PushBool(*val));
+        },
+        AST::NoneVal => unimplemented!(), // TODO: Think about if we really want null values, some
+                                          // kind of Optional class would probably be better.
         AST::Variable { name, value } => todo!(),
         AST::List { size, values } => todo!(),
         AST::AccessVariable { name } => todo!(),
@@ -104,28 +104,52 @@ fn _compile(
             code.add(Bytecode::CallFunc {
                 index: str_index,
                 arg_cnt: arguments.len().try_into().unwrap(),
-            })
+            });
         }
         AST::Top(stmts) => {
             for stmt in stmts {
                 _compile(stmt, code, context, true)?;
             }
         }
-        AST::Block(_) => todo!(),
+        AST::Block(stmts) => {
+            let mut it = stmts.iter().peekable();
+
+            while let Some(stmt) = it.next() {
+                // Drop everything but the last result
+                _compile(stmt, code, context, !it.peek().is_none())?;
+            }
+        },
         AST::While { guard, body } => todo!(),
         AST::Conditional {
             guard,
             then_branch,
             else_branch,
-        } => todo!(),
+        } => {
+            _compile(guard, code, context, false)?;
+            // True is fallthrough, false is jump
+            code.add(Bytecode::BranchLabelFalse(String::from("if_false")));
+            _compile(&then_branch, code, context, drop)?;
+            code.add(Bytecode::Label(String::from("if_false")));
+            if let Some(else_body) = else_branch {
+                _compile(&else_body, code, context, false)?;
+            }
+        },
         AST::Operator { op, arguments } => {
             check_operator_arity(op, arguments.len())?;
+            for arg in arguments {
+                _compile(arg, code, context, false)?;
+            }
             match op {
                 Opcode::Add => code.add(Bytecode::Iadd),
                 Opcode::Sub => code.add(Bytecode::Isub),
                 Opcode::Mul => code.add(Bytecode::Imul),
                 Opcode::Div => code.add(Bytecode::Idiv),
-            }
+                Opcode::Less => code.add(Bytecode::Iless),
+                Opcode::LessEq => code.add(Bytecode::Ilesseq),
+                Opcode::Greater => code.add(Bytecode::Igreater),
+                Opcode::GreaterEq => code.add(Bytecode::Igreatereq),
+                Opcode::Eq => code.add(Bytecode::Ieq),
+            };
         }
         AST::Return(_) => todo!(),
         AST::String(lit) => {
@@ -136,7 +160,7 @@ fn _compile(
                 .expect("Constant pool is full");
             code.add(Bytecode::PushLiteral(str_index));
         }
-    }
+    };
     code.add_cond(Bytecode::Drop, drop);
     Ok(())
 }
@@ -147,5 +171,5 @@ pub fn compile(ast: &AST) -> Result<Program, &'static str> {
 
     _compile(ast, &mut code, &mut context, false)?;
 
-    Ok(Program { code })
+    Ok(Program { code, constant_pool: context.constant_pool })
 }

@@ -1,9 +1,9 @@
+use std::fmt;
 use std::io;
 use std::io::prelude::*;
 use std::fs::File;
-use std::collections::HashMap;
 
-use crate::bytecode::{ConstantPoolIndex, FrameIndex, Code};
+use crate::bytecode::{ConstantPoolIndex, FrameIndex};
 use crate::serializable::Serializable;
 
 #[derive(PartialEq)]
@@ -23,11 +23,18 @@ pub enum Object {
 
 pub struct ConstantPool{data: Vec<Object>}
 
+impl fmt::Display for Range {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "begin: {}, len: {}", self.begin, self.length)
+    }
+}
+
 impl ConstantPool {
     pub fn add(&mut self, obj: Object) -> usize {
         // Check if the item was already added before, if so, just return its index.
+        // TODO: Linear for number of items
         if self.data.contains(&obj) {
-            let pos = self.data.iter().position(|item| *item == obj)
+            let pos = self.data.iter().position(|item| *item == obj);
             if pos.is_some() {
                 return pos.unwrap();
             }
@@ -43,11 +50,31 @@ impl ConstantPool {
     }
 }
 
+impl fmt::Display for ConstantPool {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for obj in &self.data {
+            writeln!(f, "{}", obj)?;
+        }
+        Ok(())
+    }
+}
+
 impl Object {
     fn byte_encode(&self) -> u8 {
         match self {
             Object::String(_) => 0x01,
             Object::Function { name, parameters_cnt, locals, range } => 0x00,
+        }
+    }
+}
+
+impl fmt::Display for Object {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Object::String(str) => write!(f, "String: {}", str),
+            Object::Function { name, parameters_cnt, locals, range } => {
+                write!(f, "Function: {}, parameters: {}, locals: {}, range: {}", name, parameters_cnt, locals, range)
+            },
         }
     }
 }
