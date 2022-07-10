@@ -154,7 +154,7 @@ impl Serializable for Code {
     /// The size is not the size in bytes but number of instructions!
     /// Also, the index to constant pool is NOT serialized at all in this.
     fn serialize(&self, f: &mut File) -> io::Result<()> {
-        for (idx, code) in &self.code {
+        for (_, code) in &self.code {
             f.write_all(&(code.len() as u64).to_le_bytes())?;
             for instruction in code {
                 instruction.serialize(f)?;

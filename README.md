@@ -37,7 +37,7 @@ println("", max([1, 2, 5, 3, 1]));
 
 The language has C-like syntax but supports advanced constructs such as objects, lists, strings and so on. It basically aims to be a more C-like Python with better scoping rules.
 
-Followinhg features will hopefully be implemented:
+Following features will hopefully be implemented:
 - Algebraic data types -> Pattern matching with enums
 - Fully interpolated strings
 - Explicit types
