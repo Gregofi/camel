@@ -71,7 +71,40 @@ fn check_operator_arity(op: &Opcode, len: usize) -> Result<(), &'static str> {
     }
 }
 
-///
+/// Removes jumps to labels and replaces them with offset jumps
+fn jump_pass(code: Vec<Bytecode>) -> Vec<Bytecode> {
+    let mut labels: HashMap<String, usize> = HashMap::new();
+
+    // Copy the bytecode without labels but store their (labels) location
+    let mut without_labels: Vec<Bytecode> = Vec::new();
+    for (idx, ins) in code.into_iter().enumerate() {
+        match ins {
+            Bytecode::Label(str) => {
+                labels.insert(str, idx);
+            },
+            _ => without_labels.push(ins)
+        }
+    }
+
+    // Remove the jump to labels with jump to address
+    // TODO: Use short, long or normal jump based on distance
+    without_labels.into_iter().map(|ins| match ins {
+        Bytecode::JmpLabel(label) => {
+            let label_index = *labels.get(&label).unwrap();
+            Bytecode::Jmp(label_index.try_into().unwrap())
+        },
+        Bytecode::BranchLabel(label) => {
+            let label_index = *labels.get(&label).unwrap();
+            Bytecode::Branch(label_index.try_into().unwrap())
+        },
+        Bytecode::BranchLabelFalse(label) => {
+            let label_index = *labels.get(&label).unwrap();
+            Bytecode::BranchFalse(label_index.try_into().unwrap())
+        },
+        _ => ins,
+    }).collect()
+}
+
 /// Inner compile function, compile the AST into bytecode which is inserted into Code.
 /// If the result is not intended to be keeped on stack (param drop is true) then
 /// a Drop instruction will be generated at the end.
@@ -103,7 +136,13 @@ fn _compile(
             parameters,
             body,
         } => {
-            context.functions_def.push(Function { name: name.clone(), parameters: parameters.clone(), body: body.clone() });
+            let new_fun_idx = context.constant_pool.add(Object::from(name.clone()));
+            code.add_function(new_fun_idx);
+
+            let fun = Object::Function { name: new_fun_idx, parameters_cnt: todo!(), locals: todo!(), range: todo!() };
+            context.constant_pool.add(fun);
+            // TODO: Also introduce parameters to local environment
+            _compile(body, code, context, new_fun_idx, true)?;
         },
         AST::CallFunction { name, arguments } => {
             for arg in arguments {
@@ -187,6 +226,8 @@ pub fn compile(ast: &AST) -> Result<Program, &'static str> {
 
     code.add_function(main_fun);
     _compile(ast, &mut code, &mut context, main_fun, false)?;
+
+    code.code = code.code.into_iter().map(|(idx, body)| (idx, jump_pass(body))).collect();
 
     Ok(Program { code, constant_pool: context.constant_pool })
 }

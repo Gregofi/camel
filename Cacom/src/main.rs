@@ -74,7 +74,7 @@ fn dump_action(input_file: &String) {
 }
 
 fn export_action(input_file: &String) {
-    let f = fs::read_to_string(input_file).expect("Couldn't read file");
+    let f = fs::read_to_string(input_file).unwrap_or_else(|_| panic!("Couldn't read file at '{}'", input_file));
 
     let ast = TopLevelParser::new()
         .parse(&f)

@@ -30,19 +30,19 @@ impl fmt::Display for Range {
 }
 
 impl ConstantPool {
-    pub fn add(&mut self, obj: Object) -> usize {
+    pub fn add(&mut self, obj: Object) -> ConstantPoolIndex {
         // Check if the item was already added before, if so, just return its index.
         // TODO: Linear for number of items
         if self.data.contains(&obj) {
             let pos = self.data.iter().position(|item| *item == obj);
             if pos.is_some() {
-                return pos.unwrap();
+                return pos.unwrap().try_into().unwrap();
             }
         }
 
         // Else push it back
         self.data.push(obj);
-        self.data.len() - 1
+        (self.data.len() - 1).try_into().unwrap()
     }
 
     pub fn new() -> Self {

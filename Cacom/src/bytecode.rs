@@ -113,7 +113,7 @@ impl fmt::Display for Bytecode {
 }
 
 pub struct Code {
-    code: HashMap<ConstantPoolIndex, Vec<Bytecode>>,
+    pub code: HashMap<ConstantPoolIndex, Vec<Bytecode>>,
 }
 
 impl fmt::Display for Code {
@@ -232,22 +232,28 @@ impl Serializable for Bytecode {
             Bytecode::PushLiteral(v) => f.write_all(&v.to_le_bytes())?,
             Bytecode::GetLocal(_) => todo!(),
             Bytecode::SetLocal(_) => todo!(),
-            Bytecode::CallFunc { index, arg_cnt } => todo!(),
+            Bytecode::CallFunc { index, arg_cnt } => {
+                f.write_all(&index.to_le_bytes())?;
+                f.write_all(&arg_cnt.to_le_bytes())?;
+            },
             Bytecode::Ret => { },
-            Bytecode::Label(_) => todo!(),
+            Bytecode::Label(name) => todo!(),
             Bytecode::BranchLabel(_) => panic!("Jump labels are not meant to exist in final bytecode"),
             Bytecode::BranchLabelFalse(_) => panic!("Jump labels are not meant to exist in final bytecode"),
             Bytecode::JmpLabel(_) => panic!("Jump labels are not meant to exist in final bytecode"),
-            Bytecode::JmpShort(_) => todo!(),
-            Bytecode::Jmp(_) => todo!(),
-            Bytecode::JmpLong(_) => todo!(),
-            Bytecode::BranchShort(_) => todo!(),
-            Bytecode::Branch(_) => todo!(),
-            Bytecode::BranchLong(_) => todo!(),
-            Bytecode::BranchShortFalse(_) => todo!(),
-            Bytecode::BranchFalse(_) => todo!(),
-            Bytecode::BranchLongFalse(_) => todo!(),
-            Bytecode::Print { string, arg_cnt } => todo!(),
+            Bytecode::JmpShort(dst) => f.write_all(&dst.to_le_bytes())?,
+            Bytecode::Jmp(dst) => f.write_all(&dst.to_le_bytes())?,
+            Bytecode::JmpLong(dst) => f.write_all(&dst.to_le_bytes())?,
+            Bytecode::BranchShort(dst) => f.write_all(&dst.to_le_bytes())?,
+            Bytecode::Branch(dst) => f.write_all(&dst.to_le_bytes())?,
+            Bytecode::BranchLong(dst) => f.write_all(&dst.to_le_bytes())?,
+            Bytecode::BranchShortFalse(dst) => f.write_all(&dst.to_le_bytes())?,
+            Bytecode::BranchFalse(dst) => f.write_all(&dst.to_le_bytes())?,
+            Bytecode::BranchLongFalse(dst) => f.write_all(&dst.to_le_bytes())?,
+            Bytecode::Print { string, arg_cnt } => {
+                f.write_all(&string.to_le_bytes())?;
+                f.write_all(&arg_cnt.to_le_bytes())?;
+            },
             Bytecode::Iadd => { },
             Bytecode::Isub => { },
             Bytecode::Imul => { },
