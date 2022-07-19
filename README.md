@@ -45,6 +45,9 @@ Following features will hopefully be implemented:
 - Closures
 - Dictionaries
 - Sets
+- Error handling
+  - Use ? For signaling that the value can be some Error value and propagate it 
+    probably with `?` like Rust (Draft, think this over).
 
 Following features are considered
 - Exceptions - Honestly, I just don't like them for error handling. IMO much better way is the Rust way.
