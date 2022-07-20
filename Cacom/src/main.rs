@@ -18,6 +18,7 @@ mod compiler;
 mod objects;
 mod serializable;
 mod tests;
+mod utils;
 
 fn cli() -> Command<'static> {
     let input_file = Arg::new("input-file")
@@ -56,9 +57,9 @@ fn compile_action(input_file: &String, output_file: &String) {
         .parse(&f)
         .expect("Unable to parse file");
 
-    let bytecode = compile(&ast).expect("Compilation error");
+    let constant_pool = compile(&ast).expect("Compilation error");
 
-    bytecode
+    constant_pool
         .serialize(&mut out_f)
         .expect("Unable to write to output file");
 }

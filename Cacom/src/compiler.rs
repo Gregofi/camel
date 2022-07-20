@@ -5,11 +5,7 @@ use crate::ast::{Opcode, AST};
 use crate::bytecode::{Bytecode, Code, ConstantPoolIndex};
 use crate::objects::{ConstantPool, Object};
 use crate::serializable::Serializable;
-
-enum Location {
-    Global,
-    Local, // TODO: Environment
-}
+use crate::utils::AtomicInt;
 
 struct Function {
     name: String,
@@ -17,23 +13,65 @@ struct Function {
     body: Box<AST>,
 }
 
+/// Environment keeps track of indexes of local variables into memory.
+/// It consists of multiple environments, each one is a map from
+/// name to index of the local variable.
+struct Environment {
+    atomic_int: AtomicInt,
+    envs: Vec<HashMap<String, LocalVarIndex>>
+}
+
+enum Location {
+    Global,
+    Local(Environment),
+}
+
 pub struct Context {
-    constant_pool: ConstantPool,
-    // Functions are first collected and generated
-    // only when all of global statement have been generated.
-    functions_def: Vec<Function>,
+    loc: Location,
 }
 
 pub struct Program {
-    constant_pool: ConstantPool,
     code: Code,
+}
+
+type LocalVarIndex = u16;
+
+impl Environment {
+    /// Returns environment with one empty environment present
+    pub fn new() -> Self {
+        Self{atomic_int: AtomicInt::new(), envs: vec![HashMap::new()]}
+    }
+
+    /// Adds one more inner scope to environment
+    pub fn enter_scope(&mut self) {
+        self.envs.push(HashMap::new());
+    }
+
+    /// Removes the topmost environment
+    pub fn leave_scope(&mut self) {
+        self.envs.pop();
+    }
+
+    pub fn add_local(&mut self, v: String) -> Result<LocalVarIndex, &'static str> {
+        let topmost = self.envs.last_mut().expect("Camel Compiler bug: There is no environment");
+        if topmost.contains_key(&v) {
+            return Err("Redefinition of local variable")
+        }
+        let idx: LocalVarIndex = self.atomic_int.get_and_inc().try_into().expect("Too many local variables");
+        topmost.insert(v, idx);
+        Ok(idx)
+    }
+
+    pub fn fetch_local(&self, v: String) -> Option<LocalVarIndex> {
+        let topmost =self.envs.last().expect("Camel compiler bug: There is no environment");
+        topmost.get(&v).copied()
+    }
 }
 
 impl Context {
     pub fn new() -> Self {
         Context {
-            constant_pool: ConstantPool::new(),
-            functions_def: Vec::new(),
+            loc: Location::Global,
         }
     }
 }
@@ -47,7 +85,7 @@ impl Serializable for Program {
 
 impl fmt::Display for Program {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.constant_pool.fmt(f)?;
+        // self.constant_pool.fmt(f)?;
         self.code.fmt(f)
     }
 }
@@ -112,16 +150,16 @@ fn _compile(
     ast: &AST,
     code: &mut Code,
     context: &mut Context,
-    current_function: ConstantPoolIndex,
+    constant_pool: &mut ConstantPool,
     drop: bool,
 ) -> Result<(), &'static str> {
     match ast {
         AST::Integer(val) => {
-            code.add(current_function, Bytecode::PushInt(*val));
+            code.add(Bytecode::PushInt(*val));
         },
         AST::Float(_) => todo!(),
         AST::Bool(val) => {
-            code.add(current_function, Bytecode::PushBool(*val));
+            code.add(Bytecode::PushBool(*val));
         },
         AST::NoneVal => unimplemented!(), // TODO: Think about if we really want null values, some
                                           // kind of Optional class would probably be better.
@@ -136,32 +174,35 @@ fn _compile(
             parameters,
             body,
         } => {
-            let new_fun_idx = context.constant_pool.add(Object::from(name.clone()));
-            code.add_function(new_fun_idx);
+            let new_fun_idx = constant_pool.add(Object::from(name.clone()));
 
-            let fun = Object::Function { name: new_fun_idx, parameters_cnt: todo!(), locals: todo!(), range: todo!() };
-            context.constant_pool.add(fun);
-            // TODO: Also introduce parameters to local environment
-            _compile(body, code, context, new_fun_idx, true)?;
+            // Create new env and populate it with parameters
+            let mut new_env = Environment::new();
+            for par in parameters {
+                new_env.add_local(par.clone())?;
+            }
+            let code = compile2(body,  constant_pool, Location::Local(new_env))?;
+
+            let fun = Object::Function { name: new_fun_idx, parameters_cnt: parameters.len().try_into().unwrap(), body: code };
+            constant_pool.add(fun);
         },
         AST::CallFunction { name, arguments } => {
             for arg in arguments {
-                _compile(arg, code, context, current_function, false)?;
+                _compile(arg, code, context, constant_pool, false)?;
             }
 
-            let str_index: ConstantPoolIndex = context
-                .constant_pool
+            let str_index: ConstantPoolIndex = constant_pool
                 .add(Object::from(name.clone()))
                 .try_into()
                 .expect("Constant pool is full");
-            code.add(current_function, Bytecode::CallFunc {
+            code.add(Bytecode::CallFunc {
                 index: str_index,
                 arg_cnt: arguments.len().try_into().unwrap(),
             });
         }
         AST::Top(stmts) => {
             for stmt in stmts {
-                _compile(stmt, code, context, current_function, true)?;
+                _compile(stmt, code, context, constant_pool, true)?;
             }
         }
         AST::Block(stmts) => {
@@ -169,7 +210,7 @@ fn _compile(
 
             while let Some(stmt) = it.next() {
                 // Drop everything but the last result
-                _compile(stmt, code, context, current_function, !it.peek().is_none())?;
+                _compile(stmt, code, context, constant_pool, !it.peek().is_none())?;
             }
         },
         AST::While { guard, body } => todo!(),
@@ -178,56 +219,61 @@ fn _compile(
             then_branch,
             else_branch,
         } => {
-            _compile(guard, code, context, current_function, false)?;
+            _compile(guard, code, context, constant_pool, false)?;
+            // TODO: Labels have duplicate names, add unique ID to them
             // True is fallthrough, false is jump
-            code.add(current_function, Bytecode::BranchLabelFalse(String::from("if_false")));
-            _compile(&then_branch, code, context, current_function, drop)?;
-            code.add(current_function, Bytecode::Label(String::from("if_false")));
+            code.add(Bytecode::BranchLabelFalse(String::from("if_false")));
+            _compile(&then_branch, code,context, constant_pool, drop)?;
+            code.add(Bytecode::Label(String::from("if_false")));
             if let Some(else_body) = else_branch {
-                _compile(&else_body, code, context, current_function, false)?;
+                _compile(&else_body, code,context, constant_pool, false)?;
             }
         },
         AST::Operator { op, arguments } => {
             check_operator_arity(op, arguments.len())?;
             for arg in arguments {
-                _compile(arg, code, context, current_function, false)?;
+                _compile(arg, code, context, constant_pool, false)?;
             }
             match op {
-                Opcode::Add => code.add(current_function, Bytecode::Iadd),
-                Opcode::Sub => code.add(current_function, Bytecode::Isub),
-                Opcode::Mul => code.add(current_function, Bytecode::Imul),
-                Opcode::Div => code.add(current_function, Bytecode::Idiv),
-                Opcode::Less => code.add(current_function, Bytecode::Iless),
-                Opcode::LessEq => code.add(current_function, Bytecode::Ilesseq),
-                Opcode::Greater => code.add(current_function, Bytecode::Igreater),
-                Opcode::GreaterEq => code.add(current_function, Bytecode::Igreatereq),
-                Opcode::Eq => code.add(current_function, Bytecode::Ieq),
+                Opcode::Add => code.add(Bytecode::Iadd),
+                Opcode::Sub => code.add(Bytecode::Isub),
+                Opcode::Mul => code.add(Bytecode::Imul),
+                Opcode::Div => code.add(Bytecode::Idiv),
+                Opcode::Less => code.add(Bytecode::Iless),
+                Opcode::LessEq => code.add(Bytecode::Ilesseq),
+                Opcode::Greater => code.add(Bytecode::Igreater),
+                Opcode::GreaterEq => code.add(Bytecode::Igreatereq),
+                Opcode::Eq => code.add(Bytecode::Ieq),
             };
         }
         AST::Return(_) => todo!(),
         AST::String(lit) => {
-            let str_index: ConstantPoolIndex = context
-                .constant_pool
+            let str_index: ConstantPoolIndex = constant_pool
                 .add(Object::from(lit.clone()))
                 .try_into()
                 .expect("Constant pool is full");
-            code.add(current_function, Bytecode::PushLiteral(str_index));
+            code.add(Bytecode::PushLiteral(str_index));
         }
     };
-    code.add_cond(current_function, Bytecode::Drop, drop);
+    code.add_cond(Bytecode::Drop, drop);
     Ok(())
 }
 
-pub fn compile(ast: &AST) -> Result<Program, &'static str> {
-    let mut context = Context::new();
+fn compile2(ast: &AST, constant_pool: &mut ConstantPool, loc: Location) -> Result<Code, &'static str> {
+    let mut context = Context{loc};
     let mut code = Code::new();
 
-    let main_fun : ConstantPoolIndex = context.constant_pool.add(Object::from(String::from("#main"))).try_into().unwrap();
+    _compile(ast, &mut code,&mut context, constant_pool, false)?;
+    Ok(code)
+}
 
-    code.add_function(main_fun);
-    _compile(ast, &mut code, &mut context, main_fun, false)?;
+pub fn compile(ast: &AST) -> Result<ConstantPool, &'static str> {
+    let mut constant_pool = ConstantPool::new();
+    let idx = constant_pool.add(Object::from(String::from("#main"))).try_into().unwrap();
+    let code = compile2(ast, &mut constant_pool, Location::Global)?;
 
-    code.code = code.code.into_iter().map(|(idx, body)| (idx, jump_pass(body))).collect();
+    let main_fun = Object::Function { name: idx, parameters_cnt: 0, body: code };
+    constant_pool.add(main_fun);
 
-    Ok(Program { code, constant_pool: context.constant_pool })
+    Ok(constant_pool)
 }

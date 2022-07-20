@@ -113,16 +113,13 @@ impl fmt::Display for Bytecode {
 }
 
 pub struct Code {
-    pub code: HashMap<ConstantPoolIndex, Vec<Bytecode>>,
+    pub code: Vec<Bytecode>,
 }
 
 impl fmt::Display for Code {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (idx, bytecode) in &self.code {
-            writeln!(f, "{}", idx)?;
-            for ins in bytecode {
-                writeln!(f, " {}", ins)?;
-            }
+        for ins in &self.code {
+            writeln!(f, " {}", ins)?;
         }
         Ok(())
     }
@@ -130,21 +127,18 @@ impl fmt::Display for Code {
 
 impl Code {
     pub fn new() -> Self {
-        Self { code: HashMap::new() }
+        Self { code: Vec::new() }
     }
 
-    pub fn add_function(&mut self, at: ConstantPoolIndex) {
-        self.code.insert(at, vec![]);
+    /// Appends the given instruction and returns its new index.
+    pub fn add(&mut self, instruction: Bytecode) -> usize {
+        self.code.push(instruction);
+        self.code.len() - 1
     }
 
-    pub fn add(&mut self, at: ConstantPoolIndex, bytecode: Bytecode) -> usize {
-        self.code.get_mut(&at).expect("No function by the index").push(bytecode);
-        self.code.get_mut(&at).expect("No function by the index").len() - 1
-    }
-
-    pub fn add_cond(&mut self, at: ConstantPoolIndex, bytecode: Bytecode, cond: bool) {
+    pub fn add_cond(&mut self, instruction: Bytecode, cond: bool) {
         if cond {
-            self.add(at, bytecode);
+            self.add(instruction);
         }
     }
 }
@@ -152,13 +146,9 @@ impl Code {
 impl Serializable for Code {
     /// Serializes the code into file in format: size - u8 | ins ...
     /// The size is not the size in bytes but number of instructions!
-    /// Also, the index to constant pool is NOT serialized at all in this.
     fn serialize(&self, f: &mut File) -> io::Result<()> {
-        for (_, code) in &self.code {
-            f.write_all(&(code.len() as u64).to_le_bytes())?;
-            for instruction in code {
-                instruction.serialize(f)?;
-            }
+        for instruction in &self.code {
+            instruction.serialize(f)?;
         }
         Ok(())
     }

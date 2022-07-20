@@ -3,44 +3,24 @@ use std::io;
 use std::io::prelude::*;
 use std::fs::File;
 
+use crate::bytecode::Code;
 use crate::bytecode::{ConstantPoolIndex, FrameIndex};
 use crate::serializable::Serializable;
 
-#[derive(PartialEq)]
-pub struct Range{begin: u64, length: u64}
-
-#[derive(PartialEq)]
 pub enum Object {
     String(String),
     Function{
         name: ConstantPoolIndex,
         parameters_cnt: u8,
-        locals: FrameIndex,
-        // The beginning and length of the bytecode
-        range: Range,
+        body: Code,
     },
 }
 
 pub struct ConstantPool{data: Vec<Object>}
 
-impl fmt::Display for Range {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "begin: {}, len: {}", self.begin, self.length)
-    }
-}
-
 impl ConstantPool {
     pub fn add(&mut self, obj: Object) -> ConstantPoolIndex {
-        // Check if the item was already added before, if so, just return its index.
-        // TODO: Linear for number of items
-        if self.data.contains(&obj) {
-            let pos = self.data.iter().position(|item| *item == obj);
-            if pos.is_some() {
-                return pos.unwrap().try_into().unwrap();
-            }
-        }
-
-        // Else push it back
+        // TODO: We ought to not add the same string multiple times
         self.data.push(obj);
         (self.data.len() - 1).try_into().unwrap()
     }
@@ -59,11 +39,21 @@ impl fmt::Display for ConstantPool {
     }
 }
 
+impl Serializable for ConstantPool {
+    fn serialize(&self, f: &mut File) -> io::Result<()> {
+        f.write_all(&self.data.len().to_le_bytes())?;
+        for obj in &self.data {
+            obj.serialize(f)?;
+        }
+        Ok(())
+    }
+}
+
 impl Object {
     fn byte_encode(&self) -> u8 {
         match self {
             Object::String(_) => 0x01,
-            Object::Function { name, parameters_cnt, locals, range } => 0x00,
+            Object::Function { name, parameters_cnt, body } => 0x00,
         }
     }
 }
@@ -72,8 +62,9 @@ impl fmt::Display for Object {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Object::String(str) => write!(f, "String: {}", str),
-            Object::Function { name, parameters_cnt, locals, range } => {
-                write!(f, "Function: {}, parameters: {}, locals: {}, range: {}", name, parameters_cnt, locals, range)
+            Object::Function { name, parameters_cnt, body } => {
+                writeln!(f, "Function: {}, parameters: {}", name, parameters_cnt)?;
+                writeln!(f, "{}", body)
             },
         }
     }
@@ -92,13 +83,10 @@ impl Serializable for Object {
             Object::String(v) => {
                 f.write_all(v.as_bytes())
             },
-            Object::Function { name, parameters_cnt, locals, range } => {
+            Object::Function { name, parameters_cnt, body } => {
                 f.write_all(&name.to_le_bytes())?;
                 f.write_all(&parameters_cnt.to_le_bytes())?;
-                f.write_all(&locals.to_le_bytes())?;
-                f.write_all(&range.begin.to_le_bytes())?;
-                f.write_all(&range.length.to_le_bytes())?;
-                Ok(())
+                body.serialize(f)
             },
         }
     }
