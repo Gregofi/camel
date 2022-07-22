@@ -16,11 +16,22 @@ pub enum Object {
     },
 }
 
-pub struct ConstantPool{data: Vec<Object>}
+pub struct ConstantPool{pub data: Vec<Object>}
 
 impl ConstantPool {
     pub fn add(&mut self, obj: Object) -> ConstantPoolIndex {
-        // TODO: We ought to not add the same string multiple times
+        // Do not add same string multiple times
+        if let Object::String(str) = &obj {
+            let pos = self.data.iter().position(|obj| match obj {
+                Object::String(searchee) => searchee == str,
+                _ => false,
+            });
+            match pos {
+                Some(val) => return val.try_into().unwrap(),
+                None => (),
+            }
+        }
+
         self.data.push(obj);
         (self.data.len() - 1).try_into().unwrap()
     }
@@ -41,7 +52,8 @@ impl fmt::Display for ConstantPool {
 
 impl Serializable for ConstantPool {
     fn serialize(&self, f: &mut File) -> io::Result<()> {
-        f.write_all(&self.data.len().to_le_bytes())?;
+        let len: u32 = self.data.len().try_into().expect("Constant pool maximum size is 2^32");
+        f.write_all(&len.to_le_bytes())?;
         for obj in &self.data {
             obj.serialize(f)?;
         }
@@ -53,7 +65,7 @@ impl Object {
     fn byte_encode(&self) -> u8 {
         match self {
             Object::String(_) => 0x01,
-            Object::Function { name, parameters_cnt, body } => 0x00,
+            Object::Function { .. } => 0x00,
         }
     }
 }
@@ -78,9 +90,11 @@ impl From<String> for Object {
 
 impl Serializable for Object {
     fn serialize(&self, f: &mut File) -> io::Result<()> {
-        f.write_all(&self.byte_encode().to_le_bytes())?;
+        // f.write_all(&self.byte_encode().to_le_bytes())?;
         match self {
             Object::String(v) => {
+                let len: u32 = v.len().try_into().expect("String is too large");
+                f.write_all(&len.to_le_bytes())?;
                 f.write_all(v.as_bytes())
             },
             Object::Function { name, parameters_cnt, body } => {

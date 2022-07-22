@@ -24,12 +24,15 @@ pub enum Bytecode {
     GetLocal(FrameIndex),
     SetLocal(FrameIndex),
 
+    GetGlobal(ConstantPoolIndex),
+    SetGlobal(ConstantPoolIndex),
+
     CallFunc{index: ConstantPoolIndex, arg_cnt: u8},
     Ret,
 
     Label(String),
 
-    // These two guys are only used as helpers for code generation
+    // These guys are only used as helpers for code generation
     // They are not real instructions and can't be exported.
     // This helps with optimization because code removal
     // doesn't mess with jump offsets.
@@ -79,6 +82,8 @@ impl fmt::Display for Bytecode {
             Bytecode::PushUnit => write!(f, "Push unit"),
             Bytecode::GetLocal(v) => write!(f, "Get local: {}", v),
             Bytecode::SetLocal(v) => write!(f, "Set local: {}", v),
+            Bytecode::GetGlobal(v) => write!(f, "Get global: {}", v),
+            Bytecode::SetGlobal(v) => write!(f, "Set global: {}", v),
             Bytecode::CallFunc { index, arg_cnt } => write!(f, "Call function {}: {}", index, arg_cnt),
             Bytecode::Ret => write!(f, "Ret"),
             Bytecode::Label(v) => write!(f, "{}:", v),
@@ -144,9 +149,11 @@ impl Code {
 }
 
 impl Serializable for Code {
-    /// Serializes the code into file in format: size - u8 | ins ...
+    /// Serializes the code into file in format: size - u16 | ins ...
     /// The size is not the size in bytes but number of instructions!
     fn serialize(&self, f: &mut File) -> io::Result<()> {
+        let size: u32 = self.code.len().try_into().expect("Bytecode overflow: There can be maximum of 2^32 instructions in one function");
+        f.write_all(&size.to_le_bytes())?;
         for instruction in &self.code {
             instruction.serialize(f)?;
         }
@@ -165,6 +172,8 @@ impl Bytecode {
             Bytecode::PushUnit => todo!(),
             Bytecode::GetLocal(_) => 0x06,
             Bytecode::SetLocal(_) => 0x07,
+            Bytecode::GetGlobal(_) => 0x13,
+            Bytecode::SetGlobal(_) => 0x14,
             Bytecode::CallFunc { index, arg_cnt } => 0x08,
             Bytecode::Ret => 0x09,
             Bytecode::Label(_) => 0x00,
@@ -258,6 +267,8 @@ impl Serializable for Bytecode {
             Bytecode::Drop => { },
             Bytecode::Dup => { },
             Bytecode::PushUnit => { },
+            Bytecode::GetGlobal(idx) => f.write_all(&idx.to_le_bytes())?,
+            Bytecode::SetGlobal(idx) => f.write_all(&idx.to_le_bytes())?,
         };
         Ok(())
     }

@@ -41,6 +41,7 @@ fn cli() -> Command<'static> {
                     .short('o')
                     .long("output-file")
                     .required(false)
+                    .default_value("a.out")
                     .value_name("OUTPUT-FILE")
                     .help("The Caby bytecode output file")))
             .subcommand(SubCommand::with_name("export")
@@ -57,11 +58,13 @@ fn compile_action(input_file: &String, output_file: &String) {
         .parse(&f)
         .expect("Unable to parse file");
 
-    let constant_pool = compile(&ast).expect("Compilation error");
+    let (constant_pool, globals) = compile(&ast).expect("Compilation error");
 
     constant_pool
         .serialize(&mut out_f)
         .expect("Unable to write to output file");
+
+    
 }
 
 fn dump_action(input_file: &String) {
@@ -81,8 +84,13 @@ fn export_action(input_file: &String) {
         .parse(&f)
         .expect("Unable to parse file");
 
-    let bytecode = compile(&ast).expect("Compilation error");
-    println!("{}", bytecode);
+    let (constant_pool, globals) = compile(&ast).expect("Compilation error");
+    println!("=== ConstantPool ===");
+    println!("{}", constant_pool);
+    println!("=== Globals ===");
+    for g in &globals {
+        println!(" {}", g.1);
+    }
 }
 
 fn main() {

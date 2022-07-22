@@ -7,12 +7,6 @@ use crate::objects::{ConstantPool, Object};
 use crate::serializable::Serializable;
 use crate::utils::AtomicInt;
 
-struct Function {
-    name: String,
-    parameters: Vec<String>,
-    body: Box<AST>,
-}
-
 /// Environment keeps track of indexes of local variables into memory.
 /// It consists of multiple environments, each one is a map from
 /// name to index of the local variable.
@@ -33,6 +27,8 @@ pub struct Context {
 pub struct Program {
     code: Code,
 }
+
+type Globals = HashMap<String, ConstantPoolIndex>;
 
 type LocalVarIndex = u16;
 
@@ -62,9 +58,9 @@ impl Environment {
         Ok(idx)
     }
 
-    pub fn fetch_local(&self, v: String) -> Option<LocalVarIndex> {
+    pub fn fetch_local(&self, v: &String) -> Option<LocalVarIndex> {
         let topmost =self.envs.last().expect("Camel compiler bug: There is no environment");
-        topmost.get(&v).copied()
+        topmost.get(v).copied()
     }
 }
 
@@ -151,6 +147,7 @@ fn _compile(
     code: &mut Code,
     context: &mut Context,
     constant_pool: &mut ConstantPool,
+    globals: &mut HashMap<String, ConstantPoolIndex>,
     drop: bool,
 ) -> Result<(), &'static str> {
     match ast {
@@ -163,11 +160,47 @@ fn _compile(
         },
         AST::NoneVal => unimplemented!(), // TODO: Think about if we really want null values, some
                                           // kind of Optional class would probably be better.
-        AST::Variable { name, value } => todo!(),
+        AST::Variable { name, value } => {
+            match &mut context.loc {
+                Location::Global => {
+                    todo!("Global variables are not yet implemeted");
+                },
+                Location::Local(env) => {
+                    env.add_local(name.clone())?;
+                },
+            }
+        },
         AST::List { size, values } => todo!(),
-        AST::AccessVariable { name } => todo!(),
+        AST::AccessVariable { name } => {
+            // TODO: Repeated code!
+            if let Location::Local(env) = &mut context.loc {
+                if let Some(v) = env.fetch_local(name) {
+                    code.add(Bytecode::GetLocal(v));
+                } else {
+                    let idx = constant_pool.add(Object::from(name.clone()));
+                    code.add(Bytecode::GetGlobal(idx));
+                }
+            } else {
+                let idx = constant_pool.add(Object::from(name.clone()));
+                code.add(Bytecode::GetGlobal(idx));
+            }
+        },
         AST::AccessList { list, index } => todo!(),
-        AST::AssignVariable { name, value } => todo!(),
+        AST::AssignVariable { name, value } => {
+            _compile(value, code, context, constant_pool, globals, false)?;
+            // TODO: Repeated code!
+            if let Location::Local(env) = &mut context.loc {
+                if let Some(v) = env.fetch_local(name) {
+                    code.add(Bytecode::SetLocal(v));
+                } else {
+                    let idx = constant_pool.add(Object::from(name.clone()));
+                    code.add(Bytecode::SetGlobal(idx));
+                }
+            } else {
+                let idx = constant_pool.add(Object::from(name.clone()));
+                code.add(Bytecode::SetGlobal(idx));
+            }
+        },
         AST::AssignList { list, index, value } => todo!(),
         AST::Function {
             name,
@@ -181,16 +214,26 @@ fn _compile(
             for par in parameters {
                 new_env.add_local(par.clone())?;
             }
-            let code = compile2(body,  constant_pool, Location::Local(new_env))?;
+            let code = compile_fun(body,  constant_pool, Location::Local(new_env), globals)?;
 
             let fun = Object::Function { name: new_fun_idx, parameters_cnt: parameters.len().try_into().unwrap(), body: code };
-            constant_pool.add(fun);
+
+            let fun_idx = constant_pool.add(fun);
+
+            match &mut context.loc {
+                Location::Global => {
+                    globals.insert(name.clone(), fun_idx);
+                },
+                Location::Local(env) => {
+                    todo!("Nested functions are not yet implemented");
+                },
+            };
         },
         AST::CallFunction { name, arguments } => {
             for arg in arguments {
-                _compile(arg, code, context, constant_pool, false)?;
+                _compile(arg, code, context, constant_pool, globals, false)?;
             }
-
+            // TODO: For nested functions we first need to look into environments, then do this.
             let str_index: ConstantPoolIndex = constant_pool
                 .add(Object::from(name.clone()))
                 .try_into()
@@ -202,7 +245,7 @@ fn _compile(
         }
         AST::Top(stmts) => {
             for stmt in stmts {
-                _compile(stmt, code, context, constant_pool, true)?;
+                _compile(stmt, code, context, constant_pool, globals, true)?;
             }
         }
         AST::Block(stmts) => {
@@ -210,7 +253,7 @@ fn _compile(
 
             while let Some(stmt) = it.next() {
                 // Drop everything but the last result
-                _compile(stmt, code, context, constant_pool, !it.peek().is_none())?;
+                _compile(stmt, code, context, constant_pool, globals, !it.peek().is_none())?;
             }
         },
         AST::While { guard, body } => todo!(),
@@ -219,20 +262,20 @@ fn _compile(
             then_branch,
             else_branch,
         } => {
-            _compile(guard, code, context, constant_pool, false)?;
+            _compile(guard, code, context, constant_pool, globals, false)?;
             // TODO: Labels have duplicate names, add unique ID to them
             // True is fallthrough, false is jump
             code.add(Bytecode::BranchLabelFalse(String::from("if_false")));
-            _compile(&then_branch, code,context, constant_pool, drop)?;
+            _compile(&then_branch, code,context, constant_pool, globals, drop)?;
             code.add(Bytecode::Label(String::from("if_false")));
             if let Some(else_body) = else_branch {
-                _compile(&else_body, code,context, constant_pool, false)?;
+                _compile(&else_body, code,context, constant_pool, globals, false)?;
             }
         },
         AST::Operator { op, arguments } => {
             check_operator_arity(op, arguments.len())?;
             for arg in arguments {
-                _compile(arg, code, context, constant_pool, false)?;
+                _compile(arg, code, context, constant_pool, globals, false)?;
             }
             match op {
                 Opcode::Add => code.add(Bytecode::Iadd),
@@ -259,21 +302,31 @@ fn _compile(
     Ok(())
 }
 
-fn compile2(ast: &AST, constant_pool: &mut ConstantPool, loc: Location) -> Result<Code, &'static str> {
+fn compile_fun(ast: &AST, constant_pool: &mut ConstantPool, loc: Location, globals: &mut HashMap<String, ConstantPoolIndex>) -> Result<Code, &'static str> {
     let mut context = Context{loc};
     let mut code = Code::new();
 
-    _compile(ast, &mut code,&mut context, constant_pool, false)?;
+    _compile(ast, &mut code,&mut context, constant_pool, globals, false)?;
     Ok(code)
 }
 
-pub fn compile(ast: &AST) -> Result<ConstantPool, &'static str> {
+pub fn compile(ast: &AST) -> Result<(ConstantPool, Globals), &'static str> {
     let mut constant_pool = ConstantPool::new();
+    let mut globals = Globals::new();
     let idx = constant_pool.add(Object::from(String::from("#main"))).try_into().unwrap();
-    let code = compile2(ast, &mut constant_pool, Location::Global)?;
+    let code = compile_fun(ast, &mut constant_pool, Location::Global, &mut globals)?;
 
     let main_fun = Object::Function { name: idx, parameters_cnt: 0, body: code };
     constant_pool.add(main_fun);
 
-    Ok(constant_pool)
+    constant_pool.data = constant_pool.data.into_iter().map(|f| {
+        match f {
+            Object::Function { body, name, parameters_cnt } => Object::Function { body: Code{code: jump_pass(body.code)}, name, parameters_cnt},
+            _ => f,
+        }
+    }).collect();
+
+    globals.insert(String::from("#main"), idx);
+
+    Ok((constant_pool, globals))
 }
