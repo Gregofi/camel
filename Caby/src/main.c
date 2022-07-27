@@ -11,7 +11,7 @@ void usage() {
     fprintf(stderr, "usage: caby command <input-file>\n");
 }
 
-int disassemble(const char* argv[]) {
+static int disassemble(const char* argv[]) {
     struct bc_chunk c;
     init_bc_chunk(&c);
     write_byte(&c, OP_RETURN);
@@ -22,15 +22,23 @@ int disassemble(const char* argv[]) {
     return 0;
 }
 
-int execute(const char* argv[]) {
-    vm_state vm;
+static int execute(const char* argv[]) {
+    struct vm_state vm;
     init_vm_state(&vm);
+    struct object* s = (struct object*)new_string("Hello, World!\n");
+
+    write_constant_pool(&vm.const_pool, s);
 
     struct bc_chunk c;
     init_bc_chunk(&c);
+    write_byte(&c, OP_PRINT);
+    write_byte(&c, 0);
+    write_byte(&c, 0);
+    write_byte(&c, 0);
+    write_byte(&c, 0);
     write_byte(&c, OP_RETURN);
 
-    execute(&vm, &c);
+    interpret(&vm, &c);
 
     free_bc_chunk(&c);
     free_vm_state(&vm);

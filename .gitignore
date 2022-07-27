@@ -4,3 +4,4 @@ bin
 .cache
 obj
 .vscode
+a.out

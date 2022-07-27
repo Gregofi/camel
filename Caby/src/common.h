@@ -18,17 +18,26 @@ typedef int64_t i64;
 size_t get_cap(size_t curr);
 
 // Reads bytes from pointer in little endian
-#define READ_2BYTES(value) ( *((u8*)(value)) | *((u8*)(value) + 1) << 8)
-#define READ_4BYTES(value) ( *(u8*)(value) | ((*(u8*)(value + 1)) << 8) \
+#define READ_2BYTES_LE(value) ( *((u8*)(value)) | *((u8*)(value) + 1) << 8)
+
+#define READ_4BYTES_LE(value) ( *(u8*)(value) | ((*(u8*)(value + 1)) << 8) \
             | ((*(u8*)(value + 2)) << 16) | ((*(u8*)(value + 3)) << 24))
-#define READ_BYTE(value) (*((u8*)((value))))
+
+#define READ_BYTE_LE(value) (*((u8*)((value))))
+
+#define READ_4BYTES_BE(value) (((value)[0] << 24) |  ((value)[1] << 16) \
+            | ((value)[2] << 8) | ((value)[3]))
+
+#define READ_2BYTES_BE(value) (((value)[0] << 8) | ((value)[1]))
 
 /// Reallocates the array if the capacity is exceeded
 /// New array is returned if reallocation occured, else
 /// old one is returned. Capacity is updated accordingly.
 void* handle_capacity(void* array, size_t len, size_t* cap);
 
-#define NOT_IMPLEMENTED() do { fprintf(stderr, "Runtime error: Not implemented: %s:%d.\n", __FILE__, __LINE__); exit(-1);} while(0)
+#define NOT_IMPLEMENTED() do { fprintf(stderr,              \
+                "Runtime error: Not implemented: %s:%d.\n", \
+                __FILE__, __LINE__); exit(-1);} while(0)
 
 // Borrowed from linux kernel
 #if __has_attribute(__fallthrough__)

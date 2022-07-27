@@ -29,7 +29,7 @@ void free_constant_pool(struct constant_pool* cp) {
 }
 
 void write_constant_pool(struct constant_pool* cp, struct object* object) {
-    cp->cap = handle_capacity(cp->data, cp->len, cp->cap);
+    cp->data = handle_capacity(cp->data, cp->len, &cp->cap);
     cp->data[cp->len++] = object;
 
 }
