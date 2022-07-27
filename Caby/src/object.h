@@ -55,6 +55,10 @@ struct value {
     };
 };
 
+#define NEW_INT(val) (struct value){.type = VAL_INT, .integer = (val)}
+#define NEW_BOOL(val) (struct value){.type = VAL_BOOL, .boolean = (val)}
+#define NEW_DOUBLE(val) (struct value){.type = VAL_DOUBLE, .double_num = (val)}
+
 /*
  * Following functions serve as constructors, converters and checkers
  * for given types. Functions with postfix _s are considered safe

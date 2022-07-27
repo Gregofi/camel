@@ -35,8 +35,12 @@ size_t get_cap(size_t curr);
 /// old one is returned. Capacity is updated accordingly.
 void* handle_capacity(void* array, size_t len, size_t* cap);
 
-#define NOT_IMPLEMENTED() do { fprintf(stderr,              \
-                "Runtime error: Not implemented: %s:%d.\n", \
+#define NOT_IMPLEMENTED() do { fprintf(stderr,                     \
+                "Inner compiler error: Not implemented: %s:%d.\n", \
+                __FILE__, __LINE__); exit(-1);} while(0)
+
+#define UNREACHABLE() do { fprintf(stderr,                         \
+                "Inner compiler error: Unreachable: %s:%d.\n",     \
                 __FILE__, __LINE__); exit(-1);} while(0)
 
 // Borrowed from linux kernel
