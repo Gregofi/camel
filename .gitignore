@@ -1,1 +1,6 @@
 target
+build
+bin
+.cache
+obj
+.vscode
