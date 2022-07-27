@@ -44,16 +44,16 @@ Pop a value from the operand stack and write it into the given local frame
 Calls a function (not an object method) at given constant pool index.
 Pops arguments of an operand stack
 
-- return = 0x09  
+- ret = 0x09  
 Exits the function.
 
 - label = 0x00  
 Does nothing, acts as a helper in dissasembly. When executed in code,
 only bumps the IP.
 
-- jump_short = 0x0A | 2B address
-- jump = 0x0B | 4B address
-- jump_long = 0x0C | 8B address  
+- jmp_short = 0x0A | 2B address
+- jmp = 0x0B | 4B address
+- jmp_long = 0x0C | 8B address  
 Unconditional jump, address is **BYTE** offset (not the number of instruction) to which to jump
 
 - branch_short = 0x0D | 2B address
@@ -71,6 +71,11 @@ Drops first value from the stack.
 - dup 0x12
 Pops value from the stack and then pushes this value twice on top of the stack
 
+- get_global 0x13 | 4B index to constant pool
+Push the value of a global variable which name is stored in constant pool to the top stack
+- set_global 0x14 | 4B index to constant pool
+Pop value from the top of the stack and assign it into variable which name is equal to the constant pool string indexed.
+
 #### Arithmetic operations
 - iadd 0x30
 - isub 0x31
@@ -78,7 +83,7 @@ Pops value from the stack and then pushes this value twice on top of the stack
 - idiv 0x33
 - irem 0x34
 - iand 0x35
-- ior  0x36  
+- ior  0x36
 Arithmetic operations on integers, pop two from the stack, perform operation, push the result.
 
 NOTE: Bitwise operations will be added later.
