@@ -23,7 +23,7 @@ void free_vm_state(struct vm_state* vm) {
 
 void push(struct vm_state* vm, struct value val) {
     vm->op_stack = handle_capacity(vm->op_stack, vm->stack_len,
-                                     &vm->stack_cap);
+                                     &vm->stack_cap, sizeof(*vm->op_stack));
 
     vm->op_stack[vm->stack_len++] = val;
 }
@@ -38,6 +38,8 @@ struct value peek(struct vm_state* vm, size_t p) {
 }
 
 // =========== Interpreting functions ===========
+
+#define READ_IP() (*vm->ip++)
 
 /// Returns new 'struct value' containing string object which is contatenation of o1 and o2
 struct value interpret_string_concat(struct object* o1, struct object* o2) {
@@ -63,6 +65,7 @@ void interpret_print(struct vm_state* vm) {
 
     for (const char* c = obj->data; *c != '\0'; ++c) {
         if (*c == '{' && c[1] != '\0' && c[1] == '}') {
+            c += 1;
             struct value v = pop(vm);
             switch (v.type) {
                 case VAL_INT:
@@ -92,13 +95,25 @@ void interpret_print(struct vm_state* vm) {
     }
 }
 
-static int interpret_ins(struct vm_state* vm, u8 ins) {
+static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
     switch (ins) {
         case OP_RETURN:
-            return 0;
+            return INTERPRET_RETURN;
         case OP_PRINT:
             interpret_print(vm);
             break;
+        case OP_PUSH_SHORT: {
+            i16 val = READ_2BYTES_BE(vm->ip);
+            vm->ip += 2;
+            push(vm, NEW_INT(val));
+            break;
+        }
+        case OP_PUSH_INT: {
+            int val = READ_4BYTES_BE(vm->ip);
+            vm->ip += 4;
+            push(vm, NEW_INT(val));
+            break;
+        }
         case OP_IADD: {
             struct value v1 = pop(vm);
             struct value v2 = pop(vm);
@@ -166,7 +181,6 @@ static int interpret_ins(struct vm_state* vm, u8 ins) {
 }
 
 static int run(struct vm_state* vm) {
-#define READ_IP() (*vm->ip++)
     u8 ins;
 
     while (true) {
@@ -179,8 +193,6 @@ static int run(struct vm_state* vm) {
             return 0;
         }
     }
-
-#undef READ_IP
 }
 
 int interpret(struct vm_state* vm, struct bc_chunk* chunk) {
@@ -188,3 +200,5 @@ int interpret(struct vm_state* vm, struct bc_chunk* chunk) {
     vm->ip = vm->chunk->data;
     return run(vm);
 }
+
+#undef READ_IP

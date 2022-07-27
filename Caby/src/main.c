@@ -25,12 +25,25 @@ static int disassemble(const char* argv[]) {
 static int execute(const char* argv[]) {
     struct vm_state vm;
     init_vm_state(&vm);
-    struct object* s = (struct object*)new_string("Hello, World!\n");
+    struct object* s = (struct object*)new_string("{} + {} = {}!\n");
 
     write_constant_pool(&vm.const_pool, s);
 
     struct bc_chunk c;
     init_bc_chunk(&c);
+    write_byte(&c, OP_PUSH_SHORT);
+    write_byte(&c, 0);
+    write_byte(&c, 1);
+    write_byte(&c, OP_PUSH_SHORT);
+    write_byte(&c, 0);
+    write_byte(&c, 2);
+    write_byte(&c, OP_IADD);
+    write_byte(&c, OP_PUSH_SHORT);
+    write_byte(&c, 0);
+    write_byte(&c, 2);
+    write_byte(&c, OP_PUSH_SHORT);
+    write_byte(&c, 0);
+    write_byte(&c, 1);
     write_byte(&c, OP_PRINT);
     write_byte(&c, 0);
     write_byte(&c, 0);

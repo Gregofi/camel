@@ -15,7 +15,7 @@ void free_bc_chunk(struct bc_chunk* c) {
 }
 
 void write_byte(struct bc_chunk* c, u8 byte) {
-    c->data = handle_capacity(c->data, c->len, &c->cap);
+    c->data = handle_capacity(c->data, c->len, &c->cap, sizeof(*c->data));
     c->data[c->len++] = byte;
 }
 
@@ -29,7 +29,7 @@ void free_constant_pool(struct constant_pool* cp) {
 }
 
 void write_constant_pool(struct constant_pool* cp, struct object* object) {
-    cp->data = handle_capacity(cp->data, cp->len, &cp->cap);
+    cp->data = handle_capacity(cp->data, cp->len, &cp->cap, sizeof(*cp->data));
     cp->data[cp->len++] = object;
 
 }

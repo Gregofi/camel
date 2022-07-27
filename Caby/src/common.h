@@ -33,7 +33,8 @@ size_t get_cap(size_t curr);
 /// Reallocates the array if the capacity is exceeded
 /// New array is returned if reallocation occured, else
 /// old one is returned. Capacity is updated accordingly.
-void* handle_capacity(void* array, size_t len, size_t* cap);
+/// cnt - number of objects, len - size of one object
+void* handle_capacity(void* array, size_t cnt, size_t* cap, size_t len);
 
 #define NOT_IMPLEMENTED() do { fprintf(stderr,                     \
                 "Inner compiler error: Not implemented: %s:%d.\n", \
