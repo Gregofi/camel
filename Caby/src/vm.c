@@ -98,8 +98,12 @@ void interpret_print(struct vm_state* vm) {
                 default:
                     UNREACHABLE();
             }
-        }
-        else {
+        } else if (*c == '\\' &&c[1] != '\0') { // Escape sequence
+            c += 1;
+            if (*c == 'n') {
+                puts("");
+            }
+        } else { // Normal char
             putc(*c, stdout);
         }
     }
@@ -195,6 +199,9 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             }
             break;
         }
+        case OP_DROP:
+            pop(vm);
+            break;
         default:
             fprintf(stderr, "Unknown instruction 0x%x!\n", ins);
     }
