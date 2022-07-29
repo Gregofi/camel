@@ -12,6 +12,7 @@ void dissasemble_chunk(FILE* f, struct bc_chunk* c, const char *prefix) {
 }
 
 size_t dissasemble_instruction(FILE* f, u8* ins) {
+    // TODO: Fix repeated code
     switch (*ins) {
         case OP_RETURN:
             fprintf(f, "RETURN");
