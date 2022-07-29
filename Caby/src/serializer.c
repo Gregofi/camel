@@ -117,5 +117,8 @@ struct vm_state serialize(FILE* f) {
     struct vm_state state;
     init_vm_state(&state);
     state.const_pool = cp;
+
+    u32 entry_point = read_4bytes_be(f);
+    state.chunk = &as_function_s(state.const_pool.data[entry_point])->bc;
     return state;
 }
