@@ -230,7 +230,7 @@ fn _compile(
             };
         },
         AST::CallFunction { name, arguments } => {
-            for arg in arguments {
+            for arg in arguments.iter().rev() {
                 _compile(arg, code, context, constant_pool, globals, false)?;
             }
             // TODO: For nested functions we first need to look into environments, then do this.
@@ -279,7 +279,7 @@ fn _compile(
         },
         AST::Operator { op, arguments } => {
             check_operator_arity(op, arguments.len())?;
-            for arg in arguments {
+            for arg in arguments.iter().rev() {
                 _compile(arg, code, context, constant_pool, globals, false)?;
             }
             match op {
@@ -312,6 +312,13 @@ fn compile_fun(ast: &AST, constant_pool: &mut ConstantPool, loc: Location, globa
     let mut code = Code::new();
 
     _compile(ast, &mut code,&mut context, constant_pool, globals, false)?;
+    if code.code.is_empty() {
+        code.add(Bytecode::PushUnit);
+    }
+    // Return last statement if return is omitted
+    if !matches!(code.code.last().unwrap(), Bytecode::Ret) {
+        code.add(Bytecode::Ret);
+    }
     Ok(code)
 }
 
