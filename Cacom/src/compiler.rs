@@ -234,14 +234,19 @@ fn _compile(
                 _compile(arg, code, context, constant_pool, globals, false)?;
             }
             // TODO: For nested functions we first need to look into environments, then do this.
-            let str_index: ConstantPoolIndex = constant_pool
-                .add(Object::from(name.clone()))
-                .try_into()
-                .expect("Constant pool is full");
-            code.add(Bytecode::CallFunc {
-                index: str_index,
-                arg_cnt: arguments.len().try_into().unwrap(),
-            });
+            // TODO: Hardcoded native print
+            if name == "print" {
+                code.add(Bytecode::Print { arg_cnt: arguments.len().try_into().unwrap() });
+            } else {
+                let str_index: ConstantPoolIndex = constant_pool
+                    .add(Object::from(name.clone()))
+                    .try_into()
+                    .expect("Constant pool is full");
+                code.add(Bytecode::CallFunc {
+                    index: str_index,
+                    arg_cnt: arguments.len().try_into().unwrap(),
+                });
+            }
         }
         AST::Top(stmts) => {
             for stmt in stmts {

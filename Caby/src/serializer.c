@@ -34,6 +34,8 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
         case OP_IREM:
         case OP_LABEL:
             break;
+        // Two byte size instructions
+        case OP_PRINT:
         case OP_PUSH_BOOL:
             write_byte(c, fgetc(f));
             break;
@@ -55,7 +57,6 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
             write_dword(c, read_4bytes_be(f));
             break;
         // Six byte size instructions
-        case OP_PRINT:
         case OP_CALL_FUNC:
             write_dword(c, read_4bytes_be(f));
             write_byte(c, fgetc(f));

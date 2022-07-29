@@ -64,7 +64,7 @@ Unconditional jump, address is **BYTE** offset (not the number of instruction) t
 - branch_long = 0x0F | 8B address  
 Conditional jump, pops value from stack, if it is *truthy*, then the jump will be performed.
 
-- print 0x10 | 4B index to constant pool | 1B argument count  
+- print 0x10 | 1B argument count  
 Prints an interpolated string `print "Hello there, {}" "General Kenobi"`
 Pops arguments from stack and tries to replace `{}` in the string with it.
 

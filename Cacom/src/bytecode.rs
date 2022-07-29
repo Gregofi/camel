@@ -52,7 +52,7 @@ pub enum Bytecode {
     BranchLongFalse(u64),
 
 
-    Print{string: ConstantPoolIndex, arg_cnt: u8},
+    Print{arg_cnt: u8},
 
     Iadd,
     Isub,
@@ -99,7 +99,7 @@ impl fmt::Display for Bytecode {
             Bytecode::BranchShortFalse(v) => write!(f, "BranchShortFalse: {}", v),
             Bytecode::BranchFalse(v) => write!(f, "BranchFalse: {}", v),
             Bytecode::BranchLongFalse(v) => write!(f, "BranchLongFalse: {}", v),
-            Bytecode::Print { string, arg_cnt } => write!(f, "Print {}: {}", string, arg_cnt),
+            Bytecode::Print { arg_cnt } => write!(f, "Print {}", arg_cnt),
             Bytecode::Iadd => write!(f, "Iadd"),
             Bytecode::Isub => write!(f, "Isub"),
             Bytecode::Imul => write!(f, "Imul"),
@@ -189,7 +189,7 @@ impl Bytecode {
             Bytecode::BranchShortFalse(_) => todo!(),
             Bytecode::BranchFalse(_) => todo!(),
             Bytecode::BranchLongFalse(_) => todo!(),
-            Bytecode::Print { string, arg_cnt } => 0x10,
+            Bytecode::Print { arg_cnt } => 0x10,
             Bytecode::Iadd => 0x30,
             Bytecode::Isub => 0x31,
             Bytecode::Imul => 0x32,
@@ -249,8 +249,7 @@ impl Serializable for Bytecode {
             Bytecode::BranchShortFalse(dst) => f.write_all(&dst.to_le_bytes())?,
             Bytecode::BranchFalse(dst) => f.write_all(&dst.to_le_bytes())?,
             Bytecode::BranchLongFalse(dst) => f.write_all(&dst.to_le_bytes())?,
-            Bytecode::Print { string, arg_cnt } => {
-                f.write_all(&string.to_le_bytes())?;
+            Bytecode::Print { arg_cnt } => {
                 f.write_all(&arg_cnt.to_le_bytes())?;
             },
             Bytecode::Iadd => { },
