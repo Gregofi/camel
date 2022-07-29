@@ -56,16 +56,23 @@ struct value interpret_string_concat(struct object* o1, struct object* o2) {
 }
 
 void interpret_print(struct vm_state* vm) {
-    u32 idx = READ_4BYTES_BE(vm->ip);
+    u8 arg_cnt = READ_IP() - 1;
 
-    struct object_string* obj = as_string_s(vm->const_pool.data[idx]);
-    if (obj == NULL) {
-        fprintf(stderr, "print argument must be a string!\n");
+    struct value v = pop(vm);
+    if (v.type != VAL_OBJECT || v.object->type != OBJECT_STRING) {
+        fprintf(stderr, "First 'print' argument must be a string.\n");
         exit(-1);
     }
+    struct object_string* obj = as_string(v.object);
 
+    // TODO: Maybe buffer the output so that if error occurs we don't print it halfway.
     for (const char* c = obj->data; *c != '\0'; ++c) {
         if (*c == '{' && c[1] != '\0' && c[1] == '}') {
+            if (arg_cnt == 0) {
+                fprintf(stderr, "There are more '{}' than arguments.\n");
+                exit(-1);
+            }
+            arg_cnt -= 1;
             c += 1;
             struct value v = pop(vm);
             switch (v.type) {
@@ -77,6 +84,7 @@ void interpret_print(struct vm_state* vm) {
                     break;
                 case VAL_DOUBLE:
                     printf("%f", v.double_num);
+                    break;
                 case VAL_OBJECT: {
                     switch (v.object->type) {
                         case OBJECT_STRING:
@@ -85,6 +93,7 @@ void interpret_print(struct vm_state* vm) {
                             fprintf(stderr, "Can't print this type.\n");
                             exit(-1);
                     }
+                    break;
                 }
                 default:
                     UNREACHABLE();
@@ -93,6 +102,10 @@ void interpret_print(struct vm_state* vm) {
         else {
             putc(*c, stdout);
         }
+    }
+    if (arg_cnt != 0) {
+        fprintf(stderr, "There are more arguments than '{}'.\n");
+        exit(-1);
     }
 }
 
@@ -113,6 +126,13 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             int val = READ_4BYTES_BE(vm->ip);
             vm->ip += 4;
             push(vm, NEW_INT(val));
+            break;
+        }
+        case OP_PUSH_LITERAL: {
+            u32 idx = READ_4BYTES_BE(vm->ip);
+            vm->ip += 4;
+            struct value vobj = NEW_OBJECT(vm->const_pool.data[idx]);
+            push(vm, vobj);
             break;
         }
         case OP_IADD: {
@@ -184,6 +204,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
 static int run(struct vm_state* vm) {
     u8 ins;
     while (true) {
+        dissasemble_instruction(stderr, vm->ip);fprintf(stderr, "\n");
         ins = READ_IP();
         enum interpret_result res = interpret_ins(vm, ins);
         if (res == INTERPRET_ERROR) {
@@ -195,7 +216,7 @@ static int run(struct vm_state* vm) {
     }
 }
 
-// TODO: Maybe this guy shoudln't receive vm state at all and rather
+// TODO: Maybe this guy shouldn't receive vm state at all and rather
 //       get constant pool, globals and entry point.
 int interpret(struct vm_state* vm) {
     vm->ip = vm->chunk->data;
