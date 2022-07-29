@@ -29,7 +29,7 @@ void usage() {
 }
 
 static int disassemble(const char* argv[]) {
-    const char* filename = *argv;
+    const char* filename = *argv++;
 
     struct vm_state vm;
     read_program(filename, &vm);
@@ -41,37 +41,13 @@ static int disassemble(const char* argv[]) {
 }
 
 static int execute(const char* argv[]) {
+    const char* filename = *argv++;
+
     struct vm_state vm;
-    init_vm_state(&vm);
-    struct object* s = (struct object*)new_string("{} + {} = {}!\n");
+    read_program(filename, &vm);
 
-    write_constant_pool(&vm.const_pool, s);
+    interpret(&vm);
 
-    struct bc_chunk c;
-    init_bc_chunk(&c);
-    write_byte(&c, OP_PUSH_SHORT);
-    write_byte(&c, 0);
-    write_byte(&c, 1);
-    write_byte(&c, OP_PUSH_SHORT);
-    write_byte(&c, 0);
-    write_byte(&c, 2);
-    write_byte(&c, OP_IADD);
-    write_byte(&c, OP_PUSH_SHORT);
-    write_byte(&c, 0);
-    write_byte(&c, 2);
-    write_byte(&c, OP_PUSH_SHORT);
-    write_byte(&c, 0);
-    write_byte(&c, 1);
-    write_byte(&c, OP_PRINT);
-    write_byte(&c, 0);
-    write_byte(&c, 0);
-    write_byte(&c, 0);
-    write_byte(&c, 0);
-    write_byte(&c, OP_RETURN);
-
-    interpret(&vm, &c);
-
-    free_bc_chunk(&c);
     free_vm_state(&vm);
 
     return 0;

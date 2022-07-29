@@ -36,7 +36,7 @@ void init_vm_state(struct vm_state* vm);
 
 void free_vm_state(struct vm_state* vm);
 
-int interpret(struct vm_state* vm, struct bc_chunk* chunk);
+int interpret(struct vm_state* vm);
 
 void push(struct vm_state* vm, struct value val);
 

@@ -2,6 +2,7 @@
 #include "bytecode.h"
 #include "common.h"
 #include "object.h"
+#include "dissasembler.h"
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -182,7 +183,6 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
 
 static int run(struct vm_state* vm) {
     u8 ins;
-
     while (true) {
         ins = READ_IP();
         enum interpret_result res = interpret_ins(vm, ins);
@@ -195,8 +195,9 @@ static int run(struct vm_state* vm) {
     }
 }
 
-int interpret(struct vm_state* vm, struct bc_chunk* chunk) {
-    vm->chunk = chunk;
+// TODO: Maybe this guy shoudln't receive vm state at all and rather
+//       get constant pool, globals and entry point.
+int interpret(struct vm_state* vm) {
     vm->ip = vm->chunk->data;
     return run(vm);
 }
