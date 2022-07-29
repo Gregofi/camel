@@ -216,7 +216,6 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
 static int run(struct vm_state* vm) {
     u8 ins;
     while (true) {
-        dissasemble_instruction(stderr, vm->ip);fprintf(stderr, "\n");
         ins = READ_IP();
         enum interpret_result res = interpret_ins(vm, ins);
         if (res == INTERPRET_ERROR) {
