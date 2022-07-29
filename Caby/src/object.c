@@ -15,13 +15,20 @@ struct object* to_object_s(struct value val) {
     return NULL;
 }
 
-/// Returns new object string with contents of 'str', the string is copied.
 struct object_string* new_string(const char* str) {
     size_t len = strlen(str);
     struct object_string* n = vmalloc(sizeof(*n) + len + 1);
     n->object.type = OBJECT_STRING;
     n->size = len;
     strcpy(n->data, str);
+    return n;
+}
+
+struct object_string* new_string_empty(size_t str_len) {
+    struct object_string* n = vmalloc(sizeof(*n) + str_len + 1);
+    n->object.type = OBJECT_STRING;
+    n->size = str_len;
+    n->data[0] = '\0';
     return n;
 }
 
@@ -34,6 +41,15 @@ struct object_string* as_string_s(struct object* object) {
         return as_string(object);
     }
     return NULL;
+}
+
+struct object_function* new_function(u8 arity, struct bc_chunk c, u32 name) {
+    struct object_function* f = vmalloc(sizeof(*f));
+    f->arity = arity;
+    f->object.type = OBJECT_FUNCTION;
+    f->bc = c;
+    f->name = name;
+    return f;
 }
 
 struct object_function* as_function(struct object* object) {

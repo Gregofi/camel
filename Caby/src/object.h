@@ -6,6 +6,8 @@
 #include <string.h>
 
 #include "memory.h"
+#include "common.h"
+#include "bytecode.h"
 
 enum object_type {
     OBJECT_STRING,
@@ -30,8 +32,9 @@ struct object_string {
 struct object_function {
     struct object object;
     uint8_t arity;
-    struct bc_chunk* bc;
-    struct object_string* name;
+    struct bc_chunk bc;
+    /// Index to constant pool
+    u32 name;
 };
 
 enum value_type {
@@ -78,9 +81,16 @@ struct object* to_object_s(struct value val);
 /// Returns new object string with contents of 'str', the string is copied.
 struct object_string* new_string(const char* str);
 
+/// Returns new object string with size equal to str_len + 1,
+/// but the strings is empty zero terminated string.
+struct object_string* new_string_empty(size_t str_len);
+
 struct object_string* as_string(struct object* object);
 
 struct object_string* as_string_s(struct object* object);
+
+/// Returns new function object, takes ownership of 'name'.
+struct object_function* new_function(u8 arity, struct bc_chunk c, u32 name);
 
 struct object_function* as_function(struct object* object);
 

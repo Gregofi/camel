@@ -90,7 +90,7 @@ impl From<String> for Object {
 
 impl Serializable for Object {
     fn serialize(&self, f: &mut File) -> io::Result<()> {
-        // f.write_all(&self.byte_encode().to_le_bytes())?;
+        f.write_all(&self.byte_encode().to_le_bytes())?;
         match self {
             Object::String(v) => {
                 let len: u32 = v.len().try_into().expect("String is too large");

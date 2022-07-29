@@ -1,39 +1,41 @@
 #pragma once
 
 #include "common.h"
-#include "object.h"
 
 #include <stdlib.h>
 
-enum opcode {
-    OP_RETURN,
-    OP_PUSH_SHORT,
-    OP_PUSH_INT,
-    OP_PUSH_BOOL,
-    OP_PUSH_LITERAL,
-    // OP_GET_LOCAL,
-    // OP_SET_LOCAL,
-    // OP_CALL_FUNC,
-    OP_LABEL,
-    OP_JMP_SHORT,
-    OP_JMP,
-    // OP_JMP_LONG,
-    OP_BRANCH_SHORT,
-    OP_BRANCH,
-    // OP_BRANCH_LONG,
-    OP_PRINT,
-    OP_DROP,
-    OP_DUP,
-    // OP_GET_GLOBAL,
-    // OP_SET_GLOBAL,
+// forward decl
+struct object;
 
-    OP_IADD,
-    OP_ISUB,
-    OP_IMUL,
-    OP_IDIV,
-    OP_IREM,
-    OP_IAND,
-    OP_IOR,
+enum opcode {
+    OP_RETURN = 0x09,
+    OP_PUSH_SHORT = 0x01,
+    OP_PUSH_INT = 0x02,
+    OP_PUSH_BOOL = 0x04,
+    OP_PUSH_LITERAL = 0x05,
+    OP_GET_LOCAL = 0x06,
+    OP_SET_LOCAL = 0x07,
+    OP_CALL_FUNC = 0x08,
+    OP_LABEL = 0x00,
+    OP_JMP_SHORT = 0x0A,
+    OP_JMP = 0x0B,
+    // OP_JMP_LONG,
+    OP_BRANCH_SHORT = 0x0D,
+    OP_BRANCH = 0x0E,
+    // OP_BRANCH_LONG,
+    OP_PRINT = 0x10,
+    OP_DROP = 0x11,
+    OP_DUP = 0x12,
+    OP_GET_GLOBAL = 0x13,
+    OP_SET_GLOBAL = 0x14,
+
+    OP_IADD = 0x30,
+    OP_ISUB = 0x31,
+    OP_IMUL = 0x32,
+    OP_IDIV = 0x33,
+    OP_IREM = 0x34,
+    OP_IAND = 0x35,
+    OP_IOR = 0x36,
 };
 
 struct bc_chunk {
@@ -54,6 +56,10 @@ void init_bc_chunk(struct bc_chunk* c);
 void free_bc_chunk(struct bc_chunk* c);
 
 void write_byte(struct bc_chunk* c, u8 byte);
+
+void write_word(struct bc_chunk* c, u16 word);
+
+void write_dword(struct bc_chunk* c, u32 dword);
 
 void init_constant_pool(struct constant_pool* cp);
 
