@@ -85,6 +85,9 @@ void interpret_print(struct vm_state* vm) {
                 case VAL_DOUBLE:
                     printf("%f", v.double_num);
                     break;
+                case VAL_NONE:
+                    printf("none");
+                    break;
                 case VAL_OBJECT: {
                     switch (v.object->type) {
                         case OBJECT_STRING:
@@ -111,6 +114,8 @@ void interpret_print(struct vm_state* vm) {
         fprintf(stderr, "There are more arguments than '{}'.\n");
         exit(-1);
     }
+
+    push(vm, NEW_NONE());
 }
 
 static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
