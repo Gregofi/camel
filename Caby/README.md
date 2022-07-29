@@ -21,10 +21,11 @@ Size of constant pool is 2^32 (so it can be indexed by 32bit int).
 
 ### Global variables
 
-### Frame
-Represents one frame call - size of one is 2^16 (so it can be indexed by 16bit int)
+### Entry point
 
-### Opcodes
+Constant pool index (4 bytes) at which the global function body is located.
+
+## Bytecode oppcodes
 - push_short = 0x01 | 2B Num
 - push_int   = 0x02 | 4B Num
 - push_long  = 0x03 | 8B Num  
