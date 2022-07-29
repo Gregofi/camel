@@ -310,14 +310,15 @@ fn compile_fun(ast: &AST, constant_pool: &mut ConstantPool, loc: Location, globa
     Ok(code)
 }
 
-pub fn compile(ast: &AST) -> Result<(ConstantPool, Globals), &'static str> {
+/// Compiles AST into constant pool and returns tuple (constant pool, entry point, globals)
+pub fn compile(ast: &AST) -> Result<(ConstantPool, ConstantPoolIndex, Globals), &'static str> {
     let mut constant_pool = ConstantPool::new();
     let mut globals = Globals::new();
     let idx = constant_pool.add(Object::from(String::from("#main"))).try_into().unwrap();
     let code = compile_fun(ast, &mut constant_pool, Location::Global, &mut globals)?;
 
     let main_fun = Object::Function { name: idx, parameters_cnt: 0, body: code };
-    constant_pool.add(main_fun);
+    let main_fun_idx = constant_pool.add(main_fun);
 
     constant_pool.data = constant_pool.data.into_iter().map(|f| {
         match f {
@@ -328,5 +329,5 @@ pub fn compile(ast: &AST) -> Result<(ConstantPool, Globals), &'static str> {
 
     globals.insert(String::from("#main"), idx);
 
-    Ok((constant_pool, globals))
+    Ok((constant_pool, main_fun_idx, globals))
 }

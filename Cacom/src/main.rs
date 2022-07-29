@@ -3,6 +3,7 @@ extern crate lalrpop_util;
 extern crate clap;
 
 use std::fs;
+use std::io::Write;
 
 use clap::{Arg, App, SubCommand, Command};
 
@@ -58,13 +59,15 @@ fn compile_action(input_file: &String, output_file: &String) {
         .parse(&f)
         .expect("Unable to parse file");
 
-    let (constant_pool, globals) = compile(&ast).expect("Compilation error");
+    let (constant_pool, entry_point, globals) = compile(&ast).expect("Compilation error");
 
     constant_pool
         .serialize(&mut out_f)
         .expect("Unable to write to output file");
 
-    
+    // TODO: Serialize globals
+
+    out_f.write_all(&entry_point.to_le_bytes()).expect("Unable to write to output file");
 }
 
 fn dump_action(input_file: &String) {
@@ -84,13 +87,14 @@ fn export_action(input_file: &String) {
         .parse(&f)
         .expect("Unable to parse file");
 
-    let (constant_pool, globals) = compile(&ast).expect("Compilation error");
+    let (constant_pool, entry_point, globals) = compile(&ast).expect("Compilation error");
     println!("=== ConstantPool ===");
     println!("{}", constant_pool);
     println!("=== Globals ===");
     for g in &globals {
         println!(" {}", g.1);
     }
+    println!("=== Entry point: {} ===", entry_point);
 }
 
 fn main() {
