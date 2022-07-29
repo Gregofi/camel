@@ -84,7 +84,7 @@ struct object* to_object_s(struct value val);
 /// Returns new object string with contents of 'str', the string is copied.
 struct object_string* new_string(const char* str);
 
-/// Returns new object string with size equal to str_len + 1,
+/// Returns new object string with data size equal to str_len + 1,
 /// but the strings is empty zero terminated string.
 struct object_string* new_string_empty(size_t str_len);
 

@@ -1,1 +1,3 @@
 print("{}\n", "Hello," + " World!");
+print("Hello, " + "{}!\n", "World");
+print("" + "Empty\n");

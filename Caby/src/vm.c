@@ -47,12 +47,11 @@ struct value interpret_string_concat(struct object* o1, struct object* o2) {
     struct object_string* str1 = as_string(o1);
     struct object_string* str2 = as_string(o2);
 
-    struct object_string* new_str = malloc(sizeof(*new_str)
-                                                + str1->size
-                                                + str2->size + 1);
+    struct object_string* new_str = new_string_empty(str1->size + str2->size + 1);
+
     strncpy(new_str->data, str1->data, str1->size);
     strcpy(new_str->data + str1->size, str2->data);
-    return (struct value){.type = VAL_OBJECT, .object = (struct object*)new_str };
+    return NEW_OBJECT((struct object*)new_str);
 }
 
 void interpret_print(struct vm_state* vm) {
@@ -92,6 +91,7 @@ void interpret_print(struct vm_state* vm) {
                     switch (v.object->type) {
                         case OBJECT_STRING:
                             fputs(as_string(v.object)->data, stdout);
+                            break;
                         default:
                             fprintf(stderr, "Can't print this type.\n");
                             exit(-1);
