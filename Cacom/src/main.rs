@@ -65,7 +65,11 @@ fn compile_action(input_file: &String, output_file: &String) {
         .serialize(&mut out_f)
         .expect("Unable to write to output file");
 
-    // TODO: Serialize globals
+    let globals_len: u32 = globals.len().try_into().unwrap();
+    out_f.write_all(&globals_len.to_le_bytes()).expect("Unable to write to output file");
+    for (_, global) in globals {
+        out_f.write(&global.to_le_bytes()).expect("Unable to write to file");
+    }
 
     out_f.write_all(&entry_point.to_le_bytes()).expect("Unable to write to output file");
 }
