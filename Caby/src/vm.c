@@ -47,11 +47,12 @@ struct value interpret_string_concat(struct object* o1, struct object* o2) {
     struct object_string* str1 = as_string(o1);
     struct object_string* str2 = as_string(o2);
 
-    struct object_string* new_str = new_string_empty(str1->size + str2->size + 1);
+    u32 size = str1->size + str2->size;
+    char* new_char = vmalloc(size + 1);
+    strncpy(new_char, str1->data, str1->size);
+    strcpy(new_char + str1->size, str2->data);
 
-    strncpy(new_str->data, str1->data, str1->size);
-    strcpy(new_str->data + str1->size, str2->data);
-    return NEW_OBJECT((struct object*)new_str);
+    return NEW_OBJECT((struct object*)new_string_move(new_char, size));
 }
 
 void interpret_print(struct vm_state* vm) {

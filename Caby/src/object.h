@@ -24,9 +24,10 @@ struct object {
 
 struct object_string {
     struct object object;
+    /// Length of the string WITHOUT zero terminator.
     uint64_t size;
     /// Contains zero terminated string.
-    char data[];
+    char* data;
 };
 
 struct object_function {
@@ -84,9 +85,9 @@ struct object* to_object_s(struct value val);
 /// Returns new object string with contents of 'str', the string is copied.
 struct object_string* new_string(const char* str);
 
-/// Returns new object string with data size equal to str_len + 1,
-/// but the strings is empty zero terminated string.
-struct object_string* new_string_empty(size_t str_len);
+/// Takes ownership of str, which is zero terminated string.
+/// len is the length of the string without zero terminator.
+struct object_string* new_string_move(char* str, u32 len);
 
 struct object_string* as_string(struct object* object);
 

@@ -85,9 +85,10 @@ struct object* serialize_object(FILE* f) {
         }
         case TAG_STRING: {
             u32 len = read_4bytes_be(f);
-            struct object_string* obj_str = new_string_empty(len);
-            fread(obj_str->data, 1, len, f);
-            obj_str->data[len] = '\0';
+            char *str = vmalloc(len + 1);
+            fread(str, 1, len, f);
+            str[len] = '\0';
+            struct object_string* obj_str = new_string_move(str, len);
             return (struct object*)obj_str;
         }
         default:

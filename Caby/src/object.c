@@ -16,19 +16,19 @@ struct object* to_object_s(struct value val) {
 }
 
 struct object_string* new_string(const char* str) {
-    size_t len = strlen(str);
-    struct object_string* n = vmalloc(sizeof(*n) + len + 1);
+    struct object_string* n = vmalloc(sizeof(*n));
     n->object.type = OBJECT_STRING;
+    size_t len = strlen(str);
     n->size = len;
     strcpy(n->data, str);
     return n;
 }
 
-struct object_string* new_string_empty(size_t str_len) {
-    struct object_string* n = vmalloc(sizeof(*n) + str_len + 1);
+struct object_string* new_string_move(char* str, u32 len) {
+    struct object_string* n = vmalloc(sizeof(*n));
     n->object.type = OBJECT_STRING;
-    n->size = str_len;
-    n->data[0] = '\0';
+    n->size = len;
+    n->data = str;
     return n;
 }
 
