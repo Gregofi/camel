@@ -1,25 +1,29 @@
 # Caby - The bytecode interpreter
 
-## Bytecode format
+## Bytecode file format
 
 Bytecode is split into three parts
 
 ### Constant pool
 
 This is a table of constant values that will not change in the program. Following items are located here:
-#### String literals
+#### Constant pool objects
+- String
 `0x01 | length - 4 bytes | the string`
 The string is NOT zero terminated.
-- Functions
+- Function
 `0x00 | name - 4 bytes index to constant pool | parameters count - 1 byte | code length (in instructions) - 4 bytes | code ...`
 There probably should be serialized local variables...
-- Classes, methods and member variables
-- Enums
-- And whatnot
+- Class, method and member variable
+- Enum
+- TBD...
 
 Size of constant pool is 2^32 (so it can be indexed by 32bit int).
 
-### Global variables
+### Globals
+Global objects, they are identified by a string (not stack slot like locals).
+
+`length - 4B | indexes to constant pool strings - 4B ...`
 
 ### Entry point
 
