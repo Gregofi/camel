@@ -7,34 +7,41 @@ fi
 
 COMPILER={$1};
 VM={$2};
+SUCCESS=0;
 
-for file in expected/*.out; do
+mkdir -p out
+
+for file in expected/*.exp; do
     # string extension and path from file
-    file=`basename ${file/.out/}`
+    file=`basename ${file/.exp/}`
     echo "Running test ${file}"
 
     # Run compiler
     ../Cacom/target/debug/cacom compile --input-file ${file}.cml;
     if [[ $? -ne 0 ]]; then
         echo "Test ${file} failed - Compilation failed";
+        SUCCESS=1;
         continue;
     fi;
 
     # Run VM
-    ../Caby/build/caby execute a.out > out.tmp;
+    ../Caby/build/caby execute a.out > out/${file}.out;
     if [[ $? -ne 0 ]]; then
         echo "Test ${file} failed - Interpreting failed";
+        SUCCESS=1
         rm a.out;
         rm out.tmp;
         continue;
     fi;
 
     # Compare results
-    diff out.tmp expected/${file}.out;
+    diff out/${file}.out expected/${file}.exp;
     if [[ $? -ne 0 ]]; then
+        SUCCESS=1
         echo "Test ${file} failed - Different output";
     fi;
     rm a.out;
-    rm out.tmp;
     echo "Test ${file} successfull :-)";
 done;
+
+exit ${SUCCESS};
