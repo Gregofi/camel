@@ -25,6 +25,7 @@ jobs:
         with:
           name: caby
           path: ${{ github.workspace }}/Caby/build/caby
+          retention-days: 1
 
   build-cacom:
     name: Build Cacom compiler
@@ -48,6 +49,7 @@ jobs:
         with:
           name: cacom
           path: ${{ github.workspace }}/Cacom/target/release/cacom
+          retention-days: 1
 
   test-interpreter:
     needs: [build-caby, build-cacom]
