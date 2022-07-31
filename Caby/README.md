@@ -91,7 +91,7 @@ Pop value from the top of the stack and assign it into variable which name is eq
 - irem 0x34
 - iand 0x35
 - ior  0x36
-- ieq  0x3a
+- ieq  0x3b
 Arithmetic operations on integers, pop two from the stack, perform operation, push the result.
 
 NOTE: Bitwise operations will be added later.
