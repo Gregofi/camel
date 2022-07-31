@@ -28,7 +28,7 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
     u8 ins = fgetc(f);
     write_byte(c, ins);
 
-    switch(ins) {
+    switch (ins) {
         // One byte size instructions
         case OP_RETURN:
         case OP_DROP:
