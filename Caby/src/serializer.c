@@ -1,18 +1,26 @@
 #include "serializer.h"
 
 u32 read_4bytes_be(FILE* f) {
-    u8 res[4];
+    i8 res[4];
     res[0] = fgetc(f);
     res[1] = fgetc(f);
     res[2] = fgetc(f);
     res[3] = fgetc(f);
+    if (res[3] == EOF) {
+        fprintf(stderr, "Error reading file\n");
+        exit(3);
+    }
     return *(u32*)res;
 }
 
 u16 read_2bytes_be(FILE* f) {
-    u8 res[2];
+    i8 res[2];
     res[0] = fgetc(f);
     res[1] = fgetc(f);
+    if (res[1] == EOF) {
+        fprintf(stderr, "Error reading file\n");
+        exit(3);
+    }
     return *(u16*)res;
 }
 
@@ -120,6 +128,12 @@ struct vm_state serialize(FILE* f) {
     struct vm_state state;
     init_vm_state(&state);
     state.const_pool = cp;
+
+    // TODO: Globals
+    u32 globals_len = read_4bytes_be(f);
+    for (u32 i = 0; i < globals_len; ++i) {
+        read_4bytes_be(f);
+    }
 
     u32 entry_point = read_4bytes_be(f);
     state.chunk = &as_function_s(state.const_pool.data[entry_point])->bc;
