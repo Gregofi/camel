@@ -13,7 +13,8 @@ jobs:
           cd ${{ github.workspace }}/Caby
           mkdir -p build
           cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release
+          CC=gcc cmake .. -DCMAKE_BUILD_TYPE=Release
+          make
   build-cacom:
     name: Build Cacom compiler
     runs-on: ubuntu-latest
@@ -21,7 +22,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Running cargo build
+      - name: Running cargo build + test
         run: |
           cd ${{ github.workspace }}/Cacom
-          cargo build
+          cargo --release test
