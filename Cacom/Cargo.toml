@@ -19,3 +19,4 @@ opt-level = 0
 
 [profile.release]
 opt-level = 3
+strip = true
