@@ -1,0 +1,78 @@
+name: build
+
+on: [push]
+
+jobs:
+  build-caby:
+    name: Build Caby VM
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Run CMake
+        run: |
+          cd ${{ github.workspace }}/Caby
+          mkdir -p build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+      - name: Build VM
+        run: |
+          cd ${{ github.workspace }}/Caby/build
+          make
+      - name: Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: caby
+          path: ${{ github.workspace }}/Caby/build/caby
+          retention-days: 1
+
+  build-cacom:
+    name: Build Cacom compiler
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Running cargo build
+        run: |
+          cd ${{ github.workspace }}/Cacom
+          cargo build --release
+
+      - name: Running cargo test
+        run: |
+          cd ${{ github.workspace }}/Cacom
+          cargo test --release
+
+      - name: Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: cacom
+          path: ${{ github.workspace }}/Cacom/target/release/cacom
+          retention-days: 1
+
+  test-interpreter:
+    needs: [build-caby, build-cacom]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Download compiler
+        uses: actions/download-artifact@v3
+        with:
+          name: cacom
+
+      - name: Download VM
+        uses: actions/download-artifact@v3
+        with:
+          name: caby
+
+      # The artifacts are not executable by default
+      - name: permissions
+        run: chmod +x ${{ github.workspace }}/cacom ${{ github.workspace }}/caby
+
+      - name: Run tests
+        run: |
+          cd ${{ github.workspace }}/tests
+          ./run_tests.sh ../cacom ../caby

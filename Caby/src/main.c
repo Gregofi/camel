@@ -32,6 +32,7 @@ static int disassemble(const char* argv[]) {
     const char* filename = *argv++;
 
     struct vm_state vm;
+    init_vm_state(&vm);
     read_program(filename, &vm);
 
     disassemble_constant_pool(stdout, &vm.const_pool);
@@ -41,10 +42,17 @@ static int disassemble(const char* argv[]) {
 }
 
 static int execute(const char* argv[]) {
+    if (*argv == NULL) {
+        fprintf(stderr, "Expected file after command 'run'\n");
+        exit(4);
+    }
     const char* filename = *argv++;
 
     struct vm_state vm;
-    read_program(filename, &vm);
+    if (read_program(filename, &vm) != 0) {
+        fprintf(stderr, "Fatal\n");
+        exit(4);
+    }
 
     interpret(&vm);
 

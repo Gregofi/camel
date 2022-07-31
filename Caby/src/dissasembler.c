@@ -47,6 +47,9 @@ size_t dissasemble_instruction(FILE* f, u8* ins) {
         case OP_IOR:
             fprintf(f, "IOR");
             return 1;
+        case OP_EQ:
+            fprintf(f, "EQ");
+            return 1;
         case OP_PUSH_BOOL:
             fprintf(f, "PUSH_BOOL %s", ins[1] == 1 ? "true" : "false");
             return 2;
