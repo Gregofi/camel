@@ -47,7 +47,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: cacom
-          path: ${{ github.workspace }}/Cacom/target/debug/cacom
+          path: ${{ github.workspace }}/Cacom/target/release/cacom
 
   test-interpreter:
     needs: [build-caby, build-cacom]
