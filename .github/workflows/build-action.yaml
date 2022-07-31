@@ -8,13 +8,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Running cmake
+      - name: Run CMake
         run: |
           cd ${{ github.workspace }}/Caby
           mkdir -p build
           cd build
           CC=gcc cmake .. -DCMAKE_BUILD_TYPE=Release
+      - name: Build VM
+        run: |
+          cd $${{ github.workspace }}/Caby/build
           make
+      - name: Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: caby
+          path: ${{ github.workspace }}/Caby/build/caby
+
   build-cacom:
     name: Build Cacom compiler
     runs-on: ubuntu-latest
@@ -22,7 +31,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Running cargo build + test
+      - name: Running cargo build
+        run: |
+          cd ${{ github.workspace }}/Cacom
+          cargo build --release
+
+      - name: Running cargo test
         run: |
           cd ${{ github.workspace }}/Cacom
           cargo test --release
+
+      - name: Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: caby
+          path: ${{ github.workspace }}/Cacom/target/release/cacom

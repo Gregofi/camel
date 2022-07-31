@@ -1,0 +1,11 @@
+name: test
+
+on:
+  workflow_run:
+    workflows: ["build"]
+    types:
+      - completed
+
+jobs:
+  test-interpreter:
+  
