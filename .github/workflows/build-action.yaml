@@ -68,9 +68,9 @@ jobs:
 
       # The artifacts are not executable by default
       - name: permissions
-        run: chmod +x ../cacom ../caby
+        run: chmod +x ${{ github.workspace }}/cacom ${{ github.workspace }}/caby
 
       - name: Run tests
         run: |
-          cd tests
+          cd ${{ github.workspace }}/tests
           ./run_tests.sh ../cacom ../caby
