@@ -36,12 +36,12 @@ jobs:
       - name: Running cargo build
         run: |
           cd ${{ github.workspace }}/Cacom
-          cargo build
+          cargo build --release
 
       - name: Running cargo test
         run: |
           cd ${{ github.workspace }}/Cacom
-          cargo test
+          cargo test --release
 
       - name: Artifact
         uses: actions/upload-artifact@v3
@@ -69,4 +69,4 @@ jobs:
       - name: Run tests
         run: |
           cd tests
-          ./run_tests.sh cacom caby
+          ./run_tests.sh ../cacom ../caby
