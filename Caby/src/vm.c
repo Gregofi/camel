@@ -140,6 +140,7 @@ bool interpret_eq(struct vm_state* vm) {
                         // TODO: Maybe compare hashes?
                         eq = strcmp(as_string(v1.object)->data,
                                     as_string(v2.object)->data) == 0;
+                        break;
                     case OBJECT_FUNCTION: {
                         NOT_IMPLEMENTED();
                         break;
