@@ -5,8 +5,8 @@ if [[ "$#" -ne 2 ]]; then
     exit 1;
 fi
 
-COMPILER={$1};
-VM={$2};
+COMPILER=${1};
+VM=${2};
 SUCCESS=0;
 
 mkdir -p out
@@ -17,7 +17,7 @@ for file in expected/*.exp; do
     echo "Running test ${file}"
 
     # Run compiler
-    ../Cacom/target/debug/cacom compile --input-file ${file}.cml;
+    ${COMPILER} compile --input-file ${file}.cml;
     if [[ $? -ne 0 ]]; then
         echo "Test ${file} failed - Compilation failed";
         SUCCESS=1;
@@ -25,7 +25,7 @@ for file in expected/*.exp; do
     fi;
 
     # Run VM
-    ../Caby/build/caby execute a.out > out/${file}.out;
+    ${VM} execute a.out > out/${file}.out;
     if [[ $? -ne 0 ]]; then
         echo "Test ${file} failed - Interpreting failed";
         SUCCESS=1
