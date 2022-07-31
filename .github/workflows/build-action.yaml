@@ -1,5 +1,7 @@
 name: build
+
 on: [push]
+
 jobs:
   build-caby:
     name: Build Caby VM
@@ -16,7 +18,7 @@ jobs:
           CC=gcc cmake .. -DCMAKE_BUILD_TYPE=Release
       - name: Build VM
         run: |
-          cd $${{ github.workspace }}/Caby/build
+          cd ${{ github.workspace }}/Caby/build
           make
       - name: Artifact
         uses: actions/upload-artifact@v3
