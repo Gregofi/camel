@@ -25,4 +25,4 @@ jobs:
       - name: Running cargo build + test
         run: |
           cd ${{ github.workspace }}/Cacom
-          cargo --release test
+          cargo test --release
