@@ -14,7 +14,7 @@ jobs:
           mkdir -p build
           cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
-  build-caby:
+  build-cacom:
     name: Build Cacom compiler
     runs-on: ubuntu-latest
     steps:
