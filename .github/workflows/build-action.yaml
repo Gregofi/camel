@@ -15,7 +15,7 @@ jobs:
           cd ${{ github.workspace }}/Caby
           mkdir -p build
           cd build
-          CC=gcc cmake ..
+          cmake .. -DCMAKE_BUILD_TYPE=Release
       - name: Build VM
         run: |
           cd ${{ github.workspace }}/Caby/build
