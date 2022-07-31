@@ -66,6 +66,10 @@ jobs:
         with:
           name: caby
 
+      # The artifacts are not executable by default
+      - name: permissions
+        run: chmod +x ../cacom ../caby
+
       - name: Run tests
         run: |
           cd tests
