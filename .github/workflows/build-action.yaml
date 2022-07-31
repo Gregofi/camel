@@ -4,11 +4,12 @@ jobs:
   build-cacom:
     runs-on: debian-latest
     steps:
-      - name: Running cmake
+      - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Running cmake
         run: |
-          cd ${{ github.workspace }}
-          cd Caby
+          cd ${{ github.workspace }}/Caby
           mkdir -p build
           cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
