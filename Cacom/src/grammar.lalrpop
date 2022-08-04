@@ -4,8 +4,7 @@
 // https://github.com/kondziu
 //
 
-use crate::ast::{AST, Opcode, IntoBoxed};
-use crate::grammar::AST::NoneVal;
+use crate::ast::{AST, Opcode};
 use std::collections::VecDeque;
 use std::str::FromStr;
 
@@ -56,8 +55,8 @@ match {
 }
 
 pub TopLevel: AST = {
-    <toplevel: TopLevelExpressions> => AST::Top(toplevel.into_boxed()),
-                                    => AST::Top(vec![NoneVal.into_boxed()]),
+    <toplevel: TopLevelExpressions> => AST::Top(toplevel),
+                                    => AST::Top(vec![AST::NoneVal]),
 }
 
 TopLevelExpressions: Vec<AST> = {
@@ -92,17 +91,17 @@ Statement: AST = {
 }
 
 Expr: AST = {
-    <left:Expr> <op:LogicalOp> <right: AExpr> => AST::Operator{op: op, arguments: vec![Box::new(left), Box::new(right)]},
+    <left:Expr> <op:LogicalOp> <right: AExpr> => AST::Operator{op: op, arguments: vec![left, right]},
     AExpr,
 }
 
 AExpr: AST = {
-    <left:AExpr> <op:ExprOp> <right:Factor> => AST::Operator{op: op, arguments: vec![Box::new(left), Box::new(right)]},
+    <left:AExpr> <op:ExprOp> <right:Factor> => AST::Operator{op: op, arguments: vec![left, right]},
     Factor,
 }
 
 Factor: AST = {
-    <left:Factor> <op:TermOp> <right:Term> => AST::Operator{op: op, arguments: vec![Box::new(left), Box::new(right)]},
+    <left:Factor> <op:TermOp> <right:Term> => AST::Operator{op: op, arguments: vec![left, right]},
     Term,
 }
 
@@ -155,13 +154,13 @@ String: String = {
 }
 
 Block: AST = {
-    CURLYBOPEN <expressions: Statements> CURLYBCLOSE => AST::Block(expressions.into_boxed()),
+    CURLYBOPEN <expressions: Statements> CURLYBCLOSE => AST::Block(expressions),
     CURLYBOPEN CURLYBCLOSE => AST::NoneVal,
 }
 
 FunDecl: AST = {
     DEF <name: Identifier> <parameters: Parameters> ASSIGN <body: Statement> => {
-        AST::Function{name, parameters, body: body.into_boxed()}
+        AST::Function{name, parameters, body: Box::new(body)}
     }
 }
 
@@ -175,27 +174,27 @@ Parameters: Vec<String> = {
         }
 }
 
-Arguments: Vec<Box<AST>> = {
+Arguments: Vec<AST> = {
     <elements: (<Expr> COMMA)*> <element: Expr?> => {
         match element {
-            None => elements.into_iter().map(|x| x.into_boxed()).collect(),
-            Some(e) => { let mut elements = elements; elements.push(e); elements.into_iter().map(|x| x.into_boxed()).collect() }
+            None => elements,
+            Some(e) => { let mut elements = elements; elements.push(e); elements }
         }
     }
 }
 
 Conditional: AST = {
     IF <guard: Expr> <then: Block> ELSE <els: Block> =>
-                    AST::Conditional{guard: guard.into_boxed(),
-                            then_branch: then.into_boxed(),
-                            else_branch: Some(els.into_boxed())},
+                    AST::Conditional{guard: Box::new(guard),
+                            then_branch: Box::new(then),
+                            else_branch: Some(Box::new(els))},
 
     IF <guard: Expr> <then: Block> =>
-                    AST::Conditional{guard: guard.into_boxed(),
-                            then_branch: then.into_boxed(),
+                    AST::Conditional{guard: Box::new(guard),
+                            then_branch: Box::new(then),
                             else_branch: None}
 }
 
 Return: AST = {
-    RETURN <expr: Expr> => AST::Return(expr.into_boxed())
+    RETURN <expr: Expr> => AST::Return(Box::new(expr))
 }
