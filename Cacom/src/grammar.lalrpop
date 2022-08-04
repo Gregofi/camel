@@ -111,6 +111,8 @@ Term: AST = {
 }
 
 LowPrio: AST = {
+    TRUE => AST::Bool(true),
+    FALSE => AST::Bool(false),
     Number => <>,
     String => AST::String(<>),
     Call => <>,
