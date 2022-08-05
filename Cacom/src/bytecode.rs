@@ -232,6 +232,50 @@ impl Bytecode {
             _ => panic!("Instruction to be updated is not a jump"),
         }
     }
+
+    pub fn size(&self) -> usize {
+        1 + match self {
+            Bytecode::PushShort(_) => 2,
+            Bytecode::PushInt(_) => 4,
+            Bytecode::PushLong(_) => 8,
+            Bytecode::PushBool(_) => 1,
+            Bytecode::PushLiteral(_) => std::mem::size_of::<ConstantPoolIndex>().try_into().unwrap(),
+            Bytecode::PushNone => 0,
+            Bytecode::GetLocal(_) => todo!(),
+            Bytecode::SetLocal(_) => todo!(),
+            Bytecode::GetGlobal(_) => todo!(),
+            Bytecode::SetGlobal(_) => todo!(),
+            Bytecode::CallFunc { index, arg_cnt } => todo!(),
+            Bytecode::Ret => 0,
+            Bytecode::Label(_) => 0,
+            Bytecode::JmpLabel(_) => std::mem::size_of::<ConstantPoolIndex>().try_into().unwrap(),
+            Bytecode::BranchLabel(_) => std::mem::size_of::<ConstantPoolIndex>().try_into().unwrap(),
+            Bytecode::BranchLabelFalse(_) => std::mem::size_of::<ConstantPoolIndex>().try_into().unwrap(),
+            Bytecode::JmpShort(_) => 2,
+            Bytecode::Jmp(_) => 4,
+            Bytecode::JmpLong(_) => 8,
+            Bytecode::BranchShort(_) => 2,
+            Bytecode::Branch(_) => 4,
+            Bytecode::BranchLong(_) => 8,
+            Bytecode::BranchShortFalse(_) => 2,
+            Bytecode::BranchFalse(_) => 4,
+            Bytecode::BranchLongFalse(_) => 8,
+            Bytecode::Print { arg_cnt } => 1,
+            Bytecode::Iadd => 0,
+            Bytecode::Isub => 0,
+            Bytecode::Imul => 0,
+            Bytecode::Idiv => 0,
+            Bytecode::Iand => 0,
+            Bytecode::Ior => 0,
+            Bytecode::Iless => 0,
+            Bytecode::Ilesseq => 0,
+            Bytecode::Igreater => 0,
+            Bytecode::Igreatereq => 0,
+            Bytecode::Ieq => 0,
+            Bytecode::Drop => 0,
+            Bytecode::Dup => 0,
+        }
+    }
 }
 
 impl Serializable for Bytecode {

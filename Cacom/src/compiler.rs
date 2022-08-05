@@ -119,18 +119,22 @@ fn check_operator_arity(op: &Opcode, len: usize) -> Result<(), &'static str> {
 }
 
 /// Removes jumps to labels and replaces them with offset jumps
+/// FIXME: This replaces only with index, not with real byte offset, so it is currently does not work.
 fn jump_pass(code: Vec<Bytecode>) -> Vec<Bytecode> {
     let mut labels: HashMap<String, usize> = HashMap::new();
 
+    let mut offset: usize = 0;
     // Copy the bytecode without labels but store their (labels) location
     let mut without_labels: Vec<Bytecode> = Vec::new();
-    for (idx, ins) in code.into_iter().enumerate() {
+    for ins in code {
+        let ins_size = ins.size();
         match ins {
             Bytecode::Label(str) => {
-                labels.insert(str, idx);
+                labels.insert(str, offset);
             }
             _ => without_labels.push(ins),
         }
+        offset += ins_size;
     }
 
     // Remove the jump to labels with jump to address
