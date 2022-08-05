@@ -271,7 +271,10 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
                 exit(-1);
             }
             if ((ins == OP_BRANCH && val.boolean) || (ins == OP_BRANCH_FALSE && !val.boolean)) {
-                vm->ip = &vm->chunk->data[READ_4BYTES_BE(vm->ip)];
+                u32 dest = READ_4BYTES_BE(vm->ip);
+                vm->ip = &vm->chunk->data[dest];
+            } else {
+                vm->ip += 4;
             }
             break;
         }
