@@ -42,6 +42,7 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
         case OP_IREM:
         case OP_LABEL:
         case OP_EQ:
+        case OP_PUSH_NONE:
             break;
         // Two byte size instructions
         case OP_PRINT:

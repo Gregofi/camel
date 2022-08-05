@@ -13,6 +13,7 @@ enum opcode {
     OP_PUSH_INT = 0x02,
     OP_PUSH_BOOL = 0x04,
     OP_PUSH_LITERAL = 0x05,
+    OP_PUSH_NONE = 0x20,
     OP_GET_LOCAL = 0x06,
     OP_SET_LOCAL = 0x07,
     OP_CALL_FUNC = 0x08,

@@ -19,7 +19,7 @@ pub enum Bytecode {
 
     PushLiteral(ConstantPoolIndex),
 
-    PushUnit,
+    PushNone,
 
     GetLocal(FrameIndex),
     SetLocal(FrameIndex),
@@ -82,7 +82,7 @@ impl fmt::Display for Bytecode {
             Bytecode::PushLong(v) => write!(f, "Push long: {}", v),
             Bytecode::PushBool(v) => write!(f, "Push bool: {}", v),
             Bytecode::PushLiteral(v) => write!(f, "Push literal: {}", v),
-            Bytecode::PushUnit => write!(f, "Push unit"),
+            Bytecode::PushNone => write!(f, "Push none"),
             Bytecode::GetLocal(v) => write!(f, "Get local: {}", v),
             Bytecode::SetLocal(v) => write!(f, "Set local: {}", v),
             Bytecode::GetGlobal(v) => write!(f, "Get global: {}", v),
@@ -177,7 +177,7 @@ impl Bytecode {
             Bytecode::PushLong(_) => 0x03,
             Bytecode::PushBool(_) => 0x04,
             Bytecode::PushLiteral(_) => 0x05,
-            Bytecode::PushUnit => todo!(),
+            Bytecode::PushNone => 0x20,
             Bytecode::GetLocal(_) => 0x06,
             Bytecode::SetLocal(_) => 0x07,
             Bytecode::GetGlobal(_) => 0x13,
@@ -283,7 +283,7 @@ impl Serializable for Bytecode {
             Bytecode::Ieq => {}
             Bytecode::Drop => {}
             Bytecode::Dup => {}
-            Bytecode::PushUnit => {}
+            Bytecode::PushNone => {}
             Bytecode::GetGlobal(idx) => f.write_all(&idx.to_le_bytes())?,
             Bytecode::SetGlobal(idx) => f.write_all(&idx.to_le_bytes())?,
         };

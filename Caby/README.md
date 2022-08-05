@@ -41,6 +41,9 @@ Pushes boolean literal onto the operand stack
 - push_literal = 0x05 | 4B Index to constant pool  
 Used for pushing other values onto the operand stack (references to objects, strings...)
 
+- push_none = 0x20
+Pushes None (Unit) value onto the stack.
+
 - get_local = 0x06 | 2B Index to local frame  
 Push the value of a local variable onto the stack
 

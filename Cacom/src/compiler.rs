@@ -300,7 +300,7 @@ fn _compile(
             if let Some(else_body) = else_branch {
                 _compile(else_body, code, context, constant_pool, globals, drop)?;
             } else if !drop {
-                code.add(Bytecode::PushUnit);
+                code.add(Bytecode::PushNone);
             }
         }
         AST::Operator { op, arguments } => {
@@ -341,7 +341,7 @@ fn compile_fun(
 
     _compile(ast, &mut code, &mut context, constant_pool, globals, false)?;
     if code.code.is_empty() {
-        code.add(Bytecode::PushUnit);
+        code.add(Bytecode::PushNone);
     }
     // Return last statement if return is omitted
     if !matches!(code.code.last().unwrap(), Bytecode::Ret) {
