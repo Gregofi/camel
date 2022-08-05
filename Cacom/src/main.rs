@@ -71,7 +71,7 @@ fn compile_action(input_file: &String, output_file: &String) {
         .expect("Unable to write to output file");
     for (_, global) in globals {
         out_f
-            .write(&global.to_le_bytes())
+            .write_all(&global.to_le_bytes())
             .expect("Unable to write to file");
     }
 

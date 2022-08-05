@@ -236,7 +236,7 @@ impl Bytecode {
 
 impl Serializable for Bytecode {
     fn serialize(&self, f: &mut File) -> io::Result<()> {
-        f.write(&[self.byte_encode()])?;
+        f.write_all(&[self.byte_encode()])?;
         match self {
             Bytecode::PushShort(v) => f.write_all(&v.to_le_bytes())?,
             Bytecode::PushInt(v) => f.write_all(&v.to_le_bytes())?,

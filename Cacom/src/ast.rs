@@ -156,7 +156,7 @@ impl AST {
                 AST::While { guard, body } => {
                     println!("While: ");
                     _dump(guard, offset.clone() + " ");
-                    _dump(body, offset.clone() + " ")
+                    _dump(body, offset + " ")
                 }
                 AST::Conditional {
                     guard,
@@ -165,9 +165,9 @@ impl AST {
                 } => {
                     println!("If: ");
                     _dump(guard, offset.clone() + " ");
-                    _dump(&then_branch, offset.clone() + " ");
+                    _dump(then_branch, offset.clone() + " ");
                     if else_branch.is_some() {
-                        _dump(else_branch.as_ref().unwrap(), offset.clone() + " ");
+                        _dump(else_branch.as_ref().unwrap(), offset + " ");
                     }
                 }
                 AST::Operator { op, arguments } => {
@@ -178,7 +178,7 @@ impl AST {
                 }
                 AST::Return(expr) => {
                     println!("Return: ");
-                    _dump(expr, offset.clone() + " ");
+                    _dump(expr, offset + " ");
                 }
             }
         }

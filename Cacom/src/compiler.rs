@@ -259,9 +259,7 @@ fn _compile(
                 });
             } else {
                 let str_index: ConstantPoolIndex = constant_pool
-                    .add(Object::from(name.clone()))
-                    .try_into()
-                    .expect("Constant pool is full");
+                    .add(Object::from(name.clone()));
                 code.add(Bytecode::CallFunc {
                     index: str_index,
                     arg_cnt: arguments.len().try_into().unwrap(),
@@ -284,7 +282,7 @@ fn _compile(
                     context,
                     constant_pool,
                     globals,
-                    !it.peek().is_none(),
+                    it.peek().is_some(),
                 )?;
             }
         }
@@ -298,10 +296,10 @@ fn _compile(
             // TODO: Labels have duplicate names, add unique ID to them
             // True is fallthrough, false is jump
             code.add(Bytecode::BranchLabelFalse(String::from("if_false")));
-            _compile(&then_branch, code, context, constant_pool, globals, drop)?;
+            _compile(then_branch, code, context, constant_pool, globals, drop)?;
             code.add(Bytecode::Label(String::from("if_false")));
             if let Some(else_body) = else_branch {
-                _compile(&else_body, code, context, constant_pool, globals, drop)?;
+                _compile(else_body, code, context, constant_pool, globals, drop)?;
             } else if !drop {
                 code.add(Bytecode::PushUnit);
             }
@@ -326,9 +324,7 @@ fn _compile(
         AST::Return(_) => todo!(),
         AST::String(lit) => {
             let str_index: ConstantPoolIndex = constant_pool
-                .add(Object::from(lit.clone()))
-                .try_into()
-                .expect("Constant pool is full");
+                .add(Object::from(lit.clone()));
             code.add(Bytecode::PushLiteral(str_index));
         }
     };
@@ -361,9 +357,7 @@ pub fn compile(ast: &AST) -> Result<(ConstantPool, ConstantPoolIndex, Globals), 
     let mut constant_pool = ConstantPool::new();
     let mut globals = Globals::new();
     let idx = constant_pool
-        .add(Object::from(String::from("#main")))
-        .try_into()
-        .unwrap();
+        .add(Object::from(String::from("#main")));
     let code = compile_fun(ast, &mut constant_pool, Location::Global, &mut globals)?;
 
     let main_fun = Object::Function {
