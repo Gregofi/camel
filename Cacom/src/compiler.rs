@@ -274,7 +274,9 @@ fn _compile(
             _compile(&then_branch, code,context, constant_pool, globals, drop)?;
             code.add(Bytecode::Label(String::from("if_false")));
             if let Some(else_body) = else_branch {
-                _compile(&else_body, code,context, constant_pool, globals, false)?;
+                _compile(&else_body, code, context, constant_pool, globals, drop)?;
+            } else if !drop {
+                code.add(Bytecode::PushUnit);
             }
         },
         AST::Operator { op, arguments } => {

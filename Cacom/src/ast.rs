@@ -27,7 +27,7 @@ pub enum AST {
     },
     List {
         size: Box<AST>,
-        values: Vec<Box<AST>>,
+        values: Vec<AST>,
     },
 
     AccessVariable {
@@ -56,11 +56,11 @@ pub enum AST {
 
     CallFunction {
         name: String,
-        arguments: Vec<Box<AST>>,
+        arguments: Vec<AST>,
     },
 
-    Top(Vec<Box<AST>>),
-    Block(Vec<Box<AST>>),
+    Top(Vec<AST>),
+    Block(Vec<AST>),
     While {
         guard: Box<AST>,
         body: Box<AST>,
@@ -74,7 +74,7 @@ pub enum AST {
 
     Operator {
         op: Opcode,
-        arguments: Vec<Box<AST>>,
+        arguments: Vec<AST>,
     },
 
     Return(Box<AST>),
@@ -183,31 +183,5 @@ impl AST {
             }
         }
         _dump(self, String::from(""));
-    }
-}
-
-pub trait IntoBoxed {
-    type Into;
-    fn into_boxed(self) -> Self::Into;
-}
-
-impl IntoBoxed for AST {
-    type Into = Box<Self>;
-    fn into_boxed(self) -> Self::Into {
-        Box::new(self)
-    }
-}
-
-impl IntoBoxed for Vec<AST> {
-    type Into = Vec<Box<AST>>;
-    fn into_boxed(self) -> Self::Into {
-        self.into_iter().map(|ast| ast.into_boxed()).collect()
-    }
-}
-
-impl IntoBoxed for Option<AST> {
-    type Into = Option<Box<AST>>;
-    fn into_boxed(self) -> Self::Into {
-        self.map(|ast| ast.into_boxed())
     }
 }
