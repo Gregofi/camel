@@ -254,6 +254,22 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
         case OP_DROP:
             pop(vm);
             break;
+        case OP_JMP:
+            vm->ip = &vm->chunk->data[READ_4BYTES_BE(vm->ip)];
+            break;
+        case OP_BRANCH_FALSE:
+            fallthrough;
+        case OP_BRANCH: {
+            struct value val = pop(vm);
+            if (val.type != VAL_BOOL) {
+                fprintf(stderr, "Expected type 'bool' in if condition");
+                exit(-1);
+            }
+            if ((ins == OP_BRANCH && val.boolean) || (ins == OP_BRANCH_FALSE && !val.boolean)) {
+                vm->ip = &vm->chunk->data[READ_4BYTES_BE(vm->ip)];
+            }
+            break;
+        }
         default:
             fprintf(stderr, "Unknown instruction 0x%x!\n", ins);
     }

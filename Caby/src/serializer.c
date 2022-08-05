@@ -52,6 +52,7 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
         // Three byte size instructions
         case OP_JMP_SHORT:
         case OP_BRANCH_SHORT:
+        case OP_BRANCH_FALSE_SHORT:
         case OP_PUSH_SHORT:
             write_word(c, read_2bytes_be(f));
             break;
@@ -60,6 +61,7 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
         case OP_PUSH_LITERAL:
         case OP_JMP:
         case OP_BRANCH:
+        case OP_BRANCH_FALSE:
         case OP_SET_GLOBAL:
         case OP_SET_LOCAL:
         case OP_GET_GLOBAL:
