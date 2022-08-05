@@ -5,7 +5,7 @@ extern crate clap;
 use std::fs;
 use std::io::Write;
 
-use clap::{Arg, App, SubCommand, Command};
+use clap::{App, Arg, Command, SubCommand};
 
 use crate::compiler::compile;
 use crate::grammar::TopLevelParser;
@@ -23,11 +23,11 @@ mod utils;
 
 fn cli() -> Command<'static> {
     let input_file = Arg::new("input-file")
-                                .short('i')
-                                .long("input-file")
-                                .required(true)
-                                .value_name("INPUT-FILE")
-                                .help("Camel source code");
+        .short('i')
+        .long("input-file")
+        .required(true)
+        .value_name("INPUT-FILE")
+        .help("Camel source code");
 
     // TODO: input file should probably not be passed like that.
     let matches = App::new("Cacom")
@@ -66,12 +66,18 @@ fn compile_action(input_file: &String, output_file: &String) {
         .expect("Unable to write to output file");
 
     let globals_len: u32 = globals.len().try_into().unwrap();
-    out_f.write_all(&globals_len.to_le_bytes()).expect("Unable to write to output file");
+    out_f
+        .write_all(&globals_len.to_le_bytes())
+        .expect("Unable to write to output file");
     for (_, global) in globals {
-        out_f.write(&global.to_le_bytes()).expect("Unable to write to file");
+        out_f
+            .write(&global.to_le_bytes())
+            .expect("Unable to write to file");
     }
 
-    out_f.write_all(&entry_point.to_le_bytes()).expect("Unable to write to output file");
+    out_f
+        .write_all(&entry_point.to_le_bytes())
+        .expect("Unable to write to output file");
 }
 
 fn dump_action(input_file: &String) {
@@ -85,7 +91,8 @@ fn dump_action(input_file: &String) {
 }
 
 fn export_action(input_file: &String) {
-    let f = fs::read_to_string(input_file).unwrap_or_else(|_| panic!("Couldn't read file at '{}'", input_file));
+    let f = fs::read_to_string(input_file)
+        .unwrap_or_else(|_| panic!("Couldn't read file at '{}'", input_file));
 
     let ast = TopLevelParser::new()
         .parse(&f)
@@ -102,19 +109,18 @@ fn export_action(input_file: &String) {
 }
 
 fn main() {
-
     let matches = cli().get_matches();
 
     match matches.subcommand() {
         Some(("dump-ast", sub_matches)) => {
             let file = sub_matches.get_one::<String>("input-file").unwrap();
             dump_action(file);
-        },
+        }
         Some(("compile", sub_matches)) => {
             let input_file = sub_matches.get_one::<String>("input-file").unwrap();
             let output_file = sub_matches.get_one::<String>("output-file").unwrap();
             compile_action(input_file, output_file);
-        },
+        }
         Some(("export", sub_matches)) => {
             let input_file = sub_matches.get_one::<String>("input-file").unwrap();
             export_action(input_file);

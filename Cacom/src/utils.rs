@@ -1,4 +1,3 @@
-
 pub struct AtomicInt(u32);
 
 impl AtomicInt {

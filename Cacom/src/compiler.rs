@@ -12,7 +12,7 @@ use crate::utils::AtomicInt;
 /// name to index of the local variable.
 struct Environment {
     atomic_int: AtomicInt,
-    envs: Vec<HashMap<String, LocalVarIndex>>
+    envs: Vec<HashMap<String, LocalVarIndex>>,
 }
 
 enum Location {
@@ -35,7 +35,10 @@ type LocalVarIndex = u16;
 impl Environment {
     /// Returns environment with one empty environment present
     pub fn new() -> Self {
-        Self{atomic_int: AtomicInt::new(), envs: vec![HashMap::new()]}
+        Self {
+            atomic_int: AtomicInt::new(),
+            envs: vec![HashMap::new()],
+        }
     }
 
     /// Adds one more inner scope to environment
@@ -49,17 +52,27 @@ impl Environment {
     }
 
     pub fn add_local(&mut self, v: String) -> Result<LocalVarIndex, &'static str> {
-        let topmost = self.envs.last_mut().expect("Camel Compiler bug: There is no environment");
+        let topmost = self
+            .envs
+            .last_mut()
+            .expect("Camel Compiler bug: There is no environment");
         if topmost.contains_key(&v) {
-            return Err("Redefinition of local variable")
+            return Err("Redefinition of local variable");
         }
-        let idx: LocalVarIndex = self.atomic_int.get_and_inc().try_into().expect("Too many local variables");
+        let idx: LocalVarIndex = self
+            .atomic_int
+            .get_and_inc()
+            .try_into()
+            .expect("Too many local variables");
         topmost.insert(v, idx);
         Ok(idx)
     }
 
     pub fn fetch_local(&self, v: &String) -> Option<LocalVarIndex> {
-        let topmost =self.envs.last().expect("Camel compiler bug: There is no environment");
+        let topmost = self
+            .envs
+            .last()
+            .expect("Camel compiler bug: There is no environment");
         topmost.get(v).copied()
     }
 }
@@ -115,28 +128,31 @@ fn jump_pass(code: Vec<Bytecode>) -> Vec<Bytecode> {
         match ins {
             Bytecode::Label(str) => {
                 labels.insert(str, idx);
-            },
-            _ => without_labels.push(ins)
+            }
+            _ => without_labels.push(ins),
         }
     }
 
     // Remove the jump to labels with jump to address
     // TODO: Use short, long or normal jump based on distance
-    without_labels.into_iter().map(|ins| match ins {
-        Bytecode::JmpLabel(label) => {
-            let label_index = *labels.get(&label).unwrap();
-            Bytecode::Jmp(label_index.try_into().unwrap())
-        },
-        Bytecode::BranchLabel(label) => {
-            let label_index = *labels.get(&label).unwrap();
-            Bytecode::Branch(label_index.try_into().unwrap())
-        },
-        Bytecode::BranchLabelFalse(label) => {
-            let label_index = *labels.get(&label).unwrap();
-            Bytecode::BranchFalse(label_index.try_into().unwrap())
-        },
-        _ => ins,
-    }).collect()
+    without_labels
+        .into_iter()
+        .map(|ins| match ins {
+            Bytecode::JmpLabel(label) => {
+                let label_index = *labels.get(&label).unwrap();
+                Bytecode::Jmp(label_index.try_into().unwrap())
+            }
+            Bytecode::BranchLabel(label) => {
+                let label_index = *labels.get(&label).unwrap();
+                Bytecode::Branch(label_index.try_into().unwrap())
+            }
+            Bytecode::BranchLabelFalse(label) => {
+                let label_index = *labels.get(&label).unwrap();
+                Bytecode::BranchFalse(label_index.try_into().unwrap())
+            }
+            _ => ins,
+        })
+        .collect()
 }
 
 /// Inner compile function, compile the AST into bytecode which is inserted into Code.
@@ -153,21 +169,19 @@ fn _compile(
     match ast {
         AST::Integer(val) => {
             code.add(Bytecode::PushInt(*val));
-        },
+        }
         AST::Float(_) => todo!(),
         AST::Bool(val) => {
             code.add(Bytecode::PushBool(*val));
-        },
+        }
         AST::NoneVal => unimplemented!(), // TODO: Think about if we really want null values, some
-                                          // kind of Optional class would probably be better.
-        AST::Variable { name, value } => {
-            match &mut context.loc {
-                Location::Global => {
-                    todo!("Global variables are not yet implemeted");
-                },
-                Location::Local(env) => {
-                    env.add_local(name.clone())?;
-                },
+        // kind of Optional class would probably be better.
+        AST::Variable { name, value } => match &mut context.loc {
+            Location::Global => {
+                todo!("Global variables are not yet implemeted");
+            }
+            Location::Local(env) => {
+                env.add_local(name.clone())?;
             }
         },
         AST::List { size, values } => todo!(),
@@ -184,7 +198,7 @@ fn _compile(
                 let idx = constant_pool.add(Object::from(name.clone()));
                 code.add(Bytecode::GetGlobal(idx));
             }
-        },
+        }
         AST::AccessList { list, index } => todo!(),
         AST::AssignVariable { name, value } => {
             _compile(value, code, context, constant_pool, globals, false)?;
@@ -200,7 +214,7 @@ fn _compile(
                 let idx = constant_pool.add(Object::from(name.clone()));
                 code.add(Bytecode::SetGlobal(idx));
             }
-        },
+        }
         AST::AssignList { list, index, value } => todo!(),
         AST::Function {
             name,
@@ -214,21 +228,25 @@ fn _compile(
             for par in parameters {
                 new_env.add_local(par.clone())?;
             }
-            let code = compile_fun(body,  constant_pool, Location::Local(new_env), globals)?;
+            let code = compile_fun(body, constant_pool, Location::Local(new_env), globals)?;
 
-            let fun = Object::Function { name: new_fun_idx, parameters_cnt: parameters.len().try_into().unwrap(), body: code };
+            let fun = Object::Function {
+                name: new_fun_idx,
+                parameters_cnt: parameters.len().try_into().unwrap(),
+                body: code,
+            };
 
             let fun_idx = constant_pool.add(fun);
 
             match &mut context.loc {
                 Location::Global => {
                     globals.insert(name.clone(), fun_idx);
-                },
+                }
                 Location::Local(env) => {
                     todo!("Nested functions are not yet implemented");
-                },
+                }
             };
-        },
+        }
         AST::CallFunction { name, arguments } => {
             for arg in arguments.iter().rev() {
                 _compile(arg, code, context, constant_pool, globals, false)?;
@@ -236,7 +254,9 @@ fn _compile(
             // TODO: For nested functions we first need to look into environments, then do this.
             // TODO: Hardcoded native print
             if name == "print" {
-                code.add(Bytecode::Print { arg_cnt: arguments.len().try_into().unwrap() });
+                code.add(Bytecode::Print {
+                    arg_cnt: arguments.len().try_into().unwrap(),
+                });
             } else {
                 let str_index: ConstantPoolIndex = constant_pool
                     .add(Object::from(name.clone()))
@@ -258,9 +278,16 @@ fn _compile(
 
             while let Some(stmt) = it.next() {
                 // Drop everything but the last result
-                _compile(stmt, code, context, constant_pool, globals, !it.peek().is_none())?;
+                _compile(
+                    stmt,
+                    code,
+                    context,
+                    constant_pool,
+                    globals,
+                    !it.peek().is_none(),
+                )?;
             }
-        },
+        }
         AST::While { guard, body } => todo!(),
         AST::Conditional {
             guard,
@@ -271,14 +298,14 @@ fn _compile(
             // TODO: Labels have duplicate names, add unique ID to them
             // True is fallthrough, false is jump
             code.add(Bytecode::BranchLabelFalse(String::from("if_false")));
-            _compile(&then_branch, code,context, constant_pool, globals, drop)?;
+            _compile(&then_branch, code, context, constant_pool, globals, drop)?;
             code.add(Bytecode::Label(String::from("if_false")));
             if let Some(else_body) = else_branch {
                 _compile(&else_body, code, context, constant_pool, globals, drop)?;
             } else if !drop {
                 code.add(Bytecode::PushUnit);
             }
-        },
+        }
         AST::Operator { op, arguments } => {
             check_operator_arity(op, arguments.len())?;
             for arg in arguments.iter().rev() {
@@ -309,11 +336,16 @@ fn _compile(
     Ok(())
 }
 
-fn compile_fun(ast: &AST, constant_pool: &mut ConstantPool, loc: Location, globals: &mut HashMap<String, ConstantPoolIndex>) -> Result<Code, &'static str> {
-    let mut context = Context{loc};
+fn compile_fun(
+    ast: &AST,
+    constant_pool: &mut ConstantPool,
+    loc: Location,
+    globals: &mut HashMap<String, ConstantPoolIndex>,
+) -> Result<Code, &'static str> {
+    let mut context = Context { loc };
     let mut code = Code::new();
 
-    _compile(ast, &mut code,&mut context, constant_pool, globals, false)?;
+    _compile(ast, &mut code, &mut context, constant_pool, globals, false)?;
     if code.code.is_empty() {
         code.add(Bytecode::PushUnit);
     }
@@ -328,18 +360,37 @@ fn compile_fun(ast: &AST, constant_pool: &mut ConstantPool, loc: Location, globa
 pub fn compile(ast: &AST) -> Result<(ConstantPool, ConstantPoolIndex, Globals), &'static str> {
     let mut constant_pool = ConstantPool::new();
     let mut globals = Globals::new();
-    let idx = constant_pool.add(Object::from(String::from("#main"))).try_into().unwrap();
+    let idx = constant_pool
+        .add(Object::from(String::from("#main")))
+        .try_into()
+        .unwrap();
     let code = compile_fun(ast, &mut constant_pool, Location::Global, &mut globals)?;
 
-    let main_fun = Object::Function { name: idx, parameters_cnt: 0, body: code };
+    let main_fun = Object::Function {
+        name: idx,
+        parameters_cnt: 0,
+        body: code,
+    };
     let main_fun_idx = constant_pool.add(main_fun);
 
-    constant_pool.data = constant_pool.data.into_iter().map(|f| {
-        match f {
-            Object::Function { body, name, parameters_cnt } => Object::Function { body: Code{code: jump_pass(body.code)}, name, parameters_cnt},
+    constant_pool.data = constant_pool
+        .data
+        .into_iter()
+        .map(|f| match f {
+            Object::Function {
+                body,
+                name,
+                parameters_cnt,
+            } => Object::Function {
+                body: Code {
+                    code: jump_pass(body.code),
+                },
+                name,
+                parameters_cnt,
+            },
             _ => f,
-        }
-    }).collect();
+        })
+        .collect();
 
     globals.insert(String::from("#main"), idx);
 

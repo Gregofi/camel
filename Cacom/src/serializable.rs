@@ -1,5 +1,5 @@
-use std::io;
 use std::fs::File;
+use std::io;
 
 pub trait Serializable {
     /// Serialize into raw bytes

@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::fmt;
+use std::fs::File;
 use std::io;
 use std::io::prelude::*;
-use std::fs::File;
 
 use crate::serializable::Serializable;
 
@@ -27,7 +27,10 @@ pub enum Bytecode {
     GetGlobal(ConstantPoolIndex),
     SetGlobal(ConstantPoolIndex),
 
-    CallFunc{index: ConstantPoolIndex, arg_cnt: u8},
+    CallFunc {
+        index: ConstantPoolIndex,
+        arg_cnt: u8,
+    },
     Ret,
 
     Label(String),
@@ -51,8 +54,9 @@ pub enum Bytecode {
     BranchFalse(u32),
     BranchLongFalse(u64),
 
-
-    Print{arg_cnt: u8},
+    Print {
+        arg_cnt: u8,
+    },
 
     Iadd,
     Isub,
@@ -66,7 +70,6 @@ pub enum Bytecode {
     Igreatereq,
     Ieq,
     // Rest of binary operations
-
     Drop,
     Dup,
 }
@@ -84,7 +87,9 @@ impl fmt::Display for Bytecode {
             Bytecode::SetLocal(v) => write!(f, "Set local: {}", v),
             Bytecode::GetGlobal(v) => write!(f, "Get global: {}", v),
             Bytecode::SetGlobal(v) => write!(f, "Set global: {}", v),
-            Bytecode::CallFunc { index, arg_cnt } => write!(f, "Call function {}: {}", index, arg_cnt),
+            Bytecode::CallFunc { index, arg_cnt } => {
+                write!(f, "Call function {}: {}", index, arg_cnt)
+            }
             Bytecode::Ret => write!(f, "Ret"),
             Bytecode::Label(v) => write!(f, "{}:", v),
             Bytecode::BranchLabel(v) => write!(f, "BranchLabel: {}", v),
@@ -152,7 +157,10 @@ impl Serializable for Code {
     /// Serializes the code into file in format: size - u16 | ins ...
     /// The size is not the size in bytes but number of instructions!
     fn serialize(&self, f: &mut File) -> io::Result<()> {
-        let size: u32 = self.code.len().try_into().expect("Bytecode overflow: There can be maximum of 2^32 instructions in one function");
+        let size: u32 =
+            self.code.len().try_into().expect(
+                "Bytecode overflow: There can be maximum of 2^32 instructions in one function",
+            );
         f.write_all(&size.to_le_bytes())?;
         for instruction in &self.code {
             instruction.serialize(f)?;
@@ -177,9 +185,15 @@ impl Bytecode {
             Bytecode::CallFunc { index, arg_cnt } => 0x08,
             Bytecode::Ret => 0x09,
             Bytecode::Label(_) => 0x00,
-            Bytecode::BranchLabel(_) => panic!("Label jumps are not meant to exist in final bytecode!"),
-            Bytecode::BranchLabelFalse(_) => panic!("Label jumps are not meant to exist in final bytecode!"),
-            Bytecode::JmpLabel(_) => panic!("Label jumps are not meant to exist in final bytecode!"),
+            Bytecode::BranchLabel(_) => {
+                panic!("Label jumps are not meant to exist in final bytecode!")
+            }
+            Bytecode::BranchLabelFalse(_) => {
+                panic!("Label jumps are not meant to exist in final bytecode!")
+            }
+            Bytecode::JmpLabel(_) => {
+                panic!("Label jumps are not meant to exist in final bytecode!")
+            }
             Bytecode::JmpShort(_) => 0x0A,
             Bytecode::Jmp(_) => 0x0B,
             Bytecode::JmpLong(_) => 0x0C,
@@ -215,7 +229,7 @@ impl Bytecode {
             Bytecode::BranchShort(v) => *v = new_dest.try_into().unwrap(),
             Bytecode::Branch(v) => *v = new_dest.try_into().unwrap(),
             Bytecode::BranchLong(v) => *v = new_dest.try_into().unwrap(),
-            _ => panic!("Instruction to be updated is not a jump")
+            _ => panic!("Instruction to be updated is not a jump"),
         }
     }
 }
@@ -234,11 +248,15 @@ impl Serializable for Bytecode {
             Bytecode::CallFunc { index, arg_cnt } => {
                 f.write_all(&index.to_le_bytes())?;
                 f.write_all(&arg_cnt.to_le_bytes())?;
-            },
-            Bytecode::Ret => { },
+            }
+            Bytecode::Ret => {}
             Bytecode::Label(name) => todo!(),
-            Bytecode::BranchLabel(_) => panic!("Jump labels are not meant to exist in final bytecode"),
-            Bytecode::BranchLabelFalse(_) => panic!("Jump labels are not meant to exist in final bytecode"),
+            Bytecode::BranchLabel(_) => {
+                panic!("Jump labels are not meant to exist in final bytecode")
+            }
+            Bytecode::BranchLabelFalse(_) => {
+                panic!("Jump labels are not meant to exist in final bytecode")
+            }
             Bytecode::JmpLabel(_) => panic!("Jump labels are not meant to exist in final bytecode"),
             Bytecode::JmpShort(dst) => f.write_all(&dst.to_le_bytes())?,
             Bytecode::Jmp(dst) => f.write_all(&dst.to_le_bytes())?,
@@ -251,21 +269,21 @@ impl Serializable for Bytecode {
             Bytecode::BranchLongFalse(dst) => f.write_all(&dst.to_le_bytes())?,
             Bytecode::Print { arg_cnt } => {
                 f.write_all(&arg_cnt.to_le_bytes())?;
-            },
-            Bytecode::Iadd => { },
-            Bytecode::Isub => { },
-            Bytecode::Imul => { },
-            Bytecode::Idiv => { },
-            Bytecode::Iand => { },
-            Bytecode::Ior => { },
-            Bytecode::Iless => { },
-            Bytecode::Ilesseq => { },
-            Bytecode::Igreater => { },
-            Bytecode::Igreatereq => { },
-            Bytecode::Ieq => { },
-            Bytecode::Drop => { },
-            Bytecode::Dup => { },
-            Bytecode::PushUnit => { },
+            }
+            Bytecode::Iadd => {}
+            Bytecode::Isub => {}
+            Bytecode::Imul => {}
+            Bytecode::Idiv => {}
+            Bytecode::Iand => {}
+            Bytecode::Ior => {}
+            Bytecode::Iless => {}
+            Bytecode::Ilesseq => {}
+            Bytecode::Igreater => {}
+            Bytecode::Igreatereq => {}
+            Bytecode::Ieq => {}
+            Bytecode::Drop => {}
+            Bytecode::Dup => {}
+            Bytecode::PushUnit => {}
             Bytecode::GetGlobal(idx) => f.write_all(&idx.to_le_bytes())?,
             Bytecode::SetGlobal(idx) => f.write_all(&idx.to_le_bytes())?,
         };
