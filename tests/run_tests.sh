@@ -2,6 +2,7 @@
 
 if [[ "$#" -ne 2 ]]; then
     echo "usage: run_tests.sh compiler vm"
+    echo "  Must be run in the tests directory"
     exit 1;
 fi
 
