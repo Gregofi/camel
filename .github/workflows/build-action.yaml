@@ -54,6 +54,10 @@ jobs:
         run: |
           cd ${{ github.workspace }}/Cacom
           cargo test --release
+      - name: Running clippy
+        run: |
+          cd ${{ github.workspace }}/Cacom
+          cargo clippy
       - name: Artifact
         uses: actions/upload-artifact@v3
         with:
