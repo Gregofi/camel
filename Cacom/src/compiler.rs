@@ -258,8 +258,7 @@ fn _compile(
                     arg_cnt: arguments.len().try_into().unwrap(),
                 });
             } else {
-                let str_index: ConstantPoolIndex = constant_pool
-                    .add(Object::from(name.clone()));
+                let str_index: ConstantPoolIndex = constant_pool.add(Object::from(name.clone()));
                 code.add(Bytecode::CallFunc {
                     index: str_index,
                     arg_cnt: arguments.len().try_into().unwrap(),
@@ -323,8 +322,7 @@ fn _compile(
         }
         AST::Return(_) => todo!(),
         AST::String(lit) => {
-            let str_index: ConstantPoolIndex = constant_pool
-                .add(Object::from(lit.clone()));
+            let str_index: ConstantPoolIndex = constant_pool.add(Object::from(lit.clone()));
             code.add(Bytecode::PushLiteral(str_index));
         }
     };
@@ -356,8 +354,7 @@ fn compile_fun(
 pub fn compile(ast: &AST) -> Result<(ConstantPool, ConstantPoolIndex, Globals), &'static str> {
     let mut constant_pool = ConstantPool::new();
     let mut globals = Globals::new();
-    let idx = constant_pool
-        .add(Object::from(String::from("#main")));
+    let idx = constant_pool.add(Object::from(String::from("#main")));
     let code = compile_fun(ast, &mut constant_pool, Location::Global, &mut globals)?;
 
     let main_fun = Object::Function {
