@@ -186,6 +186,11 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             push(vm, none);
             break;
         }
+        case OP_PUSH_BOOL: {
+            struct value boolean = NEW_BOOL(READ_IP());
+            push(vm, boolean);
+            break;
+        }
         case OP_IADD: {
             struct value v1 = pop(vm);
             struct value v2 = pop(vm);
