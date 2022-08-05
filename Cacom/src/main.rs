@@ -11,7 +11,10 @@ use crate::compiler::compile;
 use crate::grammar::TopLevelParser;
 use crate::serializable::Serializable;
 
-lalrpop_mod!(pub grammar); // synthesized by LALRPOP
+lalrpop_mod!(
+    #[allow(clippy::all)]
+    pub grammar
+);
 
 mod ast;
 mod bytecode;
