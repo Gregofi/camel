@@ -1,7 +1,7 @@
 use std::fmt;
+use std::fs::File;
 use std::io;
 use std::io::prelude::*;
-use std::fs::File;
 
 use crate::bytecode::Code;
 use crate::bytecode::{ConstantPoolIndex, FrameIndex};
@@ -9,14 +9,16 @@ use crate::serializable::Serializable;
 
 pub enum Object {
     String(String),
-    Function{
+    Function {
         name: ConstantPoolIndex,
         parameters_cnt: u8,
         body: Code,
     },
 }
 
-pub struct ConstantPool{pub data: Vec<Object>}
+pub struct ConstantPool {
+    pub data: Vec<Object>,
+}
 
 impl ConstantPool {
     pub fn add(&mut self, obj: Object) -> ConstantPoolIndex {
@@ -52,7 +54,11 @@ impl fmt::Display for ConstantPool {
 
 impl Serializable for ConstantPool {
     fn serialize(&self, f: &mut File) -> io::Result<()> {
-        let len: u32 = self.data.len().try_into().expect("Constant pool maximum size is 2^32");
+        let len: u32 = self
+            .data
+            .len()
+            .try_into()
+            .expect("Constant pool maximum size is 2^32");
         f.write_all(&len.to_le_bytes())?;
         for obj in &self.data {
             obj.serialize(f)?;
@@ -74,10 +80,14 @@ impl fmt::Display for Object {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Object::String(str) => write!(f, "String: {}", str),
-            Object::Function { name, parameters_cnt, body } => {
+            Object::Function {
+                name,
+                parameters_cnt,
+                body,
+            } => {
                 writeln!(f, "Function: {}, parameters: {}", name, parameters_cnt)?;
                 writeln!(f, "{}", body)
-            },
+            }
         }
     }
 }
@@ -96,12 +106,16 @@ impl Serializable for Object {
                 let len: u32 = v.len().try_into().expect("String is too large");
                 f.write_all(&len.to_le_bytes())?;
                 f.write_all(v.as_bytes())
-            },
-            Object::Function { name, parameters_cnt, body } => {
+            }
+            Object::Function {
+                name,
+                parameters_cnt,
+                body,
+            } => {
                 f.write_all(&name.to_le_bytes())?;
                 f.write_all(&parameters_cnt.to_le_bytes())?;
                 body.serialize(f)
-            },
+            }
         }
     }
 }

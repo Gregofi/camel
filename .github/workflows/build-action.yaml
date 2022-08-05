@@ -3,13 +3,23 @@ name: build
 on: [push, pull_request]
 
 jobs:
+  check-format-rust:
+    name: Check format - Rust
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Run format
+        run: |
+          cd ${{ github.workspace }}/Cacom
+          cargo fmt --check
+
   build-caby:
     name: Build Caby VM
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
       - name: Run CMake
         run: |
           cd ${{ github.workspace }}/Caby
@@ -29,21 +39,25 @@ jobs:
 
   build-cacom:
     name: Build Cacom compiler
+    # Check format and linter is needed since compilation takes a long time.
+    # This is to prevent unessecary wasting pipeline.
+    needs: [check-format-rust]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
       - name: Running cargo build
         run: |
           cd ${{ github.workspace }}/Cacom
           cargo build --release
-
       - name: Running cargo test
         run: |
           cd ${{ github.workspace }}/Cacom
           cargo test --release
-
+      - name: Running clippy
+        run: |
+          cd ${{ github.workspace }}/Cacom
+          cargo clippy
       - name: Artifact
         uses: actions/upload-artifact@v3
         with:
@@ -57,21 +71,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
       - name: Download compiler
         uses: actions/download-artifact@v3
         with:
           name: cacom
-
       - name: Download VM
         uses: actions/download-artifact@v3
         with:
           name: caby
-
       # The artifacts are not executable by default
       - name: permissions
         run: chmod +x ${{ github.workspace }}/cacom ${{ github.workspace }}/caby
-
       - name: Run tests
         run: |
           cd ${{ github.workspace }}/tests
