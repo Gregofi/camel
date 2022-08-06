@@ -4,6 +4,8 @@
 #include "common.h"
 #include "object.h"
 
+#define TABLE_MAX_LOAD 0.75
+
 struct entry {
     struct object_string* key;
     struct value val;
@@ -18,3 +20,9 @@ struct table {
 void init_table(struct table* t);
 
 void free_table(struct table* t);
+
+bool table_set(struct table* t, struct object_string* key, struct value val);
+
+bool table_get(struct table* t, struct object_string* key, struct value* val);
+
+bool table_delete(struct table* t, struct object_string* key);
