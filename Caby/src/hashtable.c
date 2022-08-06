@@ -32,7 +32,7 @@ static struct entry* find_entry(struct entry* entries, size_t capacity,
                     tombstone = e;
                 }
             }
-        } else if (e->key == key) {
+        } else if (strcmp(e->key->data, key->data)) {
             return e;
         }
 
