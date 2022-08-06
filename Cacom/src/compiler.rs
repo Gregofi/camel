@@ -5,7 +5,7 @@ use crate::ast::{Opcode, AST};
 use crate::bytecode::{Bytecode, Code, ConstantPoolIndex};
 use crate::objects::{ConstantPool, Object};
 use crate::serializable::Serializable;
-use crate::utils::AtomicInt;
+use crate::utils::{AtomicInt, LabelGenerator};
 
 /// Environment keeps track of indexes of local variables into memory.
 /// It consists of multiple environments, each one is a map from
@@ -22,6 +22,7 @@ enum Location {
 
 pub struct Context {
     loc: Location,
+    counter: LabelGenerator,
 }
 
 pub struct Program {
@@ -81,6 +82,7 @@ impl Context {
     pub fn new() -> Self {
         Context {
             loc: Location::Global,
+            counter: LabelGenerator::new(),
         }
     }
 }
@@ -295,17 +297,19 @@ fn _compile(
             then_branch,
             else_branch,
         } => {
+            let label_else = context.counter.get_label("if_else");
+            let label_end = context.counter.get_label("if_merge");
             _compile(guard, code, context, constant_pool, globals, false)?;
-            // TODO: Labels have duplicate names, add unique ID to them
-            // True is fallthrough, false is jump
-            code.add(Bytecode::BranchLabelFalse(String::from("if_false")));
+            code.add(Bytecode::BranchLabelFalse(label_else.clone()));
             _compile(then_branch, code, context, constant_pool, globals, drop)?;
-            code.add(Bytecode::Label(String::from("if_false")));
+            code.add(Bytecode::JmpLabel(label_end.clone()));
+            code.add(Bytecode::Label(label_else));
             if let Some(else_body) = else_branch {
                 _compile(else_body, code, context, constant_pool, globals, drop)?;
             } else if !drop {
                 code.add(Bytecode::PushNone);
             }
+            code.add(Bytecode::Label(label_end));
         }
         AST::Operator { op, arguments } => {
             check_operator_arity(op, arguments.len())?;
@@ -340,7 +344,7 @@ fn compile_fun(
     loc: Location,
     globals: &mut HashMap<String, ConstantPoolIndex>,
 ) -> Result<Code, &'static str> {
-    let mut context = Context { loc };
+    let mut context = Context { loc, counter: LabelGenerator::new() };
     let mut code = Code::new();
 
     _compile(ast, &mut code, &mut context, constant_pool, globals, false)?;
