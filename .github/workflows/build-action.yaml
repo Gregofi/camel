@@ -30,6 +30,10 @@ jobs:
         run: |
           cd ${{ github.workspace }}/Caby/build
           make
+      - name: Run unit tests
+        run: |
+          cd ${{ github.workspace }}/Caby/build
+          make test
       - name: Artifact
         uses: actions/upload-artifact@v3
         with:
