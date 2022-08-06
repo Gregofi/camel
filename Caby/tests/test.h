@@ -30,9 +30,10 @@ return EXIT_FAILURE;                                                            
 
 #define RUN_TEST(test)                                                                                      \
 do {                                                                                                        \
-if((test)() != 0)                                                                                           \
+if((test)() != 0) {                                                                                         \
     printf("Test '%s'" RED_COLOR_TERMINAL " failed.\n" CLEAR_COLOR_TERMINAL, #test);                        \
-else {                                                                                                      \
+    return 1;                                                                                               \
+} else {                                                                                                    \
     printf("Test '%s'" GREEN_COLOR_TERMINAL " completed.\n" CLEAR_COLOR_TERMINAL, #test);                   \
 }}                                                                                                          \
 while (0)
