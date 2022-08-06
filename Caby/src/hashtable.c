@@ -14,7 +14,7 @@ void free_table(struct table* t) {
 
 /// Returns the entry where the key should be inserted if it's not in table,
 /// otherwise returns entry saved under the key.
-static struct entry* find_entry(struct entry* entries, size_t capacity, 
+static struct entry* find_entry(struct entry* entries, size_t capacity,
                                 struct object_string* key) {
     u32 idx = key->hash % capacity;
     struct entry* tombstone = NULL;
@@ -32,7 +32,7 @@ static struct entry* find_entry(struct entry* entries, size_t capacity,
                     tombstone = e;
                 }
             }
-        } else if (strcmp(e->key->data, key->data)) {
+        } else if (strcmp(e->key->data, key->data) == 0) {
             return e;
         }
 
