@@ -26,6 +26,7 @@ struct object_string {
     struct object object;
     /// Length of the string WITHOUT zero terminator.
     uint64_t size;
+    u32 hash;
     /// Contains zero terminated string.
     char* data;
 };

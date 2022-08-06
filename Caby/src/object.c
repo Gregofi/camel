@@ -15,11 +15,22 @@ struct object* to_object_s(struct value val) {
     return NULL;
 }
 
+/// FNV-1a
+static uint32_t hashString(const char* key, int length) {
+  uint32_t hash = 2166136261u;
+  for (int i = 0; i < length; i++) {
+    hash ^= (uint8_t)key[i];
+    hash *= 16777619;
+  }
+  return hash;
+}
+
 struct object_string* new_string(const char* str) {
     struct object_string* n = vmalloc(sizeof(*n));
     n->object.type = OBJECT_STRING;
     size_t len = strlen(str);
     n->size = len;
+    n->hash = hashString(str, n->size);
     strcpy(n->data, str);
     return n;
 }
@@ -29,6 +40,7 @@ struct object_string* new_string_move(char* str, u32 len) {
     n->object.type = OBJECT_STRING;
     n->size = len;
     n->data = str;
+    n->hash = hashString(str, len);
     return n;
 }
 
