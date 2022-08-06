@@ -28,6 +28,7 @@ TEST(HashMapBasic) {
     ASSERT_W(table_set(&t, key3, NEW_NONE()));
     ASSERT_W(table_set(&t, key4, NEW_DOUBLE(4.2)));
 
+    // Check that the keys exists
     ASSERT_W(table_get(&t, key1, &val_out));
     ASSERT_W(val_out.type == VAL_INT && val_out.integer == 5);
     ASSERT_W(table_get(&t, key2, &val_out));
@@ -36,7 +37,8 @@ TEST(HashMapBasic) {
     ASSERT_W(val_out.type == VAL_NONE);
     ASSERT_W(table_get(&t, key4, &val_out));
     ASSERT_W(val_out.type == VAL_DOUBLE && val_out.double_num == 4.2);
-    
+
+    // Delete entries one by one
     ASSERT_W(table_delete(&t, key2));
     ASSERT_W(!table_delete(&t, key2));
     ASSERT_W(table_get(&t, key1, &val_out));
