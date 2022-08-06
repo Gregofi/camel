@@ -1,2 +1,4 @@
-print("{}\n", if true { 1 } else { 2 }); // 1
-print("{}\n", if true { 1 }); // 1
+print("{}\n", if true { 1 } else { 2 });        // 1
+print("{}\n", if true { 1 });                   // 1
+print("{}\n", if false { 1 } else { 2 });       // 2
+print("{}\n", if false { 1 });                  // none
