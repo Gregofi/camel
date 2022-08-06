@@ -31,6 +31,7 @@ struct object_string* new_string(const char* str) {
     size_t len = strlen(str);
     n->size = len;
     n->hash = hashString(str, n->size);
+    n->data = vmalloc(len + 1);
     strcpy(n->data, str);
     return n;
 }
