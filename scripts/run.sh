@@ -7,16 +7,7 @@ if [[ "$#" -ne 1 ]]; then
     exit 1;
 fi
 
-
-cd Caby &&
-mkdir build;
-cd build;
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make
-cd ../..;
-cd Cacom;
-cargo build --release
-cd ..;
+./scripts/build.sh
 ./Cacom/target/release/cacom compile --input-file=${1} &&
-./Caby/build/caby execute a.out;
-rm a.out;
+./Caby/build/caby execute a.out
+rm a.out

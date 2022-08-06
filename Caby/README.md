@@ -41,6 +41,9 @@ Pushes boolean literal onto the operand stack
 - push_literal = 0x05 | 4B Index to constant pool  
 Used for pushing other values onto the operand stack (references to objects, strings...)
 
+- push_none = 0x20
+Pushes None (Unit) value onto the stack.
+
 - get_local = 0x06 | 2B Index to local frame  
 Push the value of a local variable onto the stack
 
@@ -67,6 +70,10 @@ Unconditional jump, address is **BYTE** offset (not the number of instruction) t
 - branch = 0x0E | 4B address
 - branch_long = 0x0F | 8B address  
 Conditional jump, pops value from stack, if it is *truthy*, then the jump will be performed.
+
+- branch_false_short - 0x2D | 2B address
+- branch_false - 0x2E | 4B address
+- branch false_long - 0x0F | 8B address
 
 - print 0x10 | 1B argument count  
 Prints an interpolated string `print "Hello there, {}" "General Kenobi"`

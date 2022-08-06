@@ -5,7 +5,7 @@ use crate::ast::{Opcode, AST};
 use crate::bytecode::{Bytecode, Code, ConstantPoolIndex};
 use crate::objects::{ConstantPool, Object};
 use crate::serializable::Serializable;
-use crate::utils::AtomicInt;
+use crate::utils::{AtomicInt, LabelGenerator};
 
 /// Environment keeps track of indexes of local variables into memory.
 /// It consists of multiple environments, each one is a map from
@@ -22,6 +22,7 @@ enum Location {
 
 pub struct Context {
     loc: Location,
+    counter: LabelGenerator,
 }
 
 pub struct Program {
@@ -81,6 +82,7 @@ impl Context {
     pub fn new() -> Self {
         Context {
             loc: Location::Global,
+            counter: LabelGenerator::new(),
         }
     }
 }
@@ -119,18 +121,23 @@ fn check_operator_arity(op: &Opcode, len: usize) -> Result<(), &'static str> {
 }
 
 /// Removes jumps to labels and replaces them with offset jumps
+/// TODO: Currently, the computed offset takes all jump instructions
+/// as 4B, this is not necessarily true if we use short and long jmps.
 fn jump_pass(code: Vec<Bytecode>) -> Vec<Bytecode> {
     let mut labels: HashMap<String, usize> = HashMap::new();
 
+    let mut offset: usize = 0;
     // Copy the bytecode without labels but store their (labels) location
     let mut without_labels: Vec<Bytecode> = Vec::new();
-    for (idx, ins) in code.into_iter().enumerate() {
+    for ins in code {
+        let ins_size = ins.size();
         match ins {
             Bytecode::Label(str) => {
-                labels.insert(str, idx);
+                labels.insert(str, offset);
             }
             _ => without_labels.push(ins),
         }
+        offset += ins_size;
     }
 
     // Remove the jump to labels with jump to address
@@ -291,17 +298,19 @@ fn _compile(
             then_branch,
             else_branch,
         } => {
+            let label_else = context.counter.get_label("if_else");
+            let label_end = context.counter.get_label("if_merge");
             _compile(guard, code, context, constant_pool, globals, false)?;
-            // TODO: Labels have duplicate names, add unique ID to them
-            // True is fallthrough, false is jump
-            code.add(Bytecode::BranchLabelFalse(String::from("if_false")));
+            code.add(Bytecode::BranchLabelFalse(label_else.clone()));
             _compile(then_branch, code, context, constant_pool, globals, drop)?;
-            code.add(Bytecode::Label(String::from("if_false")));
+            code.add(Bytecode::JmpLabel(label_end.clone()));
+            code.add(Bytecode::Label(label_else));
             if let Some(else_body) = else_branch {
                 _compile(else_body, code, context, constant_pool, globals, drop)?;
             } else if !drop {
-                code.add(Bytecode::PushUnit);
+                code.add(Bytecode::PushNone);
             }
+            code.add(Bytecode::Label(label_end));
         }
         AST::Operator { op, arguments } => {
             check_operator_arity(op, arguments.len())?;
@@ -336,12 +345,15 @@ fn compile_fun(
     loc: Location,
     globals: &mut HashMap<String, ConstantPoolIndex>,
 ) -> Result<Code, &'static str> {
-    let mut context = Context { loc };
+    let mut context = Context {
+        loc,
+        counter: LabelGenerator::new(),
+    };
     let mut code = Code::new();
 
     _compile(ast, &mut code, &mut context, constant_pool, globals, false)?;
     if code.code.is_empty() {
-        code.add(Bytecode::PushUnit);
+        code.add(Bytecode::PushNone);
     }
     // Return last statement if return is omitted
     if !matches!(code.code.last().unwrap(), Bytecode::Ret) {

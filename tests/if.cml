@@ -1,0 +1,9 @@
+print("{}\n", if true { 1 } else { 2 });        // 1
+print("{}\n", if true { 1 });                   // 1
+print("{}\n", if false { 1 } else { 2 });       // 2
+print("{}\n", if false { 1 });                  // none
+
+print("{}\n", if { 1; true } { 1 } else { 2 }); // 1
+print("{}\n",
+if { if false { true } else { false } } { 1 } else { if true { 1 } else { 2 }}
+);

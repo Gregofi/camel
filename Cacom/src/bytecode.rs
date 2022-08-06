@@ -19,7 +19,7 @@ pub enum Bytecode {
 
     PushLiteral(ConstantPoolIndex),
 
-    PushUnit,
+    PushNone,
 
     GetLocal(FrameIndex),
     SetLocal(FrameIndex),
@@ -82,7 +82,7 @@ impl fmt::Display for Bytecode {
             Bytecode::PushLong(v) => write!(f, "Push long: {}", v),
             Bytecode::PushBool(v) => write!(f, "Push bool: {}", v),
             Bytecode::PushLiteral(v) => write!(f, "Push literal: {}", v),
-            Bytecode::PushUnit => write!(f, "Push unit"),
+            Bytecode::PushNone => write!(f, "Push none"),
             Bytecode::GetLocal(v) => write!(f, "Get local: {}", v),
             Bytecode::SetLocal(v) => write!(f, "Set local: {}", v),
             Bytecode::GetGlobal(v) => write!(f, "Get global: {}", v),
@@ -177,7 +177,7 @@ impl Bytecode {
             Bytecode::PushLong(_) => 0x03,
             Bytecode::PushBool(_) => 0x04,
             Bytecode::PushLiteral(_) => 0x05,
-            Bytecode::PushUnit => todo!(),
+            Bytecode::PushNone => 0x20,
             Bytecode::GetLocal(_) => 0x06,
             Bytecode::SetLocal(_) => 0x07,
             Bytecode::GetGlobal(_) => 0x13,
@@ -200,9 +200,9 @@ impl Bytecode {
             Bytecode::BranchShort(_) => 0x0D,
             Bytecode::Branch(_) => 0x0E,
             Bytecode::BranchLong(_) => 0x0F,
-            Bytecode::BranchShortFalse(_) => todo!(),
-            Bytecode::BranchFalse(_) => todo!(),
-            Bytecode::BranchLongFalse(_) => todo!(),
+            Bytecode::BranchShortFalse(_) => 0x2D,
+            Bytecode::BranchFalse(_) => 0x2E,
+            Bytecode::BranchLongFalse(_) => 0x2F,
             Bytecode::Print { arg_cnt } => 0x10,
             Bytecode::Iadd => 0x30,
             Bytecode::Isub => 0x31,
@@ -230,6 +230,53 @@ impl Bytecode {
             Bytecode::Branch(v) => *v = new_dest.try_into().unwrap(),
             Bytecode::BranchLong(v) => *v = new_dest.try_into().unwrap(),
             _ => panic!("Instruction to be updated is not a jump"),
+        }
+    }
+
+    pub fn size(&self) -> usize {
+        if let Bytecode::Label(_) = self {
+            return 0;
+        }
+        1 + match self {
+            Bytecode::PushShort(_) => 2,
+            Bytecode::PushInt(_) => 4,
+            Bytecode::PushLong(_) => 8,
+            Bytecode::PushBool(_) => 1,
+            Bytecode::PushLiteral(_) => std::mem::size_of::<ConstantPoolIndex>(),
+            Bytecode::PushNone => 0,
+            Bytecode::GetLocal(_) => todo!(),
+            Bytecode::SetLocal(_) => todo!(),
+            Bytecode::GetGlobal(_) => todo!(),
+            Bytecode::SetGlobal(_) => todo!(),
+            Bytecode::CallFunc { index, arg_cnt } => todo!(),
+            Bytecode::Ret => 0,
+            Bytecode::Label(_) => unreachable!(),
+            Bytecode::JmpLabel(_) => 4,
+            Bytecode::BranchLabel(_) => 4,
+            Bytecode::BranchLabelFalse(_) => 4,
+            Bytecode::JmpShort(_) => 2,
+            Bytecode::Jmp(_) => 4,
+            Bytecode::JmpLong(_) => 8,
+            Bytecode::BranchShort(_) => 2,
+            Bytecode::Branch(_) => 4,
+            Bytecode::BranchLong(_) => 8,
+            Bytecode::BranchShortFalse(_) => 2,
+            Bytecode::BranchFalse(_) => 4,
+            Bytecode::BranchLongFalse(_) => 8,
+            Bytecode::Print { arg_cnt } => 1,
+            Bytecode::Iadd => 0,
+            Bytecode::Isub => 0,
+            Bytecode::Imul => 0,
+            Bytecode::Idiv => 0,
+            Bytecode::Iand => 0,
+            Bytecode::Ior => 0,
+            Bytecode::Iless => 0,
+            Bytecode::Ilesseq => 0,
+            Bytecode::Igreater => 0,
+            Bytecode::Igreatereq => 0,
+            Bytecode::Ieq => 0,
+            Bytecode::Drop => 0,
+            Bytecode::Dup => 0,
         }
     }
 }
@@ -283,7 +330,7 @@ impl Serializable for Bytecode {
             Bytecode::Ieq => {}
             Bytecode::Drop => {}
             Bytecode::Dup => {}
-            Bytecode::PushUnit => {}
+            Bytecode::PushNone => {}
             Bytecode::GetGlobal(idx) => f.write_all(&idx.to_le_bytes())?,
             Bytecode::SetGlobal(idx) => f.write_all(&idx.to_le_bytes())?,
         };

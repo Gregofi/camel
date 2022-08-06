@@ -50,6 +50,9 @@ size_t dissasemble_instruction(FILE* f, u8* ins) {
         case OP_EQ:
             fprintf(f, "EQ");
             return 1;
+        case OP_PUSH_NONE:
+            fprintf(f, "PUSH_NONE");
+            return 1;
         case OP_PUSH_BOOL:
             fprintf(f, "PUSH_BOOL %s", ins[1] == 1 ? "true" : "false");
             return 2;
@@ -80,11 +83,14 @@ size_t dissasemble_instruction(FILE* f, u8* ins) {
         case OP_BRANCH:
             fprintf(f, "BRANCH %d", READ_4BYTES_BE(ins + 1));
             return 5;
+        case OP_BRANCH_FALSE:
+            fprintf(f, "BRANCH_FALSE %d", READ_4BYTES_BE(ins + 1));
+            return 5;
+        case OP_BRANCH_FALSE_SHORT:
+            fprintf(f, "BRANCH_FALSE_SHORT %d", READ_2BYTES_BE(ins + 1));
+            return 5;
         case OP_SET_GLOBAL:
             fprintf(f, "SET_GLOBAL %d", READ_4BYTES_BE(ins + 1));
-            return 5;
-        case OP_GET_GLOBAL:
-            fprintf(f, "GET_GLOBAL %d", READ_4BYTES_BE(ins + 1));
             return 5;
         case OP_PUSH_LITERAL:
             fprintf(f, "PUSH_LITERAL %d", READ_4BYTES_BE(ins + 1));
