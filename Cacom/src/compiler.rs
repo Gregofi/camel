@@ -121,7 +121,8 @@ fn check_operator_arity(op: &Opcode, len: usize) -> Result<(), &'static str> {
 }
 
 /// Removes jumps to labels and replaces them with offset jumps
-/// FIXME: This replaces only with index, not with real byte offset, so it is currently does not work.
+/// TODO: Currently, the computed offset takes all jump instructions
+/// as 4B, this is not necessarily true if we use short and long jmps.
 fn jump_pass(code: Vec<Bytecode>) -> Vec<Bytecode> {
     let mut labels: HashMap<String, usize> = HashMap::new();
 

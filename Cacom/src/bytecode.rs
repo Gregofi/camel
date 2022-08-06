@@ -234,6 +234,9 @@ impl Bytecode {
     }
 
     pub fn size(&self) -> usize {
+        if let Bytecode::Label(_) = self {
+            return 0;
+        }
         1 + match self {
             Bytecode::PushShort(_) => 2,
             Bytecode::PushInt(_) => 4,
@@ -247,10 +250,10 @@ impl Bytecode {
             Bytecode::SetGlobal(_) => todo!(),
             Bytecode::CallFunc { index, arg_cnt } => todo!(),
             Bytecode::Ret => 0,
-            Bytecode::Label(_) => 0,
-            Bytecode::JmpLabel(_) => std::mem::size_of::<ConstantPoolIndex>().try_into().unwrap(),
-            Bytecode::BranchLabel(_) => std::mem::size_of::<ConstantPoolIndex>().try_into().unwrap(),
-            Bytecode::BranchLabelFalse(_) => std::mem::size_of::<ConstantPoolIndex>().try_into().unwrap(),
+            Bytecode::Label(_) => unreachable!(),
+            Bytecode::JmpLabel(_) => 4,
+            Bytecode::BranchLabel(_) => 4,
+            Bytecode::BranchLabelFalse(_) => 4,
             Bytecode::JmpShort(_) => 2,
             Bytecode::Jmp(_) => 4,
             Bytecode::JmpLong(_) => 8,
