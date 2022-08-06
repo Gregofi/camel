@@ -1,5 +1,5 @@
-use regex::Regex;
 use lazy_static::lazy_static;
+use regex::Regex;
 
 pub struct AtomicInt(u32);
 
@@ -22,7 +22,9 @@ pub struct LabelGenerator {
 
 impl LabelGenerator {
     pub fn new() -> Self {
-        return LabelGenerator { counter: AtomicInt::new() };
+        LabelGenerator {
+            counter: AtomicInt::new(),
+        }
     }
 
     /// Creates unique label with given prefix, the prefix can't

@@ -242,7 +242,7 @@ impl Bytecode {
             Bytecode::PushInt(_) => 4,
             Bytecode::PushLong(_) => 8,
             Bytecode::PushBool(_) => 1,
-            Bytecode::PushLiteral(_) => std::mem::size_of::<ConstantPoolIndex>().try_into().unwrap(),
+            Bytecode::PushLiteral(_) => std::mem::size_of::<ConstantPoolIndex>(),
             Bytecode::PushNone => 0,
             Bytecode::GetLocal(_) => todo!(),
             Bytecode::SetLocal(_) => todo!(),

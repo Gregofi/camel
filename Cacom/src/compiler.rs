@@ -345,7 +345,10 @@ fn compile_fun(
     loc: Location,
     globals: &mut HashMap<String, ConstantPoolIndex>,
 ) -> Result<Code, &'static str> {
-    let mut context = Context { loc, counter: LabelGenerator::new() };
+    let mut context = Context {
+        loc,
+        counter: LabelGenerator::new(),
+    };
     let mut code = Code::new();
 
     _compile(ast, &mut code, &mut context, constant_pool, globals, false)?;

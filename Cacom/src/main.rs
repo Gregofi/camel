@@ -11,8 +11,8 @@ use crate::compiler::compile;
 use crate::grammar::TopLevelParser;
 use crate::serializable::Serializable;
 
-use regex::Regex;
 use lazy_static::lazy_static;
+use regex::Regex;
 
 lalrpop_mod!(
     #[allow(clippy::all)]
