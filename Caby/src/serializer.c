@@ -65,6 +65,8 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
         case OP_SET_GLOBAL:
         case OP_SET_LOCAL:
         case OP_GET_GLOBAL:
+        case OP_VAL_GLOBAL:
+        case OP_VAR_GLOBAL:
         case OP_GET_LOCAL:
             write_dword(c, read_4bytes_be(f));
             break;

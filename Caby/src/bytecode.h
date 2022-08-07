@@ -32,6 +32,8 @@ enum opcode {
     OP_DUP = 0x12,
     OP_GET_GLOBAL = 0x13,
     OP_SET_GLOBAL = 0x14,
+    OP_VAL_GLOBAL = 0x15,
+    OP_VAR_GLOBAL = 0x16,
 
     OP_IADD = 0x30,
     OP_ISUB = 0x31,
@@ -71,3 +73,9 @@ void init_constant_pool(struct constant_pool* cp);
 void free_constant_pool(struct constant_pool* cp);
 
 void write_constant_pool(struct constant_pool* cp, struct object* object);
+
+struct object* read_constant_pool(struct constant_pool* cp, u32 idx);
+
+struct object_string* read_string_cp(struct constant_pool* cp, u32 idx);
+
+struct object_function* read_function_cp(struct constant_pool* cp, u32 idx);

@@ -41,6 +41,15 @@ struct value peek(struct vm_state* vm, size_t p) {
     return vm->op_stack[vm->stack_len - p];
 }
 
+static struct object_string* pop_string(struct vm_state* vm) {
+    struct value v = pop(vm);
+    if (v.type != VAL_OBJECT || v.object->type != OBJECT_STRING) {
+        fprintf(stderr, "Expected string on top of stack.\n");
+        exit(1);
+    }
+    return as_string(v.object);
+}
+
 // =========== Interpreting functions ===========
 
 #define READ_IP() (*vm->ip++)
@@ -279,6 +288,32 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             } else {
                 vm->ip += 4;
             }
+            break;
+        }
+        case OP_VAL_GLOBAL:
+        fallthrough;
+        case OP_VAR_GLOBAL: {
+            struct value val = pop(vm);
+            u32 name_idx = READ_4BYTES_BE(vm->ip);
+            vm->ip += 4;
+            struct object_string* name = read_string_cp(&vm->const_pool, name_idx);
+            bool new_v = table_set(&vm->globals, name, val);
+            if (!new_v) {
+                fprintf(stderr, "Error: Variable '%s' is already defined.\n", name->data);
+                exit(6);
+            }
+            break;
+        }
+        case OP_GET_GLOBAL: {
+            u32 name_idx = READ_4BYTES_BE(vm->ip);
+            vm->ip += 4;
+            struct object_string* name = read_string_cp(&vm->const_pool, name_idx);
+            struct value val;
+            if (!table_get(&vm->globals, name, &val)) {
+                fprintf(stderr, "Error: Access to undefined variable '%s'.\n", name->data);
+                exit(6);
+            }
+            push(vm, val);
             break;
         }
         default:

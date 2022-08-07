@@ -92,6 +92,12 @@ size_t dissasemble_instruction(FILE* f, u8* ins) {
         case OP_SET_GLOBAL:
             fprintf(f, "SET_GLOBAL %d", READ_4BYTES_BE(ins + 1));
             return 5;
+        case OP_VAL_GLOBAL:
+            fprintf(f, "OP_VAL_GLOBAL %d", READ_4BYTES_BE(ins + 1));
+            return 5;
+        case OP_VAR_GLOBAL:
+            fprintf(f, "OP_VAL_GLOBAL %d", READ_4BYTES_BE(ins + 1));
+            return 5;
         case OP_PUSH_LITERAL:
             fprintf(f, "PUSH_LITERAL %d", READ_4BYTES_BE(ins + 1));
             return 5;
