@@ -160,6 +160,37 @@ fn jump_pass(code: Vec<Bytecode>) -> Vec<Bytecode> {
         .collect()
 }
 
+fn compile_statements(
+    stmts: &[AST],
+    code: &mut Code,
+    context: &mut Context,
+    constant_pool: &mut ConstantPool,
+    drop: bool,
+) -> Result<(), &'static str> {
+    let mut it = stmts.iter().peekable();
+
+    while let Some(stmt) = it.next() {
+        // Drop everything but the last result
+        // Hovewer if it is statement, do NOT drop it because it does not
+        // produces any value. Hovewer, if it is the last value, the block
+        // returns none.
+        match stmt {
+            // Never drop the last value, if it should be dropped then
+            // not here, but the parent of this block
+            AST::Expression(expr) => {
+                compile_expr(expr, code, context, constant_pool, it.peek().is_some())?
+            }
+            _ => {
+                _compile(stmt, code, context, constant_pool, false)?;
+                if it.peek().is_none() {
+                    code.add(Bytecode::PushNone);
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 fn compile_expr(
     expr: &Expr,
     code: &mut Code,
@@ -182,14 +213,7 @@ fn compile_expr(
             let str_index: ConstantPoolIndex = constant_pool.add(Object::from(lit.clone()));
             code.add(Bytecode::PushLiteral(str_index));
         }
-        Expr::Block(stmts) => {
-            let mut it = stmts.iter().peekable();
-
-            while let Some(stmt) = it.next() {
-                // Drop everything but the last result
-                _compile(stmt, code, context, constant_pool, it.peek().is_some())?;
-            }
-        }
+        Expr::Block(stmts) => compile_statements(stmts, code, context, constant_pool, drop)?,
         Expr::List { size, values } => todo!(),
         Expr::AccessVariable { name } => {
             // TODO: Repeated code!
@@ -261,6 +285,7 @@ fn compile_expr(
             };
         }
     }
+    code.add_cond(Bytecode::Drop, drop);
     Ok(())
 }
 
@@ -343,16 +368,10 @@ fn _compile(
                 }
             };
         }
-        AST::Top(stmts) => {
-            for stmt in stmts {
-                _compile(stmt, code, context, constant_pool, true)?;
-            }
-        }
+        AST::Top(stmts) => compile_statements(stmts, code, context, constant_pool, drop)?,
         AST::While { guard, body } => todo!(),
         AST::Return(_) => todo!(),
-        AST::Expression(expr) => {
-            compile_expr(expr, code, context, constant_pool, true)?;
-        }
+        AST::Expression(expr) => compile_expr(expr, code, context, constant_pool, true)?,
     };
     code.add_cond(Bytecode::Drop, drop);
     Ok(())
@@ -392,7 +411,8 @@ pub fn compile(ast: &AST) -> Result<(ConstantPool, ConstantPoolIndex), &'static 
     };
     match ast {
         AST::Top(_) => {
-            _compile(ast, &mut code, &mut context, &mut constant_pool, false)?;
+            // TODO: Should this really be true? Maybe return last value as program code
+            _compile(ast, &mut code, &mut context, &mut constant_pool, true)?;
             code.add(Bytecode::Ret); // Add top level return
         }
         _ => unreachable!(),

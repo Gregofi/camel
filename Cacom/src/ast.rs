@@ -132,7 +132,7 @@ impl Expr {
                     val.dump(prefix.clone() + " ");
                 }
             }
-            Expr::AccessVariable { name } => todo!(),
+            Expr::AccessVariable { name } => println!("AccessVariable: {}\n", name),
             Expr::AccessList { list, index } => todo!(),
             Expr::CallFunction { name, arguments } => {
                 println!("Call: {}", name);
