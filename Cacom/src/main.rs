@@ -65,21 +65,11 @@ fn compile_action(input_file: &String, output_file: &String) {
         .parse(&f)
         .expect("Unable to parse file");
 
-    let (constant_pool, entry_point, globals) = compile(&ast).expect("Compilation error");
+    let (constant_pool, entry_point) = compile(&ast).expect("Compilation error");
 
     constant_pool
         .serialize(&mut out_f)
         .expect("Unable to write to output file");
-
-    let globals_len: u32 = globals.len().try_into().unwrap();
-    out_f
-        .write_all(&globals_len.to_le_bytes())
-        .expect("Unable to write to output file");
-    for (_, global) in globals {
-        out_f
-            .write_all(&global.to_le_bytes())
-            .expect("Unable to write to file");
-    }
 
     out_f
         .write_all(&entry_point.to_le_bytes())
@@ -104,13 +94,9 @@ fn export_action(input_file: &String) {
         .parse(&f)
         .expect("Unable to parse file");
 
-    let (constant_pool, entry_point, globals) = compile(&ast).expect("Compilation error");
+    let (constant_pool, entry_point) = compile(&ast).expect("Compilation error");
     println!("=== ConstantPool ===");
     println!("{}", constant_pool);
-    println!("=== Globals ===");
-    for g in &globals {
-        println!(" {}", g.1);
-    }
     println!("=== Entry point: {} ===", entry_point);
 }
 

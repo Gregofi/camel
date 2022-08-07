@@ -1,6 +1,7 @@
 #include "vm.h"
 #include "bytecode.h"
 #include "common.h"
+#include "hashtable.h"
 #include "object.h"
 #include "dissasembler.h"
 
@@ -10,6 +11,7 @@
 
 void init_vm_state(struct vm_state* vm) {
     init_constant_pool(&vm->const_pool);
+    init_table(&vm->globals);
     vm->chunk = NULL;
     vm->op_stack = NULL;
     vm->frames = NULL;
@@ -19,6 +21,7 @@ void init_vm_state(struct vm_state* vm) {
 
 void free_vm_state(struct vm_state* vm) {
     free_constant_pool(&vm->const_pool);
+    free_table(&vm->globals);
     init_vm_state(vm);
 }
 

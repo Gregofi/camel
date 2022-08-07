@@ -29,8 +29,6 @@ pub struct Program {
     code: Code,
 }
 
-type Globals = HashMap<String, ConstantPoolIndex>;
-
 type LocalVarIndex = u16;
 
 impl Environment {
@@ -170,7 +168,6 @@ fn _compile(
     code: &mut Code,
     context: &mut Context,
     constant_pool: &mut ConstantPool,
-    globals: &mut HashMap<String, ConstantPoolIndex>,
     drop: bool,
 ) -> Result<(), &'static str> {
     match ast {
@@ -208,7 +205,7 @@ fn _compile(
         }
         AST::AccessList { list, index } => todo!(),
         AST::AssignVariable { name, value } => {
-            _compile(value, code, context, constant_pool, globals, false)?;
+            _compile(value, code, context, constant_pool, false)?;
             // TODO: Repeated code!
             if let Location::Local(env) = &mut context.loc {
                 if let Some(v) = env.fetch_local(name) {
@@ -235,7 +232,7 @@ fn _compile(
             for par in parameters {
                 new_env.add_local(par.clone())?;
             }
-            let code = compile_fun(body, constant_pool, Location::Local(new_env), globals)?;
+            let code = compile_fun(body, constant_pool, Location::Local(new_env))?;
 
             let fun = Object::Function {
                 name: new_fun_idx,
@@ -247,7 +244,7 @@ fn _compile(
 
             match &mut context.loc {
                 Location::Global => {
-                    globals.insert(name.clone(), fun_idx);
+                    // globals.insert(name.clone(), fun_idx);
                 }
                 Location::Local(env) => {
                     todo!("Nested functions are not yet implemented");
@@ -256,7 +253,7 @@ fn _compile(
         }
         AST::CallFunction { name, arguments } => {
             for arg in arguments.iter().rev() {
-                _compile(arg, code, context, constant_pool, globals, false)?;
+                _compile(arg, code, context, constant_pool, false)?;
             }
             // TODO: For nested functions we first need to look into environments, then do this.
             // TODO: Hardcoded native print
@@ -274,7 +271,7 @@ fn _compile(
         }
         AST::Top(stmts) => {
             for stmt in stmts {
-                _compile(stmt, code, context, constant_pool, globals, true)?;
+                _compile(stmt, code, context, constant_pool, true)?;
             }
         }
         AST::Block(stmts) => {
@@ -287,7 +284,7 @@ fn _compile(
                     code,
                     context,
                     constant_pool,
-                    globals,
+                
                     it.peek().is_some(),
                 )?;
             }
@@ -300,13 +297,13 @@ fn _compile(
         } => {
             let label_else = context.counter.get_label("if_else");
             let label_end = context.counter.get_label("if_merge");
-            _compile(guard, code, context, constant_pool, globals, false)?;
+            _compile(guard, code, context, constant_pool, false)?;
             code.add(Bytecode::BranchLabelFalse(label_else.clone()));
-            _compile(then_branch, code, context, constant_pool, globals, drop)?;
+            _compile(then_branch, code, context, constant_pool, drop)?;
             code.add(Bytecode::JmpLabel(label_end.clone()));
             code.add(Bytecode::Label(label_else));
             if let Some(else_body) = else_branch {
-                _compile(else_body, code, context, constant_pool, globals, drop)?;
+                _compile(else_body, code, context, constant_pool, drop)?;
             } else if !drop {
                 code.add(Bytecode::PushNone);
             }
@@ -315,7 +312,7 @@ fn _compile(
         AST::Operator { op, arguments } => {
             check_operator_arity(op, arguments.len())?;
             for arg in arguments.iter().rev() {
-                _compile(arg, code, context, constant_pool, globals, false)?;
+                _compile(arg, code, context, constant_pool, false)?;
             }
             match op {
                 Opcode::Add => code.add(Bytecode::Iadd),
@@ -342,8 +339,7 @@ fn _compile(
 fn compile_fun(
     ast: &AST,
     constant_pool: &mut ConstantPool,
-    loc: Location,
-    globals: &mut HashMap<String, ConstantPoolIndex>,
+    loc: Location
 ) -> Result<Code, &'static str> {
     let mut context = Context {
         loc,
@@ -351,7 +347,7 @@ fn compile_fun(
     };
     let mut code = Code::new();
 
-    _compile(ast, &mut code, &mut context, constant_pool, globals, false)?;
+    _compile(ast, &mut code, &mut context, constant_pool, false)?;
     if code.code.is_empty() {
         code.add(Bytecode::PushNone);
     }
@@ -363,11 +359,10 @@ fn compile_fun(
 }
 
 /// Compiles AST into constant pool and returns tuple (constant pool, entry point, globals)
-pub fn compile(ast: &AST) -> Result<(ConstantPool, ConstantPoolIndex, Globals), &'static str> {
+pub fn compile(ast: &AST) -> Result<(ConstantPool, ConstantPoolIndex), &'static str> {
     let mut constant_pool = ConstantPool::new();
-    let mut globals = Globals::new();
     let idx = constant_pool.add(Object::from(String::from("#main")));
-    let code = compile_fun(ast, &mut constant_pool, Location::Global, &mut globals)?;
+    let code = compile_fun(ast, &mut constant_pool, Location::Global)?;
 
     let main_fun = Object::Function {
         name: idx,
@@ -395,7 +390,5 @@ pub fn compile(ast: &AST) -> Result<(ConstantPool, ConstantPoolIndex, Globals), 
         })
         .collect();
 
-    globals.insert(String::from("#main"), idx);
-
-    Ok((constant_pool, main_fun_idx, globals))
+    Ok((constant_pool, main_fun_idx))
 }
