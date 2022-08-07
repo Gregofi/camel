@@ -46,6 +46,9 @@ match {
     "," => COMMA,
     "return" => RETURN,
 
+    "val" => VAL,
+    "var" => VAR,
+
     r"[_A-Za-z][_A-Za-z0-9]*" => IDENTIFIER,
     r"[-]?[0-9]+" => NUMBER,
     // TODO FLOATS
@@ -84,6 +87,12 @@ Statements: Vec<AST> = {
 Statement: AST = {
     Expr => <>, // All subexpressions - contains binaryop, ifs, calls and so on.
     Return => <>,
+    VarDecl => <>,
+}
+
+VarDecl: AST = {
+    VAL <name: Identifier> ASSIGN <value: Expr> => AST::Variable { name, mutable: false, value: Box::new(value) },
+    VAR <name: Identifier> ASSIGN <value: Expr> => AST::Variable { name, mutable: true, value: Box::new(value) },
 }
 
 Expr: AST = {

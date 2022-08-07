@@ -79,4 +79,15 @@ mod parser_tests {
             .parse("\"Hello\" + \" World!\"")
             .is_ok());
     }
+
+    #[test]
+    fn var_decl() {
+        assert!(TopLevelParser::new().parse("val x = 1").is_ok());
+        assert!(TopLevelParser::new().parse("var x = 1").is_ok());
+        assert!(TopLevelParser::new().parse("val x").is_err());
+        assert!(TopLevelParser::new().parse("var x").is_err());
+        assert!(TopLevelParser::new().parse("if (val x = 1) { 1 } else { 2 }").is_err());
+        assert!(TopLevelParser::new().parse("val x = 1; val y = 2;").is_ok());
+        assert!(TopLevelParser::new().parse("val x = 1; { val x = 2; val y = 2};").is_ok());
+    }
 }

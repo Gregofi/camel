@@ -23,6 +23,7 @@ pub enum AST {
 
     Variable {
         name: String,
+        mutable: bool,
         value: Box<AST>,
     },
     List {
@@ -110,8 +111,8 @@ impl AST {
                 AST::Bool(val) => println!("Bool: {}", val),
                 AST::NoneVal => println!("Unit"),
                 AST::String(val) => println!("String: {}", val),
-                AST::Variable { name, value } => {
-                    println!("Variable: {}", name);
+                AST::Variable { name, mutable, value } => {
+                    println!("{}: {}", if *mutable { "var" } else { "val" }, name);
                     _dump(value, offset + " ");
                 }
                 AST::List { size, values } => {

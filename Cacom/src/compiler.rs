@@ -180,7 +180,7 @@ fn _compile(
         }
         AST::NoneVal => unimplemented!(), // TODO: Think about if we really want null values, some
         // kind of Optional class would probably be better.
-        AST::Variable { name, value } => match &mut context.loc {
+        AST::Variable { name, mutable, value } => match &mut context.loc {
             Location::Global => {
                 todo!("Global variables are not yet implemeted");
             }
@@ -244,7 +244,7 @@ fn _compile(
 
             match &mut context.loc {
                 Location::Global => {
-                    // globals.insert(name.clone(), fun_idx);
+                    todo!();
                 }
                 Location::Local(env) => {
                     todo!("Nested functions are not yet implemented");
@@ -284,7 +284,6 @@ fn _compile(
                     code,
                     context,
                     constant_pool,
-                
                     it.peek().is_some(),
                 )?;
             }
