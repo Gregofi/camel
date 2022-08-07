@@ -182,7 +182,12 @@ fn _compile(
         // kind of Optional class would probably be better.
         AST::Variable { name, mutable, value } => match &mut context.loc {
             Location::Global => {
-                todo!("Global variables are not yet implemeted");
+                _compile(value, code, context, constant_pool, false)?;
+                if *mutable {
+                    code.add(Bytecode::DeclVarGlobal { name: constant_pool.add(Object::from(name.clone())) });
+                } else {
+                    code.add(Bytecode::DeclValGlobal { name: constant_pool.add(Object::from(name.clone())) });
+                }
             }
             Location::Local(env) => {
                 env.add_local(name.clone())?;
