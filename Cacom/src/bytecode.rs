@@ -24,8 +24,12 @@ pub enum Bytecode {
     GetLocal(FrameIndex),
     SetLocal(FrameIndex),
 
-    DeclValGlobal{name: ConstantPoolIndex},
-    DeclVarGlobal{name: ConstantPoolIndex},
+    DeclValGlobal {
+        name: ConstantPoolIndex,
+    },
+    DeclVarGlobal {
+        name: ConstantPoolIndex,
+    },
     GetGlobal(ConstantPoolIndex),
     SetGlobal(ConstantPoolIndex),
 
@@ -87,8 +91,8 @@ impl fmt::Display for Bytecode {
             Bytecode::PushNone => write!(f, "Push none"),
             Bytecode::GetLocal(v) => write!(f, "Get local: {}", v),
             Bytecode::SetLocal(v) => write!(f, "Set local: {}", v),
-            Bytecode::DeclValGlobal{name} => write!(f, "decl val global: {}", name),
-            Bytecode::DeclVarGlobal{name} => write!(f, "decl var global: {}", name),
+            Bytecode::DeclValGlobal { name } => write!(f, "decl val global: {}", name),
+            Bytecode::DeclVarGlobal { name } => write!(f, "decl var global: {}", name),
             Bytecode::GetGlobal(v) => write!(f, "Get global: {}", v),
             Bytecode::SetGlobal(v) => write!(f, "Set global: {}", v),
             Bytecode::CallFunc { index, arg_cnt } => {
@@ -186,9 +190,9 @@ impl Bytecode {
             Bytecode::SetLocal(_) => 0x07,
             Bytecode::GetGlobal(_) => 0x13,
             Bytecode::SetGlobal(_) => 0x14,
-            Bytecode::DeclValGlobal{..} => 0x15,
-            Bytecode::DeclVarGlobal{..} => 0x16,
-            Bytecode::CallFunc {..} => 0x08,
+            Bytecode::DeclValGlobal { .. } => 0x15,
+            Bytecode::DeclVarGlobal { .. } => 0x16,
+            Bytecode::CallFunc { .. } => 0x08,
             Bytecode::Ret => 0x09,
             Bytecode::Label(_) => 0x00,
             Bytecode::BranchLabel(_) => {
@@ -209,7 +213,7 @@ impl Bytecode {
             Bytecode::BranchShortFalse(_) => 0x2D,
             Bytecode::BranchFalse(_) => 0x2E,
             Bytecode::BranchLongFalse(_) => 0x2F,
-            Bytecode::Print {..} => 0x10,
+            Bytecode::Print { .. } => 0x10,
             Bytecode::Iadd => 0x30,
             Bytecode::Isub => 0x31,
             Bytecode::Imul => 0x32,
@@ -252,11 +256,11 @@ impl Bytecode {
             Bytecode::PushNone => 0,
             Bytecode::GetLocal(_) => todo!(),
             Bytecode::SetLocal(_) => todo!(),
-            Bytecode::DeclValGlobal{..} => 4,
-            Bytecode::DeclVarGlobal{..} => 4,
+            Bytecode::DeclValGlobal { .. } => 4,
+            Bytecode::DeclVarGlobal { .. } => 4,
             Bytecode::GetGlobal(_) => 4,
             Bytecode::SetGlobal(_) => todo!(),
-            Bytecode::CallFunc {..} => todo!(),
+            Bytecode::CallFunc { .. } => todo!(),
             Bytecode::Ret => 0,
             Bytecode::Label(_) => unreachable!(),
             Bytecode::JmpLabel(_) => 4,
@@ -271,7 +275,7 @@ impl Bytecode {
             Bytecode::BranchShortFalse(_) => 2,
             Bytecode::BranchFalse(_) => 4,
             Bytecode::BranchLongFalse(_) => 8,
-            Bytecode::Print {..} => 1,
+            Bytecode::Print { .. } => 1,
             Bytecode::Iadd => 0,
             Bytecode::Isub => 0,
             Bytecode::Imul => 0,
@@ -339,8 +343,8 @@ impl Serializable for Bytecode {
             Bytecode::Drop => {}
             Bytecode::Dup => {}
             Bytecode::PushNone => {}
-            Bytecode::DeclValGlobal{name} => f.write_all(&name.to_le_bytes())?,
-            Bytecode::DeclVarGlobal{name} => f.write_all(&name.to_le_bytes())?,
+            Bytecode::DeclValGlobal { name } => f.write_all(&name.to_le_bytes())?,
+            Bytecode::DeclVarGlobal { name } => f.write_all(&name.to_le_bytes())?,
             Bytecode::GetGlobal(idx) => f.write_all(&idx.to_le_bytes())?,
             Bytecode::SetGlobal(idx) => f.write_all(&idx.to_le_bytes())?,
         };

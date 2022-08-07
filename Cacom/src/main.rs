@@ -80,7 +80,7 @@ fn dump_action(input_file: &String) {
         .parse(&f)
         .expect("Unable to parse file");
 
-    ast.dump();
+    ast.dump(String::from(""));
 }
 
 fn export_action(input_file: &String) {
