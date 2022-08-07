@@ -20,11 +20,6 @@ There probably should be serialized local variables...
 
 Size of constant pool is 2^32 (so it can be indexed by 32bit int).
 
-### Globals
-Global objects, they are identified by a string (not stack slot like locals).
-
-`length - 4B | indexes to constant pool strings - 4B ...`
-
 ### Entry point
 
 Constant pool index (4 bytes) at which the global function body is located.
