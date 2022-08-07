@@ -84,8 +84,10 @@ Pops value from the stack and then pushes this value twice on top of the stack
 Push the value of a global variable which name is stored in constant pool to the top stack
 - set_global 0x14 | 4B index to constant pool
 Pop value from the top of the stack and assign it into variable which name is equal to the constant pool string indexed.
-- def_global 0x15 | 4B index to constant pool | 1B mutable
-Defines a new global variable. The cp index points to a string which is the variable name. Last byte signals if the value is mutable.
+- def_val_global 0x15 | 4B index to constant pool
+Defines a new immutable global variable. The cp index points to a string which is the variable name. Last byte signals if the value is mutable.
+- def_var_global 0x16 | 4B index to constant pool
+Defines a new mutable global variable. The cp index points to a string which is the variable name. Last byte signals if the value is mutable.
 
 #### Arithmetic operations
 - iadd 0x30
