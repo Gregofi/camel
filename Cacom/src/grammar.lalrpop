@@ -88,6 +88,11 @@ Statement: AST = {
     Expr => AST::Expression(<>), // All subexpressions - contains binaryop, ifs, calls and so on.
     Return => <>,
     VarDecl => <>,
+    Assignment => <>,
+}
+
+Assignment: AST = {
+    <name: Identifier> ASSIGN <value: Expr> => AST::AssignVariable { name, value }
 }
 
 VarDecl: AST = {

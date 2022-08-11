@@ -259,7 +259,7 @@ impl Bytecode {
             Bytecode::DeclValGlobal { .. } => 4,
             Bytecode::DeclVarGlobal { .. } => 4,
             Bytecode::GetGlobal(_) => 4,
-            Bytecode::SetGlobal(_) => todo!(),
+            Bytecode::SetGlobal(_) => 4,
             Bytecode::CallFunc { .. } => todo!(),
             Bytecode::Ret => 0,
             Bytecode::Label(_) => unreachable!(),
