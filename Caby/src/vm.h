@@ -2,6 +2,7 @@
 
 #include "bytecode.h"
 #include "object.h"
+#include "hashtable.h"
 
 enum interpret_result {
     INTERPRET_CONTINUE,
@@ -30,6 +31,8 @@ struct vm_state {
     size_t stack_cap;
 
     struct call_frame* frames;
+
+    struct table globals;
 };
 
 void init_vm_state(struct vm_state* vm);

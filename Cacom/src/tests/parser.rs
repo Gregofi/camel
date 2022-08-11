@@ -35,6 +35,9 @@ mod parser_tests {
         // assert!(TopLevelParser::new().parse("return 1").is_err());
         assert!(TopLevelParser::new()
             .parse("def foo(a, b) = return 1")
+            .is_err());
+        assert!(TopLevelParser::new()
+            .parse("def foo(a, b) = { return 1; }")
             .is_ok());
         assert!(TopLevelParser::new().parse("1 + def foo(a, b)").is_err());
     }
@@ -78,5 +81,21 @@ mod parser_tests {
         assert!(TopLevelParser::new()
             .parse("\"Hello\" + \" World!\"")
             .is_ok());
+    }
+
+    #[test]
+    fn var_decl() {
+        assert!(TopLevelParser::new().parse("val x = 1").is_ok());
+        assert!(TopLevelParser::new().parse("var x = 1").is_ok());
+        assert!(TopLevelParser::new().parse("val x").is_err());
+        assert!(TopLevelParser::new().parse("var x").is_err());
+        assert!(TopLevelParser::new()
+            .parse("if (val x = 1) { 1 } else { 2 }")
+            .is_err());
+        assert!(TopLevelParser::new().parse("val x = 1; val y = 2;").is_ok());
+        assert!(TopLevelParser::new()
+            .parse("val x = 1; { val x = 2; val y = 2};")
+            .is_ok());
+        assert!(TopLevelParser::new().parse("val x = {1}").is_ok());
     }
 }

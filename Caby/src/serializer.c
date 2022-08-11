@@ -65,6 +65,8 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
         case OP_SET_GLOBAL:
         case OP_SET_LOCAL:
         case OP_GET_GLOBAL:
+        case OP_VAL_GLOBAL:
+        case OP_VAR_GLOBAL:
         case OP_GET_LOCAL:
             write_dword(c, read_4bytes_be(f));
             break;
@@ -131,12 +133,6 @@ struct vm_state serialize(FILE* f) {
     struct vm_state state;
     init_vm_state(&state);
     state.const_pool = cp;
-
-    // TODO: Globals
-    u32 globals_len = read_4bytes_be(f);
-    for (u32 i = 0; i < globals_len; ++i) {
-        read_4bytes_be(f);
-    }
 
     u32 entry_point = read_4bytes_be(f);
     state.chunk = &as_function_s(state.const_pool.data[entry_point])->bc;

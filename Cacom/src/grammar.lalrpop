@@ -2,7 +2,7 @@
 // by Konrad Siek FML Language intepreter, thanks Konrad!
 // https://github.com/kondziu
 
-use crate::ast::{AST, Opcode};
+use crate::ast::{AST, Opcode, Expr};
 use std::collections::VecDeque;
 use std::str::FromStr;
 
@@ -46,6 +46,9 @@ match {
     "," => COMMA,
     "return" => RETURN,
 
+    "val" => VAL,
+    "var" => VAR,
+
     r"[_A-Za-z][_A-Za-z0-9]*" => IDENTIFIER,
     r"[-]?[0-9]+" => NUMBER,
     // TODO FLOATS
@@ -54,7 +57,7 @@ match {
 
 pub TopLevel: AST = {
     <toplevel: TopLevelExpressions> => AST::Top(toplevel),
-                                    => AST::Top(vec![AST::NoneVal]),
+                                    => AST::Top(vec![AST::Expression(Expr::NoneVal)]),
 }
 
 TopLevelExpressions: Vec<AST> = {
@@ -82,45 +85,56 @@ Statements: Vec<AST> = {
 // (ie. in binary operations, conditions and so on...)
 // here belongs for example while or for cycle.
 Statement: AST = {
-    Expr => <>, // All subexpressions - contains binaryop, ifs, calls and so on.
+    Expr => AST::Expression(<>), // All subexpressions - contains binaryop, ifs, calls and so on.
     Return => <>,
+    VarDecl => <>,
+    Assignment => <>,
 }
 
-Expr: AST = {
-    <left:Expr> <op:LogicalOp> <right: AExpr> => AST::Operator{op: op, arguments: vec![left, right]},
+Assignment: AST = {
+    <name: Identifier> ASSIGN <value: Expr> => AST::AssignVariable { name, value }
+}
+
+VarDecl: AST = {
+    VAL <name: Identifier> ASSIGN <value: Expr> => AST::Variable { name, mutable: false, value },
+    VAR <name: Identifier> ASSIGN <value: Expr> => AST::Variable { name, mutable: true, value },
+}
+
+Expr: Expr = {
+    <left:Expr> <op:LogicalOp> <right: AExpr> => Expr::Operator{op: op, arguments: vec![left, right]},
     AExpr,
 }
 
-AExpr: AST = {
-    <left:AExpr> <op:ExprOp> <right:Factor> => AST::Operator{op: op, arguments: vec![left, right]},
+AExpr: Expr = {
+    <left:AExpr> <op:ExprOp> <right:Factor> => Expr::Operator{op: op, arguments: vec![left, right]},
     Factor,
 }
 
-Factor: AST = {
-    <left:Factor> <op:TermOp> <right:Term> => AST::Operator{op: op, arguments: vec![left, right]},
+Factor: Expr = {
+    <left:Factor> <op:TermOp> <right:Term> => Expr::Operator{op: op, arguments: vec![left, right]},
     Term,
 }
 
-Term: AST = {
+Term: Expr = {
     // TODO: floats
     LowPrio => <>,
 }
 
-LowPrio: AST = {
-    TRUE => AST::Bool(true),
-    FALSE => AST::Bool(false),
+LowPrio: Expr = {
+    TRUE => Expr::Bool(true),
+    FALSE => Expr::Bool(false),
     Number => <>,
-    String => AST::String(<>),
+    String => Expr::String(<>),
     Call => <>,
     LPAREN <expr: Expr> RPAREN => expr,
     Block => <>,
     Conditional => <>,
-    Identifier => AST::AccessVariable{name: <>},
+    Identifier => Expr::AccessVariable{name: <>},
 }
 
-Call: AST = {
+Call: Expr = {
     <function: Identifier> LPAREN <arguments: Arguments> RPAREN => {
-        AST::CallFunction{ name: function, arguments: arguments }
+        Expr::CallFunction{ name: function, arguments: arguments }
     }
     // TODO: Method calls over objects, lists, strings and so on.
 }
@@ -143,22 +157,22 @@ TermOp: Opcode = {
     DIVIDE => Opcode::Div,
 }
 
-Number: AST = {
-    NUMBER => AST::Integer(i32::from_str(<>).unwrap()),
+Number: Expr = {
+    NUMBER => Expr::Integer(i32::from_str(<>).unwrap()),
 }
 
 String: String = {
     <s:STRING_LITERAL> => s[1..s.len()-1].to_string(),
 }
 
-Block: AST = {
-    CURLYBOPEN <expressions: Statements> CURLYBCLOSE => AST::Block(expressions),
-    CURLYBOPEN CURLYBCLOSE => AST::NoneVal,
+Block: Expr = {
+    CURLYBOPEN <expressions: Statements> CURLYBCLOSE => Expr::Block(expressions),
+    CURLYBOPEN CURLYBCLOSE => Expr::NoneVal,
 }
 
 FunDecl: AST = {
-    DEF <name: Identifier> <parameters: Parameters> ASSIGN <body: Statement> => {
-        AST::Function{name, parameters, body: Box::new(body)}
+    DEF <name: Identifier> <parameters: Parameters> ASSIGN <body: Expr> => {
+        AST::Function{name, parameters, body: body}
     }
 }
 
@@ -172,7 +186,7 @@ Parameters: Vec<String> = {
         }
 }
 
-Arguments: Vec<AST> = {
+Arguments: Vec<Expr> = {
     <mut elements: (<Expr> COMMA)*> <element: Expr?> => {
         match element {
             None => elements,
@@ -181,13 +195,13 @@ Arguments: Vec<AST> = {
     }
 }
 
-Conditional: AST = {
+Conditional: Expr = {
     IF <guard: Expr> <then: Block> <els: (ELSE <Block>)?> =>
-                    AST::Conditional{guard: Box::new(guard),
+                    Expr::Conditional{guard: Box::new(guard),
                             then_branch: Box::new(then),
                             else_branch: els.map(Box::new)},
 }
 
 Return: AST = {
-    RETURN <expr: Expr> => AST::Return(Box::new(expr))
+    RETURN <expr: Expr> => AST::Return(expr)
 }

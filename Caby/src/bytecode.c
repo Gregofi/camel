@@ -1,6 +1,7 @@
 #include "bytecode.h"
 #include "common.h"
 #include "memory.h"
+#include "object.h"
 
 #include <string.h>
 
@@ -42,4 +43,30 @@ void free_constant_pool(struct constant_pool* cp) {
 void write_constant_pool(struct constant_pool* cp, struct object* object) {
     cp->data = handle_capacity(cp->data, cp->len, &cp->cap, sizeof(*cp->data));
     cp->data[cp->len++] = object;
+}
+
+struct object* read_constant_pool(struct constant_pool* cp, u32 idx) {
+    if (idx >= cp->len) {
+        fprintf(stderr, "Error reading constant pool: len - %lu, idx - %u\n", cp->len, idx);
+        exit(5);
+    }
+    return cp->data[idx];
+}
+
+struct object_string* read_string_cp(struct constant_pool* cp, u32 idx) {
+    struct object_string* s = as_string_s(read_constant_pool(cp, idx));
+    if (s == NULL) {
+        fprintf(stderr, "Error: Object is not a string");
+        exit(5);
+    }
+    return s;
+}
+
+struct object_function* read_function_cp(struct constant_pool* cp, u32 idx) {
+    struct object_function* f = as_function_s(read_constant_pool(cp, idx));
+    if (f == NULL) {
+        fprintf(stderr, "Error: Object is not a string");
+        exit(5);
+    }
+    return f;
 }

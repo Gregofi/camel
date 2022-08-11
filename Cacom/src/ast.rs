@@ -13,20 +13,63 @@ pub enum Opcode {
     Eq,
 }
 
+/// Represents top-level statements, these do not leave anything on the stack
 #[derive(Debug, Clone)]
 pub enum AST {
+    Variable {
+        name: String,
+        mutable: bool,
+        value: Expr,
+    },
+    AssignVariable {
+        name: String,
+        value: Expr,
+    },
+    AssignList {
+        list: Expr,
+        index: Expr,
+        value: Expr,
+    },
+
+    Function {
+        name: String,
+        parameters: Vec<String>,
+        body: Expr,
+    },
+
+    Top(Vec<AST>),
+    While {
+        guard: Expr,
+        body: Box<AST>,
+    },
+
+    Return(Expr),
+    Expression(Expr),
+}
+
+/// Expressions always leave some value on the stack
+///
+/// For example, if statement always leaves resulting value
+/// even if else is omitted (value is none).
+///
+/// But for, while, assignment and so on does not leave any
+/// value on the stack.
+///
+/// Blocks of statements are also expression, the value
+/// is either the one of last statement or none if the
+/// block is empty.
+#[derive(Debug, Clone)]
+pub enum Expr {
     Integer(i32),
     Float(f32),
     Bool(bool),
     NoneVal,
     String(String),
 
-    Variable {
-        name: String,
-        value: Box<AST>,
-    },
+    Block(Vec<AST>),
+
     List {
-        size: Box<AST>,
+        size: Box<Expr>,
         values: Vec<AST>,
     },
 
@@ -37,47 +80,20 @@ pub enum AST {
         list: Box<AST>,
         index: Box<AST>,
     },
-
-    AssignVariable {
-        name: String,
-        value: Box<AST>,
-    },
-    AssignList {
-        list: Box<AST>,
-        index: Box<AST>,
-        value: Box<AST>,
-    },
-
-    Function {
-        name: String,
-        parameters: Vec<String>,
-        body: Box<AST>,
-    },
-
     CallFunction {
         name: String,
-        arguments: Vec<AST>,
+        arguments: Vec<Expr>,
     },
-
-    Top(Vec<AST>),
-    Block(Vec<AST>),
-    While {
-        guard: Box<AST>,
-        body: Box<AST>,
-    },
-
     Conditional {
-        guard: Box<AST>,
-        then_branch: Box<AST>,
-        else_branch: Option<Box<AST>>,
+        guard: Box<Expr>,
+        then_branch: Box<Expr>,
+        else_branch: Option<Box<Expr>>,
     },
 
     Operator {
         op: Opcode,
-        arguments: Vec<AST>,
+        arguments: Vec<Expr>,
     },
-
-    Return(Box<AST>),
 }
 
 impl fmt::Display for Opcode {
@@ -100,88 +116,98 @@ impl fmt::Display for Opcode {
     }
 }
 
-impl AST {
-    pub fn dump(&self) {
-        fn _dump(ast: &AST, offset: String) {
-            print!("{}", offset);
-            match ast {
-                AST::Integer(val) => println!("Integer: {}", val),
-                AST::Float(val) => println!("Float: {}", val),
-                AST::Bool(val) => println!("Bool: {}", val),
-                AST::NoneVal => println!("Unit"),
-                AST::String(val) => println!("String: {}", val),
-                AST::Variable { name, value } => {
-                    println!("Variable: {}", name);
-                    _dump(value, offset + " ");
+impl Expr {
+    pub fn dump(&self, prefix: String) {
+        print!("{}", prefix);
+        match self {
+            Expr::Integer(val) => println!("Integer: {}", val),
+            Expr::Float(val) => println!("Float: {}", val),
+            Expr::Bool(val) => println!("Bool: {}", val),
+            Expr::NoneVal => println!("Unit"),
+            Expr::String(val) => println!("String: {}", val),
+            Expr::List { size, values } => {
+                println!("List:");
+                size.dump(prefix.clone() + " ");
+                for val in values {
+                    val.dump(prefix.clone() + " ");
                 }
-                AST::List { size, values } => {
-                    println!("List:");
-                    _dump(size, offset.clone() + " ");
-                    for val in values {
-                        _dump(val, offset.clone() + " ");
-                    }
+            }
+            Expr::AccessVariable { name } => println!("AccessVariable: {}\n", name),
+            Expr::AccessList { list, index } => todo!(),
+            Expr::CallFunction { name, arguments } => {
+                println!("Call: {}", name);
+                for arg in arguments {
+                    arg.dump(prefix.clone() + " ");
                 }
-                AST::AccessVariable { name } => todo!(),
-                AST::AccessList { list, index } => todo!(),
-                AST::AssignVariable { name, value } => todo!(),
-                AST::AssignList { list, index, value } => todo!(),
-                AST::Function {
-                    name,
-                    parameters,
-                    body,
-                } => {
-                    print!("Function: {} [", &name);
-                    for param in parameters {
-                        print!("{} ", param);
-                    }
-                    println!("]");
-                    _dump(body, offset + " ");
+            }
+            Expr::Conditional {
+                guard,
+                then_branch,
+                else_branch,
+            } => {
+                println!("If: ");
+                guard.dump(prefix.clone() + " ");
+                then_branch.dump(prefix.clone() + " ");
+                if else_branch.is_some() {
+                    else_branch.as_ref().unwrap().dump(prefix + " ");
                 }
-                AST::CallFunction { name, arguments } => {
-                    println!("Call: {}", name);
-                    for arg in arguments {
-                        _dump(arg, offset.clone() + " ");
-                    }
+            }
+            Expr::Operator { op, arguments } => {
+                println!("Operator: {}", op);
+                for arg in arguments {
+                    arg.dump(prefix.clone() + " ");
                 }
-                AST::Top(vals) => {
-                    for stmt in vals {
-                        _dump(stmt, String::from(""));
-                    }
-                }
-                AST::Block(vals) => {
-                    for stmt in vals {
-                        _dump(stmt, offset.clone());
-                    }
-                }
-                AST::While { guard, body } => {
-                    println!("While: ");
-                    _dump(guard, offset.clone() + " ");
-                    _dump(body, offset + " ")
-                }
-                AST::Conditional {
-                    guard,
-                    then_branch,
-                    else_branch,
-                } => {
-                    println!("If: ");
-                    _dump(guard, offset.clone() + " ");
-                    _dump(then_branch, offset.clone() + " ");
-                    if else_branch.is_some() {
-                        _dump(else_branch.as_ref().unwrap(), offset + " ");
-                    }
-                }
-                AST::Operator { op, arguments } => {
-                    println!("Operator: {}", op);
-                    for arg in arguments {
-                        _dump(arg, offset.clone() + " ");
-                    }
-                }
-                AST::Return(expr) => {
-                    println!("Return: ");
-                    _dump(expr, offset + " ");
+            }
+            Expr::Block(vals) => {
+                for stmt in vals {
+                    stmt.dump(prefix.clone());
                 }
             }
         }
-        _dump(self, String::from(""));
+    }
+}
+
+impl AST {
+    pub fn dump(&self, prefix: String) {
+        print!("{}", prefix);
+        match self {
+            AST::Variable {
+                name,
+                mutable,
+                value,
+            } => {
+                println!("{}: {}", if *mutable { "var" } else { "val" }, name);
+                value.dump(prefix + " ");
+            }
+            AST::AssignVariable { name, value } => todo!(),
+            AST::AssignList { list, index, value } => todo!(),
+            AST::Function {
+                name,
+                parameters,
+                body,
+            } => {
+                print!("Function: {} [", &name);
+                for param in parameters {
+                    print!("{} ", param);
+                }
+                println!("]");
+                body.dump(prefix + " ");
+            }
+            AST::Top(vals) => {
+                for stmt in vals {
+                    stmt.dump(String::from(""));
+                }
+            }
+            AST::While { guard, body } => {
+                println!("While: ");
+                guard.dump(prefix.clone() + " ");
+                body.dump(prefix + " ")
+            }
+            AST::Return(expr) => {
+                println!("Return: ");
+                expr.dump(prefix + " ");
+            }
+            AST::Expression(expr) => expr.dump(prefix),
+        }
     }
 }

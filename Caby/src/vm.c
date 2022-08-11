@@ -1,6 +1,7 @@
 #include "vm.h"
 #include "bytecode.h"
 #include "common.h"
+#include "hashtable.h"
 #include "object.h"
 #include "dissasembler.h"
 
@@ -10,6 +11,7 @@
 
 void init_vm_state(struct vm_state* vm) {
     init_constant_pool(&vm->const_pool);
+    init_table(&vm->globals);
     vm->chunk = NULL;
     vm->op_stack = NULL;
     vm->frames = NULL;
@@ -19,6 +21,7 @@ void init_vm_state(struct vm_state* vm) {
 
 void free_vm_state(struct vm_state* vm) {
     free_constant_pool(&vm->const_pool);
+    free_table(&vm->globals);
     init_vm_state(vm);
 }
 
@@ -36,6 +39,15 @@ struct value pop(struct vm_state* vm) {
 
 struct value peek(struct vm_state* vm, size_t p) {
     return vm->op_stack[vm->stack_len - p];
+}
+
+static struct object_string* pop_string(struct vm_state* vm) {
+    struct value v = pop(vm);
+    if (v.type != VAL_OBJECT || v.object->type != OBJECT_STRING) {
+        fprintf(stderr, "Expected string on top of stack.\n");
+        exit(1);
+    }
+    return as_string(v.object);
 }
 
 // =========== Interpreting functions ===========
@@ -275,6 +287,43 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
                 vm->ip = &vm->chunk->data[dest];
             } else {
                 vm->ip += 4;
+            }
+            break;
+        }
+        case OP_VAL_GLOBAL:
+        fallthrough;
+        case OP_VAR_GLOBAL: {
+            struct value val = pop(vm);
+            u32 name_idx = READ_4BYTES_BE(vm->ip);
+            vm->ip += 4;
+            struct object_string* name = read_string_cp(&vm->const_pool, name_idx);
+            bool new_v = table_set(&vm->globals, name, val);
+            if (!new_v) {
+                fprintf(stderr, "Error: Variable '%s' is already defined.\n", name->data);
+                exit(6);
+            }
+            break;
+        }
+        case OP_GET_GLOBAL: {
+            u32 name_idx = READ_4BYTES_BE(vm->ip);
+            vm->ip += 4;
+            struct object_string* name = read_string_cp(&vm->const_pool, name_idx);
+            struct value val;
+            if (!table_get(&vm->globals, name, &val)) {
+                fprintf(stderr, "Error: Access to undefined variable '%s'.\n", name->data);
+                exit(6);
+            }
+            push(vm, val);
+            break;
+        }
+        case OP_SET_GLOBAL: {
+            u32 name_idx = READ_4BYTES_BE(vm->ip);
+            vm->ip += 4;
+            struct object_string* name = read_string_cp(&vm->const_pool, name_idx);
+            struct value v = pop(vm);
+            if (table_set(&vm->globals, name, v)) {
+                fprintf(stderr, "Global variable '%s' is not defined!\n", name->data);
+                exit(1);
             }
             break;
         }

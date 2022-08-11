@@ -4,7 +4,7 @@ use std::io;
 use std::io::prelude::*;
 
 use crate::bytecode::Code;
-use crate::bytecode::{ConstantPoolIndex, FrameIndex};
+use crate::bytecode::ConstantPoolIndex;
 use crate::serializable::Serializable;
 
 pub enum Object {

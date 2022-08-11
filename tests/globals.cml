@@ -1,0 +1,10 @@
+val x = 1;
+print("{}\n", x);   // 1
+
+val y = {2; x};
+print("{}\n", y); // 1
+
+x = 3;
+
+print("{}\n", x);   // 3
+print("{}\n", y); // 1
