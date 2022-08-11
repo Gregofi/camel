@@ -4,6 +4,7 @@ use std::fs::File;
 use std::io;
 use std::io::prelude::*;
 
+use crate::compiler::Context;
 use crate::serializable::Serializable;
 
 pub type ConstantPoolIndex = u32;
@@ -30,6 +31,7 @@ pub enum Bytecode {
     DeclVarGlobal {
         name: ConstantPoolIndex,
     },
+
     GetGlobal(ConstantPoolIndex),
     SetGlobal(ConstantPoolIndex),
 
@@ -149,14 +151,24 @@ impl Code {
     }
 
     /// Appends the given instruction and returns its new index.
-    pub fn add(&mut self, instruction: Bytecode) -> usize {
+    pub fn add(&mut self, instruction: Bytecode, context: &mut Context) -> usize {
+        match instruction {
+            Bytecode::PushShort(_)
+            | Bytecode::PushInt(_)
+            | Bytecode::PushLong(_)
+            | Bytecode::PushBool(_)
+            | Bytecode::PushLiteral(_)
+            | Bytecode::PushNone => context.inc_depth(),
+            Bytecode::Drop => context.decrease_depth(),
+            _ => (),
+        }
         self.code.push(instruction);
         self.code.len() - 1
     }
 
-    pub fn add_cond(&mut self, instruction: Bytecode, cond: bool) {
+    pub fn add_cond(&mut self, instruction: Bytecode, cond: bool, context: &mut Context) {
         if cond {
-            self.add(instruction);
+            self.add(instruction, context);
         }
     }
 }
@@ -254,8 +266,8 @@ impl Bytecode {
             Bytecode::PushBool(_) => 1,
             Bytecode::PushLiteral(_) => std::mem::size_of::<ConstantPoolIndex>(),
             Bytecode::PushNone => 0,
-            Bytecode::GetLocal(_) => todo!(),
-            Bytecode::SetLocal(_) => todo!(),
+            Bytecode::GetLocal(_) => 2,
+            Bytecode::SetLocal(_) => 2,
             Bytecode::DeclValGlobal { .. } => 4,
             Bytecode::DeclVarGlobal { .. } => 4,
             Bytecode::GetGlobal(_) => 4,
@@ -302,8 +314,8 @@ impl Serializable for Bytecode {
             Bytecode::PushLong(v) => f.write_all(&v.to_le_bytes())?,
             Bytecode::PushBool(v) => f.write_all(&[*v as u8])?,
             Bytecode::PushLiteral(v) => f.write_all(&v.to_le_bytes())?,
-            Bytecode::GetLocal(_) => todo!(),
-            Bytecode::SetLocal(_) => todo!(),
+            Bytecode::GetLocal(idx) => f.write_all(&idx.to_le_bytes())?,
+            Bytecode::SetLocal(idx) => f.write_all(&idx.to_le_bytes())?,
             Bytecode::CallFunc { index, arg_cnt } => {
                 f.write_all(&index.to_le_bytes())?;
                 f.write_all(&arg_cnt.to_le_bytes())?;

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt;
 
 use crate::ast::{Expr, Opcode, AST};
-use crate::bytecode::{Bytecode, Code, ConstantPoolIndex};
+use crate::bytecode::{Bytecode, Code, ConstantPoolIndex, FrameIndex};
 use crate::objects::{ConstantPool, Object};
 use crate::serializable::Serializable;
 use crate::utils::{AtomicInt, LabelGenerator};
@@ -23,6 +23,7 @@ enum Location {
 pub struct Context {
     loc: Location,
     counter: LabelGenerator,
+    stack_idx: FrameIndex,
 }
 
 pub struct Program {
@@ -50,7 +51,7 @@ impl Environment {
         self.envs.pop();
     }
 
-    pub fn add_local(&mut self, v: String) -> Result<LocalVarIndex, &'static str> {
+    pub fn add_local(&mut self, v: String, idx: FrameIndex) -> Result<(), &'static str> {
         let topmost = self
             .envs
             .last_mut()
@@ -64,7 +65,7 @@ impl Environment {
             .try_into()
             .expect("Too many local variables");
         topmost.insert(v, idx);
-        Ok(idx)
+        Ok(())
     }
 
     pub fn fetch_local(&self, v: &String) -> Option<LocalVarIndex> {
@@ -81,7 +82,17 @@ impl Context {
         Context {
             loc: Location::Global,
             counter: LabelGenerator::new(),
+            stack_idx: 0,
         }
+    }
+
+    pub fn inc_depth(&mut self) {
+        self.stack_idx += 1;
+    }
+
+    pub fn decrease_depth(&mut self) {
+        assert!(self.stack_idx > 0);
+        self.stack_idx -= 1;
     }
 }
 
@@ -168,7 +179,6 @@ fn compile_statements(
     drop: bool,
 ) -> Result<(), &'static str> {
     let mut it = stmts.iter().peekable();
-
     while let Some(stmt) = it.next() {
         // Drop everything but the last result
         // Hovewer if it is statement, do NOT drop it because it does not
@@ -183,7 +193,7 @@ fn compile_statements(
             _ => {
                 _compile(stmt, code, context, constant_pool, false)?;
                 if it.peek().is_none() {
-                    code.add(Bytecode::PushNone);
+                    code.add(Bytecode::PushNone, context);
                 }
             }
         }
@@ -200,33 +210,54 @@ fn compile_expr(
 ) -> Result<(), &'static str> {
     match expr {
         Expr::Integer(val) => {
-            code.add(Bytecode::PushInt(*val));
+            code.add(Bytecode::PushInt(*val), context);
         }
         Expr::Float(_) => todo!(),
         Expr::Bool(val) => {
-            code.add(Bytecode::PushBool(*val));
+            code.add(Bytecode::PushBool(*val), context);
         }
         Expr::NoneVal => {
-            code.add(Bytecode::PushNone);
+            code.add(Bytecode::PushNone, context);
         }
         Expr::String(lit) => {
             let str_index: ConstantPoolIndex = constant_pool.add(Object::from(lit.clone()));
-            code.add(Bytecode::PushLiteral(str_index));
+            code.add(Bytecode::PushLiteral(str_index), context);
         }
-        Expr::Block(stmts) => compile_statements(stmts, code, context, constant_pool, drop)?,
+        Expr::Block(stmts) => {
+            // match &mut context.loc {
+            //     Location::Global => {
+            //         context.loc = Location::Local(Environment::new());
+            //     },
+            //     Location::Local(env) => {
+            //         env.enter_scope();
+            //     },
+            // }
+            compile_statements(stmts, code, context, constant_pool, drop)?;
+            // match &mut context.loc {
+            //     Location::Global => {
+            //         unreachable!("Can't leave global environment!");
+            //     },
+            //     Location::Local(env) => {
+            //         if (env.envs.len() == 1) {
+            //             context.loc = Location::Global;
+            //         }
+            //         env.leave_scope();
+            //     },
+            // }
+        }
         Expr::List { size, values } => todo!(),
         Expr::AccessVariable { name } => {
             // TODO: Repeated code!
             if let Location::Local(env) = &mut context.loc {
                 if let Some(v) = env.fetch_local(name) {
-                    code.add(Bytecode::GetLocal(v));
+                    code.add(Bytecode::GetLocal(v), context);
                 } else {
                     let idx = constant_pool.add(Object::from(name.clone()));
-                    code.add(Bytecode::GetGlobal(idx));
+                    code.add(Bytecode::GetGlobal(idx), context);
                 }
             } else {
                 let idx = constant_pool.add(Object::from(name.clone()));
-                code.add(Bytecode::GetGlobal(idx));
+                code.add(Bytecode::GetGlobal(idx), context);
             }
         }
         Expr::AccessList { list, index } => todo!(),
@@ -237,15 +268,21 @@ fn compile_expr(
             // TODO: For nested functions we first need to look into environments, then do this.
             // TODO: Hardcoded native print
             if name == "print" {
-                code.add(Bytecode::Print {
-                    arg_cnt: arguments.len().try_into().unwrap(),
-                });
+                code.add(
+                    Bytecode::Print {
+                        arg_cnt: arguments.len().try_into().unwrap(),
+                    },
+                    context,
+                );
             } else {
                 let str_index: ConstantPoolIndex = constant_pool.add(Object::from(name.clone()));
-                code.add(Bytecode::CallFunc {
-                    index: str_index,
-                    arg_cnt: arguments.len().try_into().unwrap(),
-                });
+                code.add(
+                    Bytecode::CallFunc {
+                        index: str_index,
+                        arg_cnt: arguments.len().try_into().unwrap(),
+                    },
+                    context,
+                );
             }
         }
         Expr::Conditional {
@@ -256,16 +293,16 @@ fn compile_expr(
             let label_else = context.counter.get_label("if_else");
             let label_end = context.counter.get_label("if_merge");
             compile_expr(guard, code, context, constant_pool, false)?;
-            code.add(Bytecode::BranchLabelFalse(label_else.clone()));
+            code.add(Bytecode::BranchLabelFalse(label_else.clone()), context);
             compile_expr(then_branch, code, context, constant_pool, drop)?;
-            code.add(Bytecode::JmpLabel(label_end.clone()));
-            code.add(Bytecode::Label(label_else));
+            code.add(Bytecode::JmpLabel(label_end.clone()), context);
+            code.add(Bytecode::Label(label_else), context);
             if let Some(else_body) = else_branch {
                 compile_expr(else_body, code, context, constant_pool, drop)?;
             } else if !drop {
-                code.add(Bytecode::PushNone);
+                code.add(Bytecode::PushNone, context);
             }
-            code.add(Bytecode::Label(label_end));
+            code.add(Bytecode::Label(label_end), context);
         }
         Expr::Operator { op, arguments } => {
             check_operator_arity(op, arguments.len())?;
@@ -273,19 +310,19 @@ fn compile_expr(
                 compile_expr(arg, code, context, constant_pool, false)?;
             }
             match op {
-                Opcode::Add => code.add(Bytecode::Iadd),
-                Opcode::Sub => code.add(Bytecode::Isub),
-                Opcode::Mul => code.add(Bytecode::Imul),
-                Opcode::Div => code.add(Bytecode::Idiv),
-                Opcode::Less => code.add(Bytecode::Iless),
-                Opcode::LessEq => code.add(Bytecode::Ilesseq),
-                Opcode::Greater => code.add(Bytecode::Igreater),
-                Opcode::GreaterEq => code.add(Bytecode::Igreatereq),
-                Opcode::Eq => code.add(Bytecode::Ieq),
+                Opcode::Add => code.add(Bytecode::Iadd, context),
+                Opcode::Sub => code.add(Bytecode::Isub, context),
+                Opcode::Mul => code.add(Bytecode::Imul, context),
+                Opcode::Div => code.add(Bytecode::Idiv, context),
+                Opcode::Less => code.add(Bytecode::Iless, context),
+                Opcode::LessEq => code.add(Bytecode::Ilesseq, context),
+                Opcode::Greater => code.add(Bytecode::Igreater, context),
+                Opcode::GreaterEq => code.add(Bytecode::Igreatereq, context),
+                Opcode::Eq => code.add(Bytecode::Ieq, context),
             };
         }
     }
-    code.add_cond(Bytecode::Drop, drop);
+    code.add_cond(Bytecode::Drop, drop, context);
     Ok(())
 }
 
@@ -308,17 +345,23 @@ fn _compile(
             Location::Global => {
                 compile_expr(value, code, context, constant_pool, false)?;
                 if *mutable {
-                    code.add(Bytecode::DeclVarGlobal {
-                        name: constant_pool.add(Object::from(name.clone())),
-                    });
+                    code.add(
+                        Bytecode::DeclVarGlobal {
+                            name: constant_pool.add(Object::from(name.clone())),
+                        },
+                        context,
+                    );
                 } else {
-                    code.add(Bytecode::DeclValGlobal {
-                        name: constant_pool.add(Object::from(name.clone())),
-                    });
+                    code.add(
+                        Bytecode::DeclValGlobal {
+                            name: constant_pool.add(Object::from(name.clone())),
+                        },
+                        context,
+                    );
                 }
             }
             Location::Local(env) => {
-                env.add_local(name.clone())?;
+                env.add_local(name.clone(), context.stack_idx)?;
             }
         },
         AST::AssignVariable { name, value } => {
@@ -326,14 +369,14 @@ fn _compile(
             // TODO: Repeated code!
             if let Location::Local(env) = &mut context.loc {
                 if let Some(v) = env.fetch_local(name) {
-                    code.add(Bytecode::SetLocal(v));
+                    code.add(Bytecode::SetLocal(v), context);
                 } else {
                     let idx = constant_pool.add(Object::from(name.clone()));
-                    code.add(Bytecode::SetGlobal(idx));
+                    code.add(Bytecode::SetGlobal(idx), context);
                 }
             } else {
                 let idx = constant_pool.add(Object::from(name.clone()));
-                code.add(Bytecode::SetGlobal(idx));
+                code.add(Bytecode::SetGlobal(idx), context);
             }
         }
         AST::AssignList { list, index, value } => todo!(),
@@ -347,7 +390,7 @@ fn _compile(
             // Create new env and populate it with parameters
             let mut new_env = Environment::new();
             for par in parameters {
-                new_env.add_local(par.clone())?;
+                new_env.add_local(par.clone(), context.stack_idx)?;
             }
             let code = compile_fun(body, constant_pool, Location::Local(new_env))?;
 
@@ -373,7 +416,7 @@ fn _compile(
         AST::Return(_) => todo!(),
         AST::Expression(expr) => compile_expr(expr, code, context, constant_pool, true)?,
     };
-    code.add_cond(Bytecode::Drop, drop);
+    code.add_cond(Bytecode::Drop, drop, context);
     Ok(())
 }
 
@@ -385,16 +428,17 @@ fn compile_fun(
     let mut context = Context {
         loc,
         counter: LabelGenerator::new(),
+        stack_idx: 0,
     };
     let mut code = Code::new();
 
     compile_expr(ast, &mut code, &mut context, constant_pool, false)?;
     if code.code.is_empty() {
-        code.add(Bytecode::PushNone);
+        code.add(Bytecode::PushNone, &mut context);
     }
     // Return last statement if return is omitted
     if !matches!(code.code.last().unwrap(), Bytecode::Ret) {
-        code.add(Bytecode::Ret);
+        code.add(Bytecode::Ret, &mut context);
     }
     Ok(code)
 }
@@ -408,12 +452,13 @@ pub fn compile(ast: &AST) -> Result<(ConstantPool, ConstantPoolIndex), &'static 
     let mut context = Context {
         loc: Location::Global,
         counter: LabelGenerator::new(),
+        stack_idx: 0,
     };
     match ast {
         AST::Top(_) => {
             // TODO: Should this really be true? Maybe return last value as program code
             _compile(ast, &mut code, &mut context, &mut constant_pool, true)?;
-            code.add(Bytecode::Ret); // Add top level return
+            code.add(Bytecode::Ret, &mut context); // Add top level retu, contextrn
         }
         _ => unreachable!(),
     }
