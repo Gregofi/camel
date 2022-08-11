@@ -89,6 +89,9 @@ size_t dissasemble_instruction(FILE* f, u8* ins) {
         case OP_BRANCH_FALSE_SHORT:
             fprintf(f, "BRANCH_FALSE_SHORT %d", READ_2BYTES_BE(ins + 1));
             return 5;
+        case OP_GET_GLOBAL:
+            fprintf(f, "GET_GLOBAL %d", READ_4BYTES_BE(ins + 1));
+            return 5;
         case OP_SET_GLOBAL:
             fprintf(f, "SET_GLOBAL %d", READ_4BYTES_BE(ins + 1));
             return 5;
