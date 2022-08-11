@@ -316,6 +316,17 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             push(vm, val);
             break;
         }
+        case OP_SET_GLOBAL: {
+            u32 name_idx = READ_4BYTES_BE(vm->ip);
+            vm->ip += 4;
+            struct object_string* name = read_string_cp(&vm->const_pool, name_idx);
+            struct value v = pop(vm);
+            if (!table_set(&vm->globals, name, v)) {
+                fprintf(stderr, "Global variable '%s' is not defined!\n", name->data);
+                exit(1);
+            }
+            break;
+        }
         default:
             fprintf(stderr, "Unknown instruction 0x%x!\n", ins);
     }
