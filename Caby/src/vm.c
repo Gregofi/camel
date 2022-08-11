@@ -321,7 +321,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             vm->ip += 4;
             struct object_string* name = read_string_cp(&vm->const_pool, name_idx);
             struct value v = pop(vm);
-            if (!table_set(&vm->globals, name, v)) {
+            if (table_set(&vm->globals, name, v)) {
                 fprintf(stderr, "Global variable '%s' is not defined!\n", name->data);
                 exit(1);
             }
