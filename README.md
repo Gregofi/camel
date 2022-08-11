@@ -1,5 +1,7 @@
 # :camel: Camel
 
+[![build](https://github.com/Gregofi/camel/actions/workflows/build-action.yaml/badge.svg)](https://github.com/Gregofi/camel/actions/workflows/build-action.yaml)
+
 Camel is a dynamic scripting language. It is primarily meant as a toy project for learning interpreters and Rust programming language. The project is split into two main parts, the **Ca**mel **Com**piler (Cacom) and the **Ca**mel **By**tecode interpreter (Caby).
 
 The language is very simple, here is an example of calculating factorial:
