@@ -146,7 +146,7 @@ impl Compiler {
                 code.add(Bytecode::PushLiteral(str_index));
             }
             Expr::Block(stmts) => {
-                self.compile_statements(stmts, code, drop)?;
+                self.compile_block(stmts, code, drop)?;
             }
             Expr::List { size, values } => todo!(),
             Expr::AccessVariable { name } => {
@@ -224,7 +224,7 @@ impl Compiler {
         Ok(())
     }
 
-    fn compile_statements(
+    fn compile_block(
         &mut self,
         stmts: &[AST],
         code: &mut Code,
@@ -241,7 +241,7 @@ impl Compiler {
                 // not here, but the parent of this block
                 AST::Expression(expr) => self.compile_expr(expr, code, it.peek().is_some())?,
                 _ => {
-                    self._compile(stmt, code, false)?;
+                    self.compile_stmt(stmt, code, false)?;
                     if it.peek().is_none() {
                         code.add(Bytecode::PushNone);
                     }
@@ -254,7 +254,7 @@ impl Compiler {
     /// Inner compile function, compile the AST into bytecode which is inserted into Code.
     /// If the result is not intended to be keeped on stack (param drop is true) then
     /// a Drop instruction will be generated at the end.
-    fn _compile(&mut self, ast: &AST, code: &mut Code, drop: bool) -> Result<(), &'static str> {
+    fn compile_stmt(&mut self, ast: &AST, code: &mut Code, drop: bool) -> Result<(), &'static str> {
         match ast {
             AST::Variable {
                 name,
@@ -324,7 +324,7 @@ impl Compiler {
                     }
                 };
             }
-            AST::Top(stmts) => self.compile_statements(stmts, code, drop)?,
+            AST::Top(stmts) => self.compile_block(stmts, code, drop)?,
             AST::While { guard, body } => todo!(),
             AST::Return(_) => todo!(),
             AST::Expression(expr) => self.compile_expr(expr, code, true)?,
@@ -420,7 +420,7 @@ pub fn compile(ast: &AST) -> Result<(ConstantPool, ConstantPoolIndex), &'static 
     match ast {
         AST::Top(_) => {
             // TODO: Should this really be true? Maybe return last value as program code
-            compiler._compile(ast, &mut code, true)?;
+            compiler.compile_stmt(ast, &mut code, true)?;
             code.add(Bytecode::Ret); // Add top level return
         }
         _ => unreachable!(),
