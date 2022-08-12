@@ -8,8 +8,7 @@ use crate::compiler::Context;
 use crate::serializable::Serializable;
 
 pub type ConstantPoolIndex = u32;
-
-pub type FrameIndex = u16;
+pub type LocalIndex = u32;
 
 pub enum Bytecode {
     PushShort(i8),
@@ -22,8 +21,8 @@ pub enum Bytecode {
 
     PushNone,
 
-    GetLocal(FrameIndex),
-    SetLocal(FrameIndex),
+    GetLocal(LocalIndex),
+    SetLocal(LocalIndex),
 
     DeclValGlobal {
         name: ConstantPoolIndex,

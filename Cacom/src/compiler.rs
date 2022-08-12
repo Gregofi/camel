@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt;
 
 use crate::ast::{Expr, Opcode, AST};
-use crate::bytecode::{Bytecode, Code, ConstantPoolIndex, FrameIndex};
+use crate::bytecode::{Bytecode, Code, ConstantPoolIndex, LocalIndex};
 use crate::objects::{ConstantPool, Object};
 use crate::serializable::Serializable;
 use crate::utils::{AtomicInt, LabelGenerator};
@@ -12,7 +12,7 @@ use crate::utils::{AtomicInt, LabelGenerator};
 /// name to index of the local variable.
 struct Environment {
     atomic_int: AtomicInt,
-    envs: Vec<HashMap<String, LocalVarIndex>>,
+    envs: Vec<HashMap<String, LocalIndex>>,
 }
 
 enum Location {
@@ -23,10 +23,8 @@ enum Location {
 pub struct Context {
     loc: Location,
     counter: LabelGenerator,
-    stack_idx: FrameIndex,
+    stack_idx: LocalIndex,
 }
-
-type LocalVarIndex = u16;
 
 impl Environment {
     /// Returns environment with one empty environment present
@@ -47,7 +45,7 @@ impl Environment {
         self.envs.pop();
     }
 
-    pub fn add_local(&mut self, v: String, idx: FrameIndex) -> Result<(), &'static str> {
+    pub fn add_local(&mut self, v: String, idx: LocalIndex) -> Result<(), &'static str> {
         let topmost = self
             .envs
             .last_mut()
@@ -55,7 +53,7 @@ impl Environment {
         if topmost.contains_key(&v) {
             return Err("Redefinition of local variable");
         }
-        let idx: LocalVarIndex = self
+        let idx: LocalIndex = self
             .atomic_int
             .get_and_inc()
             .try_into()
@@ -64,7 +62,7 @@ impl Environment {
         Ok(())
     }
 
-    pub fn fetch_local(&self, v: &String) -> Option<LocalVarIndex> {
+    pub fn fetch_local(&self, v: &String) -> Option<LocalIndex> {
         let topmost = self
             .envs
             .last()
@@ -95,7 +93,7 @@ impl Context {
 struct Compiler {
     constant_pool: ConstantPool,
     location: Location,
-    stack_offset: FrameIndex,
+    stack_offset: LocalIndex,
     label_generator: LabelGenerator,
 }
 
@@ -109,7 +107,7 @@ impl Compiler {
         }
     }
 
-    fn add_scope(&mut self) {
+    fn enter_scope(&mut self) {
         match &mut self.location {
             Location::Global => {
                 self.location = Location::Local(Environment::new());
@@ -171,7 +169,9 @@ impl Compiler {
                 code.add(Bytecode::PushLiteral(str_index));
             }
             Expr::Block(stmts) => {
+                self.enter_scope();
                 self.compile_block(stmts, code)?;
+                self.leave_scope();
             }
             Expr::List { size, values } => todo!(),
             Expr::AccessVariable { name } => {
