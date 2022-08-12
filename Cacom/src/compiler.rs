@@ -113,13 +113,46 @@ impl Compiler {
             | Bytecode::PushLong(_)
             | Bytecode::PushBool(_)
             | Bytecode::PushLiteral(_)
-            | Bytecode::PushNone => self.stack_offset += 1,
-            Bytecode::Drop => self.stack_offset -= 1,
-            _ => (),
+            | Bytecode::PushNone
+            | Bytecode::GetGlobal(_)
+            | Bytecode::Dup => self.stack_offset += 1,
+            Bytecode::GetLocal(_)
+            | Bytecode::SetLocal(_)
+            | Bytecode::Label(_)
+            | Bytecode::JmpLabel(_)
+            | Bytecode::JmpShort(_)
+            | Bytecode::Jmp(_)
+            | Bytecode::DeclValGlobal {..}
+            | Bytecode::DeclVarGlobal {..}
+            | Bytecode::JmpLong(_) => (),
+            Bytecode::CallFunc { index, arg_cnt } => todo!(),
+            Bytecode::SetGlobal(_)
+            | Bytecode::Ret
+            | Bytecode::BranchLabel(_)
+            | Bytecode::BranchLabelFalse(_)
+            | Bytecode::BranchShort(_)
+            | Bytecode::Branch(_)
+            | Bytecode::BranchLong(_)
+            | Bytecode::BranchShortFalse(_)
+            | Bytecode::BranchFalse(_)
+            | Bytecode::BranchLongFalse(_)
+            | Bytecode::Drop => self.stack_offset -= 1,
+            Bytecode::Iadd
+            | Bytecode::Isub
+            | Bytecode::Imul
+            | Bytecode::Idiv
+            | Bytecode::Iand
+            | Bytecode::Ior
+            | Bytecode::Iless
+            | Bytecode::Ilesseq
+            | Bytecode::Igreater
+            | Bytecode::Igreatereq
+            | Bytecode::Ieq => self.stack_offset -= 2,
+            Bytecode::Print { arg_cnt } => self.stack_offset -= *arg_cnt as u16,
         };
         code.add(ins);
     }
-
+    
     fn compile_expr(
         &mut self,
         expr: &Expr,
@@ -128,19 +161,19 @@ impl Compiler {
     ) -> Result<(), &'static str> {
         match expr {
             Expr::Integer(val) => {
-                code.add(Bytecode::PushInt(*val));
+                self.add_instruction(code, Bytecode::PushInt(*val));
             }
             Expr::Float(_) => todo!(),
             Expr::Bool(val) => {
-                code.add(Bytecode::PushBool(*val));
+                self.add_instruction(code, Bytecode::PushBool(*val));
             }
             Expr::NoneVal => {
-                code.add(Bytecode::PushNone);
+                self.add_instruction(code, Bytecode::PushNone);
             }
             Expr::String(lit) => {
                 let str_index: ConstantPoolIndex =
                     self.constant_pool.add(Object::from(lit.clone()));
-                code.add(Bytecode::PushLiteral(str_index));
+                self.add_instruction(code, Bytecode::PushLiteral(str_index));
             }
             Expr::Block(stmts) => {
                 self.enter_scope();
@@ -152,14 +185,14 @@ impl Compiler {
                 // TODO: Repeated code!
                 if let Location::Local(env) = &mut self.location {
                     if let Some(v) = env.fetch_local(name) {
-                        code.add(Bytecode::GetLocal(v));
+                        self.add_instruction(code, Bytecode::GetLocal(v));
                     } else {
                         let idx = self.constant_pool.add(Object::from(name.clone()));
-                        code.add(Bytecode::GetGlobal(idx));
+                        self.add_instruction(code, Bytecode::GetGlobal(idx));
                     }
                 } else {
                     let idx = self.constant_pool.add(Object::from(name.clone()));
-                    code.add(Bytecode::GetGlobal(idx));
+                    self.add_instruction(code, Bytecode::GetGlobal(idx));
                 }
             }
             Expr::AccessList { list, index } => todo!(),
@@ -170,13 +203,13 @@ impl Compiler {
                 // TODO: For nested functions we first need to look into environments, then do this.
                 // TODO: Hardcoded native print
                 if name == "print" {
-                    code.add(Bytecode::Print {
+                    self.add_instruction(code, Bytecode::Print {
                         arg_cnt: arguments.len().try_into().unwrap(),
                     });
                 } else {
                     let str_index: ConstantPoolIndex =
                         self.constant_pool.add(Object::from(name.clone()));
-                    code.add(Bytecode::CallFunc {
+                    self.add_instruction(code, Bytecode::CallFunc {
                         index: str_index,
                         arg_cnt: arguments.len().try_into().unwrap(),
                     });
@@ -190,16 +223,16 @@ impl Compiler {
                 let label_else = self.label_generator.get_label("if_else");
                 let label_end = self.label_generator.get_label("if_merge");
                 self.compile_expr(guard, code, false)?;
-                code.add(Bytecode::BranchLabelFalse(label_else.clone()));
+                self.add_instruction(code, Bytecode::BranchLabelFalse(label_else.clone()));
                 self.compile_expr(then_branch, code, drop)?;
-                code.add(Bytecode::JmpLabel(label_end.clone()));
-                code.add(Bytecode::Label(label_else));
+                self.add_instruction(code, Bytecode::JmpLabel(label_end.clone()));
+                self.add_instruction(code, Bytecode::Label(label_else));
                 if let Some(else_body) = else_branch {
                     self.compile_expr(else_body, code, drop)?;
                 } else if !drop {
-                    code.add(Bytecode::PushNone);
+                    self.add_instruction(code, Bytecode::PushNone);
                 }
-                code.add(Bytecode::Label(label_end));
+                self.add_instruction(code, Bytecode::Label(label_end));
             }
             Expr::Operator { op, arguments } => {
                 check_operator_arity(op, arguments.len())?;
@@ -207,15 +240,15 @@ impl Compiler {
                     self.compile_expr(arg, code, false)?;
                 }
                 match op {
-                    Opcode::Add => code.add(Bytecode::Iadd),
-                    Opcode::Sub => code.add(Bytecode::Isub),
-                    Opcode::Mul => code.add(Bytecode::Imul),
-                    Opcode::Div => code.add(Bytecode::Idiv),
-                    Opcode::Less => code.add(Bytecode::Iless),
-                    Opcode::LessEq => code.add(Bytecode::Ilesseq),
-                    Opcode::Greater => code.add(Bytecode::Igreater),
-                    Opcode::GreaterEq => code.add(Bytecode::Igreatereq),
-                    Opcode::Eq => code.add(Bytecode::Ieq),
+                    Opcode::Add => self.add_instruction(code, Bytecode::Iadd),
+                    Opcode::Sub => self.add_instruction(code, Bytecode::Isub),
+                    Opcode::Mul => self.add_instruction(code, Bytecode::Imul),
+                    Opcode::Div => self.add_instruction(code, Bytecode::Idiv),
+                    Opcode::Less => self.add_instruction(code, Bytecode::Iless),
+                    Opcode::LessEq => self.add_instruction(code, Bytecode::Ilesseq),
+                    Opcode::Greater => self.add_instruction(code, Bytecode::Igreater),
+                    Opcode::GreaterEq => self.add_instruction(code, Bytecode::Igreatereq),
+                    Opcode::Eq => self.add_instruction(code, Bytecode::Ieq),
                 };
             }
         }
@@ -237,7 +270,7 @@ impl Compiler {
                 _ => {
                     self.compile_stmt(stmt, code)?;
                     if it.peek().is_none() {
-                        code.add(Bytecode::PushNone);
+                        self.add_instruction(code, Bytecode::PushNone);
                     }
                 }
             }
@@ -256,19 +289,20 @@ impl Compiler {
                 self.compile_expr(value, code, false)?;
                 match &mut self.location {
                     Location::Global => {
+                        let name_idx = self.constant_pool.add(Object::from(name.clone()));
                         if *mutable {
-                            code.add(Bytecode::DeclVarGlobal {
-                                name: self.constant_pool.add(Object::from(name.clone())),
+                            self.add_instruction(code, Bytecode::DeclVarGlobal {
+                                name: name_idx,
                             });
                         } else {
-                            code.add(Bytecode::DeclValGlobal {
-                                name: self.constant_pool.add(Object::from(name.clone())),
+                            self.add_instruction(code, Bytecode::DeclValGlobal {
+                                name: name_idx,
                             });
                         }
                     }
                     Location::Local(env) => {
                         env.add_local(name.clone(), self.stack_offset)?;
-                        code.add(Bytecode::SetLocal(self.stack_offset));
+                        self.add_instruction(code, Bytecode::SetLocal(self.stack_offset));
                     }
                 }
             }
@@ -277,14 +311,14 @@ impl Compiler {
                 // TODO: Repeated code!
                 if let Location::Local(env) = &mut self.location {
                     if let Some(v) = env.fetch_local(name) {
-                        code.add(Bytecode::SetLocal(v));
+                        self.add_instruction(code, Bytecode::SetLocal(v));
                     } else {
                         let idx = self.constant_pool.add(Object::from(name.clone()));
-                        code.add(Bytecode::SetGlobal(idx));
+                        self.add_instruction(code, Bytecode::SetGlobal(idx));
                     }
                 } else {
                     let idx = self.constant_pool.add(Object::from(name.clone()));
-                    code.add(Bytecode::SetGlobal(idx));
+                    self.add_instruction(code, Bytecode::SetGlobal(idx));
                 }
             }
             AST::AssignList { list, index, value } => todo!(),
@@ -332,11 +366,11 @@ impl Compiler {
 
         self.compile_expr(ast, &mut code, false)?;
         if code.code.is_empty() {
-            code.add(Bytecode::PushNone);
+            self.add_instruction(&mut code, Bytecode::PushNone);
         }
         // Return last statement if return is omitted
         if !matches!(code.code.last().unwrap(), Bytecode::Ret) {
-            code.add(Bytecode::Ret);
+            self.add_instruction(&mut code, Bytecode::Ret);
         }
         Ok(code)
     }
@@ -414,7 +448,7 @@ pub fn compile(ast: &AST) -> Result<(ConstantPool, ConstantPoolIndex), &'static 
     match ast {
         AST::Top(_) => {
             compiler.compile_stmt(ast, &mut code)?;
-            code.add(Bytecode::Ret); // Add top level return
+            compiler.add_instruction(&mut code, Bytecode::Ret); // Add top level return
         }
         _ => unreachable!(),
     }
