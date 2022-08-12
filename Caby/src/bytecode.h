@@ -44,6 +44,7 @@ enum opcode {
     OP_IAND = 0x35,
     OP_IOR = 0x36,
     OP_EQ = 0x3b,
+    OP_INEG = 0x3c,
 };
 
 struct bc_chunk {

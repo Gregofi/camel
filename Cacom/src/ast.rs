@@ -11,6 +11,7 @@ pub enum Opcode {
     Greater,
     GreaterEq,
     Eq,
+    Negate,
 }
 
 /// Represents top-level statements, these do not leave anything on the stack
@@ -103,7 +104,7 @@ impl fmt::Display for Opcode {
             "{}",
             match self {
                 Opcode::Add => "+",
-                Opcode::Sub => "-",
+                Opcode::Sub | Opcode::Negate => "-",
                 Opcode::Mul => "*",
                 Opcode::Div => "/",
                 Opcode::Less => "<",
