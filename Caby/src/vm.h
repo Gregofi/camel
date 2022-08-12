@@ -33,6 +33,8 @@ struct vm_state {
     struct call_frame* frames;
 
     struct table globals;
+
+    struct value* locals;
 };
 
 void init_vm_state(struct vm_state* vm);

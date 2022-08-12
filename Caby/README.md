@@ -77,6 +77,9 @@ Pops arguments from stack and tries to replace `{}` in the string with it.
 - drop 0x11
 Drops first value from the stack.
 
+- dropn - 0x25 | 1B count
+Drops first 'count' values from the stack.
+
 - dup 0x12
 Pops value from the stack and then pushes this value twice on top of the stack
 
@@ -101,3 +104,20 @@ Defines a new mutable global variable. The cp index points to a string which is 
 Arithmetic operations on integers, pop two from the stack, perform operation, push the result.
 
 NOTE: Bitwise operations will be added later.
+
+# Implementation details
+## Local variables
+Local variables have their own array. It has 65536(2^16) slots. So there can be at most 65536 local variables
+in the whole program accross all function calls. This should be fine, stack overflow would probably happen
+sooner than you running out of local variables.
+
+Best solution was to keep them on the stack, but this is tricky with the block expression, since they do not
+immediately not follow each other. For example
+```
+var x = 1;
+if (true && {var y = x == 1; y}) {
+    ...
+}
+```
+There is the `true` expression between x and y. This can be solved by simulating the stack offset in compilation.
+Also, the last value on the stack is not the return value of the block, because there is the local variables sitting there.

@@ -53,6 +53,9 @@ size_t dissasemble_instruction(FILE* f, u8* ins) {
         case OP_PUSH_NONE:
             fprintf(f, "PUSH_NONE");
             return 1;
+        case OP_DROPN:
+            fprintf(f, "DROPN %d", ins[1]);
+            return 2;
         case OP_PUSH_BOOL:
             fprintf(f, "PUSH_BOOL %s", ins[1] == 1 ? "true" : "false");
             return 2;
@@ -69,10 +72,10 @@ size_t dissasemble_instruction(FILE* f, u8* ins) {
             fprintf(f, "BRANCH_SHORT %d", READ_2BYTES_BE(ins + 1));
             return 3;
         case OP_SET_LOCAL:
-            fprintf(f, "GET_LOCAL %d", READ_2BYTES_BE(ins + 1));
+            fprintf(f, "SET_LOCAL %d", READ_2BYTES_BE(ins + 1));
             return 3;
         case OP_GET_LOCAL:
-            fprintf(f, "SET_LOCAL %d", READ_2BYTES_BE(ins + 1));
+            fprintf(f, "GET_LOCAL %d", READ_2BYTES_BE(ins + 1));
             return 3;
         case OP_PUSH_INT:
             fprintf(f, "PUSH_INT %d", READ_4BYTES_BE(ins + 1));

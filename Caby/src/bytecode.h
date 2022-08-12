@@ -29,6 +29,7 @@ enum opcode {
     OP_BRANCH_FALSE_LONG = 0x2F,
     OP_PRINT = 0x10,
     OP_DROP = 0x11,
+    OP_DROPN = 0x25,
     OP_DUP = 0x12,
     OP_GET_GLOBAL = 0x13,
     OP_SET_GLOBAL = 0x14,

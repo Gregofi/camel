@@ -7,8 +7,7 @@ use std::io::prelude::*;
 use crate::serializable::Serializable;
 
 pub type ConstantPoolIndex = u32;
-
-pub type FrameIndex = u16;
+pub type LocalIndex = u16;
 
 pub enum Bytecode {
     PushShort(i8),
@@ -21,8 +20,8 @@ pub enum Bytecode {
 
     PushNone,
 
-    GetLocal(FrameIndex),
-    SetLocal(FrameIndex),
+    GetLocal(LocalIndex),
+    SetLocal(LocalIndex),
 
     DeclValGlobal {
         name: ConstantPoolIndex,
@@ -30,6 +29,7 @@ pub enum Bytecode {
     DeclVarGlobal {
         name: ConstantPoolIndex,
     },
+
     GetGlobal(ConstantPoolIndex),
     SetGlobal(ConstantPoolIndex),
 
@@ -77,6 +77,7 @@ pub enum Bytecode {
     Ieq,
     // Rest of binary operations
     Drop,
+    Dropn(u8),
     Dup,
 }
 
@@ -125,6 +126,7 @@ impl fmt::Display for Bytecode {
             Bytecode::Igreatereq => write!(f, "Igreatereq"),
             Bytecode::Ieq => write!(f, "Ieq"),
             Bytecode::Drop => write!(f, "Drop"),
+            Bytecode::Dropn(cnt) => write!(f, "Dropn: {}", cnt),
             Bytecode::Dup => write!(f, "Dup"),
         }
     }
@@ -151,7 +153,7 @@ impl Code {
     /// Appends the given instruction and returns its new index.
     pub fn add(&mut self, instruction: Bytecode) -> usize {
         self.code.push(instruction);
-        self.code.len() - 1
+        self.code.len()
     }
 
     pub fn add_cond(&mut self, instruction: Bytecode, cond: bool) {
@@ -227,6 +229,7 @@ impl Bytecode {
             Bytecode::Ieq => 0x3B,
 
             Bytecode::Drop => 0x11,
+            Bytecode::Dropn(_) => 0x25,
             Bytecode::Dup => 0x12,
         }
     }
@@ -254,8 +257,8 @@ impl Bytecode {
             Bytecode::PushBool(_) => 1,
             Bytecode::PushLiteral(_) => std::mem::size_of::<ConstantPoolIndex>(),
             Bytecode::PushNone => 0,
-            Bytecode::GetLocal(_) => todo!(),
-            Bytecode::SetLocal(_) => todo!(),
+            Bytecode::GetLocal(idx) => std::mem::size_of_val(idx),
+            Bytecode::SetLocal(idx) => std::mem::size_of_val(idx),
             Bytecode::DeclValGlobal { .. } => 4,
             Bytecode::DeclVarGlobal { .. } => 4,
             Bytecode::GetGlobal(_) => 4,
@@ -288,6 +291,7 @@ impl Bytecode {
             Bytecode::Igreatereq => 0,
             Bytecode::Ieq => 0,
             Bytecode::Drop => 0,
+            Bytecode::Dropn(_) => 1,
             Bytecode::Dup => 0,
         }
     }
@@ -302,8 +306,8 @@ impl Serializable for Bytecode {
             Bytecode::PushLong(v) => f.write_all(&v.to_le_bytes())?,
             Bytecode::PushBool(v) => f.write_all(&[*v as u8])?,
             Bytecode::PushLiteral(v) => f.write_all(&v.to_le_bytes())?,
-            Bytecode::GetLocal(_) => todo!(),
-            Bytecode::SetLocal(_) => todo!(),
+            Bytecode::GetLocal(idx) => f.write_all(&idx.to_le_bytes())?,
+            Bytecode::SetLocal(idx) => f.write_all(&idx.to_le_bytes())?,
             Bytecode::CallFunc { index, arg_cnt } => {
                 f.write_all(&index.to_le_bytes())?;
                 f.write_all(&arg_cnt.to_le_bytes())?;
@@ -341,6 +345,7 @@ impl Serializable for Bytecode {
             Bytecode::Igreatereq => {}
             Bytecode::Ieq => {}
             Bytecode::Drop => {}
+            Bytecode::Dropn(cnt) => f.write_all(&cnt.to_le_bytes())?,
             Bytecode::Dup => {}
             Bytecode::PushNone => {}
             Bytecode::DeclValGlobal { name } => f.write_all(&name.to_le_bytes())?,

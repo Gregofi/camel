@@ -47,6 +47,7 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
         // Two byte size instructions
         case OP_PRINT:
         case OP_PUSH_BOOL:
+        case OP_DROPN:
             write_byte(c, fgetc(f));
             break;
         // Three byte size instructions
@@ -54,6 +55,8 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
         case OP_BRANCH_SHORT:
         case OP_BRANCH_FALSE_SHORT:
         case OP_PUSH_SHORT:
+        case OP_SET_LOCAL:
+        case OP_GET_LOCAL:
             write_word(c, read_2bytes_be(f));
             break;
         // Five byte size instructions
@@ -63,11 +66,9 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
         case OP_BRANCH:
         case OP_BRANCH_FALSE:
         case OP_SET_GLOBAL:
-        case OP_SET_LOCAL:
         case OP_GET_GLOBAL:
         case OP_VAL_GLOBAL:
         case OP_VAR_GLOBAL:
-        case OP_GET_LOCAL:
             write_dword(c, read_4bytes_be(f));
             break;
         // Six byte size instructions
