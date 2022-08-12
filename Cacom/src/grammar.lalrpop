@@ -56,28 +56,16 @@ match {
 }
 
 pub TopLevel: AST = {
-    <toplevel: TopLevelExpressions> => AST::Top(toplevel),
-                                    => AST::Top(vec![AST::Expression(Expr::NoneVal)]),
+    TopLevelExpressions => AST::Top(<>),
+                        => AST::Top(vec![AST::Expression(Expr::NoneVal)]),
 }
 
-TopLevelExpressions: Vec<AST> = {
-    <mut elements: (<TopLevelExpression> SEMICOLON)*> <element: TopLevelExpression> SEMICOLON? => {
-        elements.push(element);
-        elements
-    }
-}
+TopLevelExpressions: Vec<AST> = SeparatedLeastOne<TopLevelExpression, SEMICOLON>;
 
 TopLevelExpression: AST = {
     // FIXME: This permits 'return' in top level
     Statement => <>,
     FunDecl => <>,
-}
-
-Statements: Vec<AST> = {
-    <mut elements: (<Statement> SEMICOLON)*> <element: Statement> SEMICOLON? => {
-        elements.push(element);
-        elements
-    }
 }
 
 // Those are 'top' level expression in block,
@@ -100,27 +88,38 @@ VarDecl: AST = {
     VAR <name: Identifier> ASSIGN <value: Expr> => AST::Variable { name, mutable: true, value },
 }
 
-Expr: Expr = {
-    <left:Expr> <op:LogicalOp> <right: AExpr> => Expr::Operator{op: op, arguments: vec![left, right]},
-    AExpr,
+LeftAssoc<Op, NextLevel>: Expr = {
+    <left: LeftAssoc<Op, NextLevel>> <op: Op> <right: NextLevel> => Expr::Operator{ op, arguments: vec![left, right] },
+    NextLevel,
 }
 
-AExpr: Expr = {
-    <left:AExpr> <op:ExprOp> <right:Factor> => Expr::Operator{op: op, arguments: vec![left, right]},
-    Factor,
+Expr = LeftAssoc<LogicalOp, AExpr>;
+
+LogicalOp: Opcode = {
+    LESS => Opcode::Less,
+    LESSEQ => Opcode::LessEq,
+    GREATER => Opcode::Greater,
+    GREATEREQ => Opcode::GreaterEq,
+    EQ => Opcode::Eq,
 }
 
-Factor: Expr = {
-    <left:Factor> <op:TermOp> <right:Term> => Expr::Operator{op: op, arguments: vec![left, right]},
-    Term,
+AExpr = LeftAssoc<ExprOp, Factor>;
+
+ExprOp: Opcode = {
+    PLUS => Opcode::Add,
+    MINUS => Opcode::Sub,
 }
 
-Term: Expr = {
-    // TODO: floats
-    LowPrio => <>,
+Factor = LeftAssoc<TermOp, Term>;
+
+TermOp: Opcode = {
+    MULTIPLY => Opcode::Mul,
+    DIVIDE => Opcode::Div,
 }
 
-LowPrio: Expr = {
+Term = Primary;
+
+Primary: Expr = {
     TRUE => Expr::Bool(true),
     FALSE => Expr::Bool(false),
     Number => <>,
@@ -138,24 +137,9 @@ Call: Expr = {
     }
     // TODO: Method calls over objects, lists, strings and so on.
 }
+Arguments = Separated<Expr, COMMA>;
 
-LogicalOp: Opcode = {
-    LESS => Opcode::Less,
-    LESSEQ => Opcode::LessEq,
-    GREATER => Opcode::Greater,
-    GREATEREQ => Opcode::GreaterEq,
-    EQ => Opcode::Eq,
-}
-
-ExprOp: Opcode = {
-    PLUS => Opcode::Add,
-    MINUS => Opcode::Sub,
-}
-
-TermOp: Opcode = {
-    MULTIPLY => Opcode::Mul,
-    DIVIDE => Opcode::Div,
-}
+Identifier: String = IDENTIFIER => <>.to_string();
 
 Number: Expr = {
     NUMBER => Expr::Integer(i32::from_str(<>).unwrap()),
@@ -166,34 +150,17 @@ String: String = {
 }
 
 Block: Expr = {
-    CURLYBOPEN <expressions: Statements> CURLYBCLOSE => Expr::Block(expressions),
+    CURLYBOPEN <Statements> CURLYBCLOSE => Expr::Block(<>),
     CURLYBOPEN CURLYBCLOSE => Expr::NoneVal,
 }
+Statements = SeparatedLeastOne<Statement, SEMICOLON>;
 
 FunDecl: AST = {
-    DEF <name: Identifier> <parameters: Parameters> ASSIGN <body: Expr> => {
+    DEF <name: Identifier> LPAREN <parameters: Parameters> RPAREN ASSIGN <body: Expr> => {
         AST::Function{name, parameters, body: body}
     }
 }
-
-Identifier: String = IDENTIFIER => <>.to_string();
-
-Parameters: Vec<String> = {
-    LPAREN <elements: (<Identifier> COMMA)*> <element: Identifier?> RPAREN =>
-        match element {
-            None => elements,
-            Some(e) => { let mut elements = elements; elements.push(e); elements }
-        }
-}
-
-Arguments: Vec<Expr> = {
-    <mut elements: (<Expr> COMMA)*> <element: Expr?> => {
-        match element {
-            None => elements,
-            Some(e) => { elements.push(e); elements }
-        }
-    }
-}
+Parameters = Separated<Identifier, COMMA>;
 
 Conditional: Expr = {
     IF <guard: Expr> <then: Block> <els: (ELSE <Block>)?> =>
@@ -203,5 +170,17 @@ Conditional: Expr = {
 }
 
 Return: AST = {
-    RETURN <expr: Expr> => AST::Return(expr)
+    RETURN <Expr> => AST::Return(<>)
 }
+
+// Macros
+Separated<T, S>: Vec<T> = {
+    <mut v: (<T> S)*> <e: T?> => match e {
+        None => v,
+        Some(e) => { v.push(e); v }
+    }
+}
+
+SeparatedLeastOne<T, S>: Vec<T> = {
+    <mut v: (<T> S)*> <e: T> S? => { v.push(e); v }
+};
