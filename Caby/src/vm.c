@@ -12,6 +12,7 @@
 void init_vm_state(struct vm_state* vm) {
     init_constant_pool(&vm->const_pool);
     init_table(&vm->globals);
+    vm->locals = malloc(sizeof(*vm->locals) * (1 << 16));
     vm->chunk = NULL;
     vm->op_stack = NULL;
     vm->frames = NULL;
@@ -22,6 +23,7 @@ void init_vm_state(struct vm_state* vm) {
 void free_vm_state(struct vm_state* vm) {
     free_constant_pool(&vm->const_pool);
     free_table(&vm->globals);
+    free(vm->locals);
     init_vm_state(vm);
 }
 
@@ -329,6 +331,20 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
                 exit(1);
             }
             break;
+        }
+        case OP_GET_LOCAL: {
+            u16 frame_idx = READ_2BYTES_BE(vm->ip);
+            vm->ip += 2;
+            struct value v = vm->locals[frame_idx];
+            push(vm, v);
+            break;
+        }
+        case OP_SET_LOCAL: {
+            u16 frame_idx = READ_2BYTES_BE(vm->ip);
+            vm->ip += 2;
+            struct value v = pop(vm);
+            vm->locals[frame_idx] = v;
+            break;            
         }
         default:
             fprintf(stderr, "Unknown instruction 0x%x!\n", ins);

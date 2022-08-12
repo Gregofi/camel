@@ -6,12 +6,17 @@ use crate::bytecode::{Bytecode, Code, ConstantPoolIndex, LocalIndex};
 use crate::objects::{ConstantPool, Object};
 use crate::utils::{AtomicInt, LabelGenerator};
 
+#[derive(Clone, Copy)]
+struct Local {
+    idx: LocalIndex,
+    mutable: bool,
+}
+
 /// Environment keeps track of indexes of local variables into memory.
 /// It consists of multiple environments, each one is a map from
 /// name to index of the local variable.
 struct Environment {
-    atomic_int: AtomicInt,
-    envs: Vec<HashMap<String, LocalIndex>>,
+    envs: Vec<HashMap<String, Local>>,
 }
 
 enum Location {
@@ -23,7 +28,6 @@ impl Environment {
     /// Returns environment with one empty environment present
     pub fn new() -> Self {
         Self {
-            atomic_int: AtomicInt::new(),
             envs: vec![HashMap::new()],
         }
     }
@@ -40,7 +44,12 @@ impl Environment {
         size
     }
 
-    pub fn add_local(&mut self, v: String, idx: LocalIndex) -> Result<(), &'static str> {
+    pub fn add_local(
+        &mut self,
+        v: String,
+        idx: LocalIndex,
+        mutable: bool,
+    ) -> Result<(), &'static str> {
         let topmost = self
             .envs
             .last_mut()
@@ -48,29 +57,27 @@ impl Environment {
         if topmost.contains_key(&v) {
             return Err("Redefinition of local variable");
         }
-        let idx: LocalIndex = self
-            .atomic_int
-            .get_and_inc()
-            .try_into()
-            .expect("Too many local variables");
-        topmost.insert(v, idx);
+        topmost.insert(v, Local { idx, mutable });
         Ok(())
     }
 
-    pub fn fetch_local(&self, v: &String) -> Option<LocalIndex> {
-        let topmost = self
-            .envs
-            .last()
-            .expect("Camel compiler bug: There is no environment");
-        topmost.get(v).copied()
+    /// Traverses through environments, starting from the topmost
+    /// If the local is not defined in any of them returns None.
+    pub fn fetch_local(&self, v: &String) -> Option<Local> {
+        for env in self.envs.iter().rev() {
+            if let Some(v) = env.get(v) {
+                return Some(*v);
+            }
+        }
+        None
     }
 }
 
 struct Compiler {
     constant_pool: ConstantPool,
     location: Location,
-    stack_offset: LocalIndex,
     label_generator: LabelGenerator,
+    local_count: LocalIndex,
 }
 
 impl Compiler {
@@ -78,8 +85,8 @@ impl Compiler {
         Self {
             constant_pool: ConstantPool::new(),
             location: Location::Global,
-            stack_offset: 0,
             label_generator: LabelGenerator::new(),
+            local_count: 0,
         }
     }
 
@@ -94,70 +101,69 @@ impl Compiler {
         };
     }
 
-    fn leave_scope(&mut self, code: &mut Code) {
+    fn leave_scope(&mut self) {
         match &mut self.location {
             Location::Global => {
                 unreachable!("Internal compiler error: Can't leave scope at global environment");
             }
             Location::Local(env) => {
-                let var_cnt = env.leave_scope();
+                let var_cnt: u16 = env.leave_scope().try_into().unwrap();
                 if env.envs.is_empty() {
                     self.location = Location::Global;
                 }
-                // FIXME: Generate multiple drops if one dropn isn't enough
-                self.add_instruction(code, Bytecode::Dropn(var_cnt.try_into().unwrap()));
+                self.local_count -= var_cnt;
             }
         };
     }
 
     fn add_instruction(&mut self, code: &mut Code, ins: Bytecode) {
-        match &ins {
-            Bytecode::PushShort(_)
-            | Bytecode::PushInt(_)
-            | Bytecode::PushLong(_)
-            | Bytecode::PushBool(_)
-            | Bytecode::PushLiteral(_)
-            | Bytecode::PushNone
-            | Bytecode::GetGlobal(_)
-            | Bytecode::Dup => self.stack_offset += 1,
-            Bytecode::GetLocal(_)
-            | Bytecode::SetLocal(_)
-            | Bytecode::Label(_)
-            | Bytecode::JmpLabel(_)
-            | Bytecode::JmpShort(_)
-            | Bytecode::Jmp(_)
-            | Bytecode::DeclValGlobal {..}
-            | Bytecode::DeclVarGlobal {..}
-            | Bytecode::JmpLong(_) => (),
-            Bytecode::CallFunc { index, arg_cnt } => todo!(),
-            Bytecode::SetGlobal(_)
-            | Bytecode::Ret
-            | Bytecode::BranchLabel(_)
-            | Bytecode::BranchLabelFalse(_)
-            | Bytecode::BranchShort(_)
-            | Bytecode::Branch(_)
-            | Bytecode::BranchLong(_)
-            | Bytecode::BranchShortFalse(_)
-            | Bytecode::BranchFalse(_)
-            | Bytecode::BranchLongFalse(_)
-            | Bytecode::Drop => self.stack_offset -= 1,
-            Bytecode::Iadd
-            | Bytecode::Isub
-            | Bytecode::Imul
-            | Bytecode::Idiv
-            | Bytecode::Iand
-            | Bytecode::Ior
-            | Bytecode::Iless
-            | Bytecode::Ilesseq
-            | Bytecode::Igreater
-            | Bytecode::Igreatereq
-            | Bytecode::Ieq => self.stack_offset -= 2,
-            Bytecode::Print { arg_cnt } => self.stack_offset -= *arg_cnt as u16,
-            Bytecode::Dropn(cnt) => self.stack_offset -= *cnt as u16,
-        };
+        // match &ins {
+        //     Bytecode::PushShort(_)
+        //     | Bytecode::PushInt(_)
+        //     | Bytecode::PushLong(_)
+        //     | Bytecode::PushBool(_)
+        //     | Bytecode::PushLiteral(_)
+        //     | Bytecode::PushNone
+        //     | Bytecode::GetGlobal(_)
+        //     | Bytecode::Dup => self.stack_offset += 1,
+        //     Bytecode::GetLocal(_)
+        //     | Bytecode::SetLocal(_)
+        //     | Bytecode::Label(_)
+        //     | Bytecode::JmpLabel(_)
+        //     | Bytecode::JmpShort(_)
+        //     | Bytecode::Jmp(_)
+        //     | Bytecode::DeclValGlobal {..}
+        //     | Bytecode::DeclVarGlobal {..}
+        //     | Bytecode::JmpLong(_) => (),
+        //     Bytecode::CallFunc { index, arg_cnt } => todo!(),
+        //     Bytecode::SetGlobal(_)
+        //     | Bytecode::Ret
+        //     | Bytecode::BranchLabel(_)
+        //     | Bytecode::BranchLabelFalse(_)
+        //     | Bytecode::BranchShort(_)
+        //     | Bytecode::Branch(_)
+        //     | Bytecode::BranchLong(_)
+        //     | Bytecode::BranchShortFalse(_)
+        //     | Bytecode::BranchFalse(_)
+        //     | Bytecode::BranchLongFalse(_)
+        //     | Bytecode::Drop => self.stack_offset -= 1,
+        //     Bytecode::Iadd
+        //     | Bytecode::Isub
+        //     | Bytecode::Imul
+        //     | Bytecode::Idiv
+        //     | Bytecode::Iand
+        //     | Bytecode::Ior
+        //     | Bytecode::Iless
+        //     | Bytecode::Ilesseq
+        //     | Bytecode::Igreater
+        //     | Bytecode::Igreatereq
+        //     | Bytecode::Ieq => self.stack_offset -= 2,
+        //     Bytecode::Print { arg_cnt } => self.stack_offset -= *arg_cnt as u16,
+        //     Bytecode::Dropn(cnt) => self.stack_offset -= *cnt as u16,
+        // };
         code.add(ins);
     }
-    
+
     fn compile_expr(
         &mut self,
         expr: &Expr,
@@ -183,14 +189,14 @@ impl Compiler {
             Expr::Block(stmts) => {
                 self.enter_scope();
                 self.compile_block(stmts, code)?;
-                self.leave_scope(code);
+                self.leave_scope();
             }
             Expr::List { size, values } => todo!(),
             Expr::AccessVariable { name } => {
                 // TODO: Repeated code!
                 if let Location::Local(env) = &mut self.location {
                     if let Some(v) = env.fetch_local(name) {
-                        self.add_instruction(code, Bytecode::GetLocal(v));
+                        self.add_instruction(code, Bytecode::GetLocal(v.idx));
                     } else {
                         let idx = self.constant_pool.add(Object::from(name.clone()));
                         self.add_instruction(code, Bytecode::GetGlobal(idx));
@@ -208,17 +214,23 @@ impl Compiler {
                 // TODO: For nested functions we first need to look into environments, then do this.
                 // TODO: Hardcoded native print
                 if name == "print" {
-                    self.add_instruction(code, Bytecode::Print {
-                        arg_cnt: arguments.len().try_into().unwrap(),
-                    });
+                    self.add_instruction(
+                        code,
+                        Bytecode::Print {
+                            arg_cnt: arguments.len().try_into().unwrap(),
+                        },
+                    );
                     self.add_instruction(code, Bytecode::PushNone);
                 } else {
                     let str_index: ConstantPoolIndex =
                         self.constant_pool.add(Object::from(name.clone()));
-                    self.add_instruction(code, Bytecode::CallFunc {
-                        index: str_index,
-                        arg_cnt: arguments.len().try_into().unwrap(),
-                    });
+                    self.add_instruction(
+                        code,
+                        Bytecode::CallFunc {
+                            index: str_index,
+                            arg_cnt: arguments.len().try_into().unwrap(),
+                        },
+                    );
                 }
             }
             Expr::Conditional {
@@ -297,17 +309,15 @@ impl Compiler {
                     Location::Global => {
                         let name_idx = self.constant_pool.add(Object::from(name.clone()));
                         if *mutable {
-                            self.add_instruction(code, Bytecode::DeclVarGlobal {
-                                name: name_idx,
-                            });
+                            self.add_instruction(code, Bytecode::DeclVarGlobal { name: name_idx });
                         } else {
-                            self.add_instruction(code, Bytecode::DeclValGlobal {
-                                name: name_idx,
-                            });
+                            self.add_instruction(code, Bytecode::DeclValGlobal { name: name_idx });
                         }
                     }
                     Location::Local(env) => {
-                        env.add_local(name.clone(), self.stack_offset)?;
+                        env.add_local(name.clone(), self.local_count, *mutable)?;
+                        self.add_instruction(code, Bytecode::SetLocal(self.local_count));
+                        self.local_count += 1;
                     }
                 }
             }
@@ -315,8 +325,11 @@ impl Compiler {
                 self.compile_expr(value, code, false)?;
                 // TODO: Repeated code!
                 if let Location::Local(env) = &mut self.location {
-                    if let Some(v) = env.fetch_local(name) {
-                        self.add_instruction(code, Bytecode::SetLocal(v));
+                    if let Some(Local { idx, mutable }) = env.fetch_local(name) {
+                        if !mutable {
+                            return Err("Variable is declared immutable.");
+                        }
+                        self.add_instruction(code, Bytecode::SetLocal(idx));
                     } else {
                         let idx = self.constant_pool.add(Object::from(name.clone()));
                         self.add_instruction(code, Bytecode::SetGlobal(idx));
@@ -332,12 +345,14 @@ impl Compiler {
                 parameters,
                 body,
             } => {
+                todo!();
                 let new_fun_idx = self.constant_pool.add(Object::from(name.clone()));
 
                 // Create new env and populate it with parameters
                 let mut new_env = Environment::new();
                 for par in parameters {
-                    new_env.add_local(par.clone(), self.stack_offset)?;
+                    new_env.add_local(par.clone(), self.local_count, false)?;
+                    self.local_count += 1;
                 }
                 let code = self.compile_fun(body)?;
 

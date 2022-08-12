@@ -8,4 +8,23 @@
     var x = 6;
     var y = 7;
     print("{} + {} = {}\n", x, y, x + y);
+};
+
+{
+    var x = 5;
+    {
+        var y = 10;
+        y = 7;
+        print("{} + {} = {}\n", x, y, x + y);
+    }
+};
+
+{
+    var x = 3;
+    {
+        var x = x;
+        print("{} ", x);
+        x = 5;
+    };
+    print("{}\n", x)
 }
