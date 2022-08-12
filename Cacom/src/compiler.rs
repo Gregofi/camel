@@ -127,7 +127,7 @@ impl Compiler {
             }
             Location::Local(env) => {
                 env.leave_scope();
-                if env.envs.len() == 0 {
+                if env.envs.is_empty() {
                     self.location = Location::Global;
                 }
             }
@@ -249,11 +249,7 @@ impl Compiler {
         Ok(())
     }
 
-    fn compile_block(
-        &mut self,
-        stmts: &[AST],
-        code: &mut Code,
-    ) -> Result<(), &'static str> {
+    fn compile_block(&mut self, stmts: &[AST], code: &mut Code) -> Result<(), &'static str> {
         let mut it = stmts.iter().peekable();
         while let Some(stmt) = it.next() {
             // Drop everything but the last result
