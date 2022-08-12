@@ -109,6 +109,20 @@ impl Compiler {
         }
     }
 
+    fn add_instruction(&mut self, code: &mut Code, ins: Bytecode) {
+        match &ins {
+            Bytecode::PushShort(_)
+            | Bytecode::PushInt(_)
+            | Bytecode::PushLong(_)
+            | Bytecode::PushBool(_)
+            | Bytecode::PushLiteral(_)
+            | Bytecode::PushNone => self.stack_offset += 1,
+            Bytecode::Drop => self.stack_offset -= 1,
+            _ => (),
+        };
+        code.add(ins);
+    }
+
     fn compile_expr(
         &mut self,
         expr: &Expr,
@@ -132,26 +146,7 @@ impl Compiler {
                 code.add(Bytecode::PushLiteral(str_index));
             }
             Expr::Block(stmts) => {
-                // match &mut context.loc {
-                //     Location::Global => {
-                //         context.loc = Location::Local(Environment::new());
-                //     },
-                //     Location::Local(env) => {
-                //         env.enter_scope();
-                //     },
-                // }
                 self.compile_statements(stmts, code, drop)?;
-                // match &mut context.loc {
-                //     Location::Global => {
-                //         unreachable!("Can't leave global environment!");
-                //     },
-                //     Location::Local(env) => {
-                //         if (env.envs.len() == 1) {
-                //             context.loc = Location::Global;
-                //         }
-                //         env.leave_scope();
-                //     },
-                // }
             }
             Expr::List { size, values } => todo!(),
             Expr::AccessVariable { name } => {
