@@ -257,17 +257,7 @@ impl Compiler {
                 for arg in arguments.iter().rev() {
                     self.compile_expr(arg, code, false)?;
                 }
-                match op {
-                    Opcode::Add => self.add_instruction(code, Bytecode::Iadd),
-                    Opcode::Sub => self.add_instruction(code, Bytecode::Isub),
-                    Opcode::Mul => self.add_instruction(code, Bytecode::Imul),
-                    Opcode::Div => self.add_instruction(code, Bytecode::Idiv),
-                    Opcode::Less => self.add_instruction(code, Bytecode::Iless),
-                    Opcode::LessEq => self.add_instruction(code, Bytecode::Ilesseq),
-                    Opcode::Greater => self.add_instruction(code, Bytecode::Igreater),
-                    Opcode::GreaterEq => self.add_instruction(code, Bytecode::Igreatereq),
-                    Opcode::Eq => self.add_instruction(code, Bytecode::Ieq),
-                };
+                self.add_instruction(code, (*op).into());
             }
         }
         code.add_cond(Bytecode::Drop, drop);
