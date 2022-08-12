@@ -77,6 +77,7 @@ pub enum Bytecode {
     Ieq,
     // Rest of binary operations
     Drop,
+    Dropn(u8),
     Dup,
 }
 
@@ -125,6 +126,7 @@ impl fmt::Display for Bytecode {
             Bytecode::Igreatereq => write!(f, "Igreatereq"),
             Bytecode::Ieq => write!(f, "Ieq"),
             Bytecode::Drop => write!(f, "Drop"),
+            Bytecode::Dropn(cnt) => write!(f, "Dropn: {}", cnt),
             Bytecode::Dup => write!(f, "Dup"),
         }
     }
@@ -227,6 +229,7 @@ impl Bytecode {
             Bytecode::Ieq => 0x3B,
 
             Bytecode::Drop => 0x11,
+            Bytecode::Dropn(_) => 0x25,
             Bytecode::Dup => 0x12,
         }
     }
@@ -288,6 +291,7 @@ impl Bytecode {
             Bytecode::Igreatereq => 0,
             Bytecode::Ieq => 0,
             Bytecode::Drop => 0,
+            Bytecode::Dropn(_) => 1,
             Bytecode::Dup => 0,
         }
     }
@@ -341,6 +345,7 @@ impl Serializable for Bytecode {
             Bytecode::Igreatereq => {}
             Bytecode::Ieq => {}
             Bytecode::Drop => {}
+            Bytecode::Dropn(cnt) => f.write_all(&cnt.to_le_bytes())?,
             Bytecode::Dup => {}
             Bytecode::PushNone => {}
             Bytecode::DeclValGlobal { name } => f.write_all(&name.to_le_bytes())?,

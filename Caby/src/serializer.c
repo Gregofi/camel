@@ -47,6 +47,7 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
         // Two byte size instructions
         case OP_PRINT:
         case OP_PUSH_BOOL:
+        case OP_DROPN:
             write_byte(c, fgetc(f));
             break;
         // Three byte size instructions

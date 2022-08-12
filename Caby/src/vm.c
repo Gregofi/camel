@@ -271,6 +271,9 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
         case OP_DROP:
             pop(vm);
             break;
+        case OP_DROPN:
+            vm->stack_len -= *vm->ip++;
+            break;
         case OP_JMP:
             vm->ip = &vm->chunk->data[READ_4BYTES_BE(vm->ip)];
             break;

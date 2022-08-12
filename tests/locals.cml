@@ -1,0 +1,11 @@
+
+{
+    var x = 5;
+    print("{}\n", x);
+};
+
+{
+    var x = 6;
+    var y = 7;
+    print("{} + {} = {}\n", x, y, x + y);
+}

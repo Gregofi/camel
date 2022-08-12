@@ -33,9 +33,11 @@ impl Environment {
         self.envs.push(HashMap::new());
     }
 
-    /// Removes the topmost environment
-    pub fn leave_scope(&mut self) {
+    /// Removes the topmost environment and returns number of local variables in that environment
+    pub fn leave_scope(&mut self) -> usize {
+        let size = self.envs.last().unwrap().len();
         self.envs.pop();
+        size
     }
 
     pub fn add_local(&mut self, v: String, idx: LocalIndex) -> Result<(), &'static str> {
@@ -92,16 +94,18 @@ impl Compiler {
         };
     }
 
-    fn leave_scope(&mut self) {
+    fn leave_scope(&mut self, code: &mut Code) {
         match &mut self.location {
             Location::Global => {
                 unreachable!("Internal compiler error: Can't leave scope at global environment");
             }
             Location::Local(env) => {
-                env.leave_scope();
+                let var_cnt = env.leave_scope();
                 if env.envs.is_empty() {
                     self.location = Location::Global;
                 }
+                // FIXME: Generate multiple drops if one dropn isn't enough
+                self.add_instruction(code, Bytecode::Dropn(var_cnt.try_into().unwrap()));
             }
         };
     }
@@ -149,6 +153,7 @@ impl Compiler {
             | Bytecode::Igreatereq
             | Bytecode::Ieq => self.stack_offset -= 2,
             Bytecode::Print { arg_cnt } => self.stack_offset -= *arg_cnt as u16,
+            Bytecode::Dropn(cnt) => self.stack_offset -= *cnt as u16,
         };
         code.add(ins);
     }
@@ -178,7 +183,7 @@ impl Compiler {
             Expr::Block(stmts) => {
                 self.enter_scope();
                 self.compile_block(stmts, code)?;
-                self.leave_scope();
+                self.leave_scope(code);
             }
             Expr::List { size, values } => todo!(),
             Expr::AccessVariable { name } => {
@@ -206,6 +211,7 @@ impl Compiler {
                     self.add_instruction(code, Bytecode::Print {
                         arg_cnt: arguments.len().try_into().unwrap(),
                     });
+                    self.add_instruction(code, Bytecode::PushNone);
                 } else {
                     let str_index: ConstantPoolIndex =
                         self.constant_pool.add(Object::from(name.clone()));
@@ -302,7 +308,6 @@ impl Compiler {
                     }
                     Location::Local(env) => {
                         env.add_local(name.clone(), self.stack_offset)?;
-                        self.add_instruction(code, Bytecode::SetLocal(self.stack_offset));
                     }
                 }
             }
