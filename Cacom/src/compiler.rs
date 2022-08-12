@@ -397,6 +397,7 @@ fn check_operator_arity(op: &Opcode, len: usize) -> Result<(), &'static str> {
         Opcode::Greater => 2,
         Opcode::GreaterEq => 2,
         Opcode::Eq => 2,
+        Opcode::Negate => 1,
     };
     if arity != len {
         Err("Operator arity does not match.")

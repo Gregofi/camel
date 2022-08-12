@@ -10,6 +10,12 @@ mod parser_tests {
         assert!(TopLevelParser::new().parse("1 + 2 + 3").is_ok());
         assert!(TopLevelParser::new().parse("1 + 2 * 3").is_ok());
         assert!(TopLevelParser::new().parse("1 + (1 + 2)").is_ok());
+        assert!(TopLevelParser::new().parse("- 1").is_ok());
+        assert!(TopLevelParser::new().parse("-2").is_ok());
+        assert!(TopLevelParser::new().parse("1 - 1").is_ok());
+        assert!(TopLevelParser::new().parse("1 -1").is_ok());
+        assert!(TopLevelParser::new().parse("1 - -1").is_ok());
+        assert!(TopLevelParser::new().parse("1 - --1").is_ok());
     }
 
     #[test]

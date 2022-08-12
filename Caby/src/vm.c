@@ -270,6 +270,18 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             push(vm, NEW_BOOL(res));
             break;
         }
+        case OP_INEG: {
+            struct value v = pop(vm);
+            if (v.type == VAL_INT) {
+                push(vm, NEW_INT(-v.integer));
+            } else if (v.type == VAL_DOUBLE) {
+                push(vm, NEW_DOUBLE(-v.integer));
+            } else {
+                fprintf(stderr, "Incopatible type for operator unary '-'\n");
+                return INTERPRET_ERROR;
+            }
+            break;
+        }
         case OP_DROP:
             pop(vm);
             break;
