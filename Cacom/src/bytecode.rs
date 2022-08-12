@@ -4,6 +4,7 @@ use std::fs::File;
 use std::io;
 use std::io::prelude::*;
 
+use crate::ast::Opcode;
 use crate::serializable::Serializable;
 
 pub type ConstantPoolIndex = u32;
@@ -79,6 +80,22 @@ pub enum Bytecode {
     Drop,
     Dropn(u8),
     Dup,
+}
+
+impl From<Opcode> for Bytecode {
+    fn from(opcode: Opcode) -> Self {
+        match opcode {
+            Opcode::Add => Bytecode::Iadd,
+            Opcode::Sub => Bytecode::Isub,
+            Opcode::Mul => Bytecode::Imul,
+            Opcode::Div => Bytecode::Idiv,
+            Opcode::Less => Bytecode::Iless,
+            Opcode::LessEq => Bytecode::Ilesseq,
+            Opcode::Greater => Bytecode::Igreater,
+            Opcode::GreaterEq => Bytecode::Igreatereq,
+            Opcode::Eq => Bytecode::Ieq,
+        }
+    }
 }
 
 impl fmt::Display for Bytecode {
