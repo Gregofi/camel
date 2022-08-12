@@ -151,24 +151,26 @@ impl Code {
     }
 
     /// Appends the given instruction and returns its new index.
-    pub fn add(&mut self, instruction: Bytecode, context: &mut Context) -> usize {
-        match instruction {
+    pub fn add(&mut self, instruction: Bytecode) -> i32 {
+        let shift = match instruction {
             Bytecode::PushShort(_)
             | Bytecode::PushInt(_)
             | Bytecode::PushLong(_)
             | Bytecode::PushBool(_)
             | Bytecode::PushLiteral(_)
-            | Bytecode::PushNone => context.inc_depth(),
-            Bytecode::Drop => context.decrease_depth(),
-            _ => (),
-        }
+            | Bytecode::PushNone => 1,
+            Bytecode::Drop => -1,
+            _ => 0,
+        };
         self.code.push(instruction);
-        self.code.len() - 1
+        shift
     }
 
-    pub fn add_cond(&mut self, instruction: Bytecode, cond: bool, context: &mut Context) {
+    pub fn add_cond(&mut self, instruction: Bytecode, cond: bool) -> i32 {
         if cond {
-            self.add(instruction, context);
+            self.add(instruction)
+        } else {
+            0
         }
     }
 }
