@@ -4,7 +4,6 @@ use std::fmt;
 use crate::ast::{Expr, Opcode, AST};
 use crate::bytecode::{Bytecode, Code, ConstantPoolIndex, LocalIndex};
 use crate::objects::{ConstantPool, Object};
-use crate::serializable::Serializable;
 use crate::utils::{AtomicInt, LabelGenerator};
 
 /// Environment keeps track of indexes of local variables into memory.
@@ -247,32 +246,32 @@ impl Compiler {
         Ok(())
     }
 
-    /// Inner compile function, compile the AST into bytecode which is inserted into Code.
-    /// If the result is not intended to be keeped on stack (param drop is true) then
-    /// a Drop instruction will be generated at the end.
     fn compile_stmt(&mut self, ast: &AST, code: &mut Code) -> Result<(), &'static str> {
         match ast {
             AST::Variable {
                 name,
                 mutable,
                 value,
-            } => match &mut self.location {
-                Location::Global => {
-                    self.compile_expr(value, code, false)?;
-                    if *mutable {
-                        code.add(Bytecode::DeclVarGlobal {
-                            name: self.constant_pool.add(Object::from(name.clone())),
-                        });
-                    } else {
-                        code.add(Bytecode::DeclValGlobal {
-                            name: self.constant_pool.add(Object::from(name.clone())),
-                        });
+            } => {
+                self.compile_expr(value, code, false)?;
+                match &mut self.location {
+                    Location::Global => {
+                        if *mutable {
+                            code.add(Bytecode::DeclVarGlobal {
+                                name: self.constant_pool.add(Object::from(name.clone())),
+                            });
+                        } else {
+                            code.add(Bytecode::DeclValGlobal {
+                                name: self.constant_pool.add(Object::from(name.clone())),
+                            });
+                        }
+                    }
+                    Location::Local(env) => {
+                        env.add_local(name.clone(), self.stack_offset)?;
+                        code.add(Bytecode::SetLocal(self.stack_offset));
                     }
                 }
-                Location::Local(env) => {
-                    env.add_local(name.clone(), self.stack_offset)?;
-                }
-            },
+            }
             AST::AssignVariable { name, value } => {
                 self.compile_expr(value, code, false)?;
                 // TODO: Repeated code!

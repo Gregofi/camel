@@ -69,10 +69,10 @@ size_t dissasemble_instruction(FILE* f, u8* ins) {
             fprintf(f, "BRANCH_SHORT %d", READ_2BYTES_BE(ins + 1));
             return 3;
         case OP_SET_LOCAL:
-            fprintf(f, "GET_LOCAL %d", READ_2BYTES_BE(ins + 1));
+            fprintf(f, "SET_LOCAL %d", READ_2BYTES_BE(ins + 1));
             return 3;
         case OP_GET_LOCAL:
-            fprintf(f, "SET_LOCAL %d", READ_2BYTES_BE(ins + 1));
+            fprintf(f, "GET_LOCAL %d", READ_2BYTES_BE(ins + 1));
             return 3;
         case OP_PUSH_INT:
             fprintf(f, "PUSH_INT %d", READ_4BYTES_BE(ins + 1));

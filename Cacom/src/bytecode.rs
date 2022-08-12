@@ -7,7 +7,7 @@ use std::io::prelude::*;
 use crate::serializable::Serializable;
 
 pub type ConstantPoolIndex = u32;
-pub type LocalIndex = u32;
+pub type LocalIndex = u16;
 
 pub enum Bytecode {
     PushShort(i8),
@@ -254,8 +254,8 @@ impl Bytecode {
             Bytecode::PushBool(_) => 1,
             Bytecode::PushLiteral(_) => std::mem::size_of::<ConstantPoolIndex>(),
             Bytecode::PushNone => 0,
-            Bytecode::GetLocal(_) => 2,
-            Bytecode::SetLocal(_) => 2,
+            Bytecode::GetLocal(idx) => std::mem::size_of_val(idx),
+            Bytecode::SetLocal(idx) => std::mem::size_of_val(idx),
             Bytecode::DeclValGlobal { .. } => 4,
             Bytecode::DeclVarGlobal { .. } => 4,
             Bytecode::GetGlobal(_) => 4,
