@@ -20,12 +20,6 @@ enum Location {
     Local(Environment),
 }
 
-pub struct Context {
-    loc: Location,
-    counter: LabelGenerator,
-    stack_idx: LocalIndex,
-}
-
 impl Environment {
     /// Returns environment with one empty environment present
     pub fn new() -> Self {
@@ -68,25 +62,6 @@ impl Environment {
             .last()
             .expect("Camel compiler bug: There is no environment");
         topmost.get(v).copied()
-    }
-}
-
-impl Context {
-    pub fn new() -> Self {
-        Context {
-            loc: Location::Global,
-            counter: LabelGenerator::new(),
-            stack_idx: 0,
-        }
-    }
-
-    pub fn inc_depth(&mut self) {
-        self.stack_idx += 1;
-    }
-
-    pub fn decrease_depth(&mut self) {
-        assert!(self.stack_idx > 0);
-        self.stack_idx -= 1;
     }
 }
 

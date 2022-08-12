@@ -4,7 +4,6 @@ use std::fs::File;
 use std::io;
 use std::io::prelude::*;
 
-use crate::compiler::Context;
 use crate::serializable::Serializable;
 
 pub type ConstantPoolIndex = u32;
