@@ -111,3 +111,13 @@ Local variables have their own array. It has 65536(2^16) slots. So there can be 
 in the whole program accross all function calls. This should be fine, stack overflow would probably happen
 sooner than you running out of local variables.
 
+Best solution was to keep them on the stack, but this is tricky with the block expression, since they do not
+immediately not follow each other. For example
+```
+var x = 1;
+if (true && {var y = x == 1; y}) {
+    ...
+}
+```
+There is the `true` expression between x and y. This can be solved by simulating the stack offset in compilation.
+Also, the last value on the stack is not the return value of the block, because there is the local variables sitting there.
