@@ -109,6 +109,31 @@ impl Compiler {
         }
     }
 
+    fn add_scope(&mut self) {
+        match &mut self.location {
+            Location::Global => {
+                self.location = Location::Local(Environment::new());
+            }
+            Location::Local(env) => {
+                env.enter_scope();
+            }
+        };
+    }
+
+    fn leave_scope(&mut self) {
+        match &mut self.location {
+            Location::Global => {
+                unreachable!("Internal compiler error: Can't leave scope at global environment");
+            }
+            Location::Local(env) => {
+                env.leave_scope();
+                if env.envs.len() == 0 {
+                    self.location = Location::Global;
+                }
+            }
+        };
+    }
+
     fn add_instruction(&mut self, code: &mut Code, ins: Bytecode) {
         match &ins {
             Bytecode::PushShort(_)
@@ -230,15 +255,6 @@ impl Compiler {
         code: &mut Code,
         drop: bool,
     ) -> Result<(), &'static str> {
-        match &mut self.location {
-            Location::Global => {
-                self.location = Location::Local(Environment::new());
-            },
-            Location::Local(env) => {
-                env.enter_scope();
-            },
-        };
-
         let mut it = stmts.iter().peekable();
         while let Some(stmt) = it.next() {
             // Drop everything but the last result
@@ -257,18 +273,6 @@ impl Compiler {
                 }
             }
         }
-
-        match &mut self.location {
-            Location::Global => {
-                 unreachable!("Internal compiler error: Can't leave scope at global environment");
-            },
-            Location::Local(env) => {
-                env.leave_scope();
-                if env.envs.len() == 0 {
-                    self.location = Location::Global;
-                }
-            },
-        };
 
         Ok(())
     }
