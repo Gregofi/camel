@@ -16,7 +16,8 @@ void free_table(struct table* t) {
 /// otherwise returns entry saved under the key.
 static struct entry* find_entry(struct entry* entries, size_t capacity,
                                 struct object_string* key) {
-    u32 idx = key->hash % capacity;
+    // Assume the capacity is a power of two and do fast modulo using mask.
+    u32 idx = key->hash & (capacity - 1);
     struct entry* tombstone = NULL;
 
     for (;;) {
@@ -36,7 +37,7 @@ static struct entry* find_entry(struct entry* entries, size_t capacity,
             return e;
         }
 
-        idx = (idx + 1) % capacity;
+        idx = (idx + 1) & (capacity - 1);
     }
     UNREACHABLE();
 }
