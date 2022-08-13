@@ -4,6 +4,8 @@
 #include "object.h"
 #include "hashtable.h"
 
+#define FRAME_DEPTH 128
+
 enum interpret_result {
     INTERPRET_CONTINUE,
     INTERPRET_ERROR,
@@ -12,16 +14,16 @@ enum interpret_result {
 
 struct call_frame {
     struct object_function* function;
-    u8* ip;
-    /// Points to the beginning of the part of operand stack
-    /// which is used by this function. This is used for
-    /// local variable access, since they live on the stack.
+    /// Address to return to when function ends.
+    u8* ret;
+    /// Points to the beginning of the part of locals array that
+    /// belongs to this function.
     struct value* slots;
 };
 
 struct vm_state {
-    /// VM does not own bytecode chunk
-    struct bc_chunk* chunk;
+    struct call_frame frames[FRAME_DEPTH];
+    u16 frame_index;
     u8* ip;
 
     struct constant_pool const_pool;
@@ -29,8 +31,6 @@ struct vm_state {
     struct value* op_stack;
     size_t stack_len;
     size_t stack_cap;
-
-    struct call_frame* frames;
 
     struct table globals;
 

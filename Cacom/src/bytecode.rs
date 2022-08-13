@@ -35,7 +35,6 @@ pub enum Bytecode {
     SetGlobal(ConstantPoolIndex),
 
     CallFunc {
-        index: ConstantPoolIndex,
         arg_cnt: u8,
     },
     Ret,
@@ -115,8 +114,8 @@ impl fmt::Display for Bytecode {
             Bytecode::DeclVarGlobal { name } => write!(f, "decl var global: {}", name),
             Bytecode::GetGlobal(v) => write!(f, "Get global: {}", v),
             Bytecode::SetGlobal(v) => write!(f, "Set global: {}", v),
-            Bytecode::CallFunc { index, arg_cnt } => {
-                write!(f, "Call function {}, args: {}", index, arg_cnt)
+            Bytecode::CallFunc { arg_cnt } => {
+                write!(f, "Call function, args: {}", arg_cnt)
             }
             Bytecode::Ret => write!(f, "Ret"),
             Bytecode::Label(v) => write!(f, "{}:", v),
@@ -284,8 +283,8 @@ impl Bytecode {
             Bytecode::DeclVarGlobal { .. } => 4,
             Bytecode::GetGlobal(_) => 4,
             Bytecode::SetGlobal(_) => 4,
-            Bytecode::CallFunc { index, arg_cnt } => {
-                std::mem::size_of_val(index) + std::mem::size_of_val(arg_cnt)
+            Bytecode::CallFunc { arg_cnt } => {
+                std::mem::size_of_val(arg_cnt)
             }
             Bytecode::Ret => 0,
             Bytecode::Label(_) => unreachable!(),
@@ -332,8 +331,7 @@ impl Serializable for Bytecode {
             Bytecode::PushLiteral(v) => f.write_all(&v.to_le_bytes())?,
             Bytecode::GetLocal(idx) => f.write_all(&idx.to_le_bytes())?,
             Bytecode::SetLocal(idx) => f.write_all(&idx.to_le_bytes())?,
-            Bytecode::CallFunc { index, arg_cnt } => {
-                f.write_all(&index.to_le_bytes())?;
+            Bytecode::CallFunc { arg_cnt } => {
                 f.write_all(&arg_cnt.to_le_bytes())?;
             }
             Bytecode::Ret => {}

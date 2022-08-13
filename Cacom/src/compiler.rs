@@ -243,12 +243,11 @@ impl Compiler {
                     );
                     self.add_instruction(code, Bytecode::PushNone);
                 } else {
-                    let str_index: ConstantPoolIndex =
-                        self.constant_pool.add(Object::from(name.clone()));
+                    let cp_idx = self.constant_pool.add(Object::from(name.clone()));
+                    self.add_instruction(code, Bytecode::GetGlobal(cp_idx));
                     self.add_instruction(
                         code,
                         Bytecode::CallFunc {
-                            index: str_index,
                             arg_cnt: arguments.len().try_into().unwrap(),
                         },
                     );

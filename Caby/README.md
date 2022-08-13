@@ -44,9 +44,9 @@ Push the value of a local variable onto the stack
 - set_local = 0x07 | 2B Index to local frame  
 Pop a value from the operand stack and write it into the given local frame
 
-- call_func = 0x08 | 4B Index to constant pool | 1B Arguments count  
-Calls a function (not an object method) at given constant pool index.
-Pops arguments of an operand stack
+- call_func = 0x08 | 1B Arguments count  
+Calls a function (not an object method) at the top of the stack.
+Pops arguments of an operand stack. First popped should be the first argument etc.
 
 - ret = 0x09  
 Exits the function.

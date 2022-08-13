@@ -1,4 +1,5 @@
 #include "serializer.h"
+#include "vm.h"
 
 u32 read_4bytes_be(FILE* f) {
     i8 res[4];
@@ -138,6 +139,10 @@ struct vm_state serialize(FILE* f) {
     state.const_pool = cp;
 
     u32 entry_point = read_4bytes_be(f);
-    state.chunk = &as_function_s(state.const_pool.data[entry_point])->bc;
+    struct call_frame* entry = &state.frames[0];
+    entry->function = (struct object_function*)cp.data[entry_point];
+    // There should never be a return from global
+    entry->ret = 0;
+    entry->slots = 0;
     return state;
 }

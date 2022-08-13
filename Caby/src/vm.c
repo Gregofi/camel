@@ -13,11 +13,29 @@ void init_vm_state(struct vm_state* vm) {
     init_constant_pool(&vm->const_pool);
     init_table(&vm->globals);
     vm->locals = malloc(sizeof(*vm->locals) * (1 << 16));
-    vm->chunk = NULL;
     vm->op_stack = NULL;
-    vm->frames = NULL;
+    memset(vm->frames, 0, sizeof(vm->frames));
+    vm->frame_index = 0;
     vm->stack_cap = 0;
     vm->stack_len = 0;
+}
+
+static void push_frame(struct vm_state* vm, struct object_function* f) {
+    assert(vm->frame_index > 0);
+    struct call_frame* new_frame = &vm->frames[vm->frame_index];
+    struct call_frame* previous  = &vm->frames[vm->frame_index - 1];
+    new_frame->function = f;
+    new_frame->slots = previous->slots + previous->function->locals;
+    new_frame->ret = vm->ip;
+    vm->ip = new_frame->function->bc.data;
+    vm->frame_index += 1;
+}
+
+static void pop_frame(struct vm_state* vm) {
+    assert(vm->frame_index > 0);
+    struct call_frame* curr_frame = &vm->frames[vm->frame_index];
+    vm->ip = curr_frame->ret;
+    vm->frame_index -= 1;
 }
 
 void free_vm_state(struct vm_state* vm) {
@@ -171,8 +189,14 @@ bool interpret_eq(struct vm_state* vm) {
 
 static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
     switch (ins) {
-        case OP_RETURN:
-            return INTERPRET_RETURN;
+        case OP_RETURN: {
+            if (vm->frame_index > 0) {
+                pop_frame(vm);
+            } else {
+                return INTERPRET_RETURN;
+            }
+            break;
+        }
         case OP_PRINT:
             interpret_print(vm);
             break;
@@ -289,7 +313,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             vm->stack_len -= *vm->ip++;
             break;
         case OP_JMP:
-            vm->ip = &vm->chunk->data[READ_4BYTES_BE(vm->ip)];
+            vm->ip = &vm->frames[vm->frame_index].function->bc.data[READ_4BYTES_BE(vm->ip)];
             break;
         case OP_BRANCH_FALSE:
             fallthrough;
@@ -301,7 +325,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             }
             if ((ins == OP_BRANCH && val.boolean) || (ins == OP_BRANCH_FALSE && !val.boolean)) {
                 u32 dest = READ_4BYTES_BE(vm->ip);
-                vm->ip = &vm->chunk->data[dest];
+                vm->ip = &vm->frames[vm->frame_index].function->bc.data[dest];
             } else {
                 vm->ip += 4;
             }
@@ -356,7 +380,23 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             vm->ip += 2;
             struct value v = pop(vm);
             vm->locals[frame_idx] = v;
-            break;            
+            break;
+        }
+        case OP_CALL_FUNC: {
+            struct value v = pop(vm);
+            if (v.type == VAL_OBJECT && v.object->type == OBJECT_FUNCTION) {
+                struct object_function* f = as_function(v.object);
+                u8 arity = READ_IP();
+                if (arity != f->arity) {
+                    fprintf(stderr, "Got '%d' arguments, expected '%d'", arity, f->arity);
+                    return INTERPRET_ERROR;
+                }
+                push_frame(vm, f);
+            } else {
+                fprintf(stderr, "Only functions can be called\n");
+                return INTERPRET_ERROR;
+            }
+            break;
         }
         default:
             fprintf(stderr, "Unknown instruction 0x%x!\n", ins);
@@ -381,7 +421,6 @@ static int run(struct vm_state* vm) {
 // TODO: Maybe this guy shouldn't receive vm state at all and rather
 //       get constant pool, globals and entry point.
 int interpret(struct vm_state* vm) {
-    vm->ip = vm->chunk->data;
     return run(vm);
 }
 

@@ -1,0 +1,11 @@
+
+
+def foo(a) = {
+    var y = 5;
+    y + a
+};
+
+{
+    var x = 1;
+    print("{}", foo(x));
+}
