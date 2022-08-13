@@ -89,8 +89,9 @@ struct value interpret_string_concat(struct object* o1, struct object* o2) {
 
     u32 size = str1->size + str2->size;
     char* new_char = vmalloc(size + 1);
-    strncpy(new_char, str1->data, str1->size);
-    strcpy(new_char + str1->size, str2->data);
+    memcpy(new_char, str1->data, str1->size);
+    memcpy(new_char + str1->size, str2->data, str2->size);
+    new_char[size] = '\0';
 
     return NEW_OBJECT((struct object*)new_string_move(new_char, size));
 }

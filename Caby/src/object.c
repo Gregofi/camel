@@ -19,7 +19,7 @@ struct object* to_object_s(struct value val) {
 static uint32_t hashString(const char* key, int length) {
   uint32_t hash = 2166136261u;
   for (int i = 0; i < length; i++) {
-    hash ^= (uint8_t)key[i];
+    hash ^= (u8)key[i];
     hash *= 16777619;
   }
   return hash;
@@ -32,7 +32,8 @@ struct object_string* new_string(const char* str) {
     n->size = len;
     n->hash = hashString(str, n->size);
     n->data = vmalloc(len + 1);
-    strcpy(n->data, str);
+    memcpy(n->data, str, n->size);
+    n->data[n->size] = '\0';
     return n;
 }
 
