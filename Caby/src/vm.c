@@ -320,7 +320,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             vm->stack_len -= *vm->ip++;
             break;
         case OP_JMP:
-            vm->ip = &vm->frames[vm->frame_index].function->bc.data[READ_4BYTES_BE(vm->ip)];
+            vm->ip = &vm->frames[vm->frame_index - 1].function->bc.data[READ_4BYTES_BE(vm->ip)];
             break;
         case OP_BRANCH_FALSE:
             fallthrough;
@@ -332,7 +332,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             }
             if ((ins == OP_BRANCH && val.boolean) || (ins == OP_BRANCH_FALSE && !val.boolean)) {
                 u32 dest = READ_4BYTES_BE(vm->ip);
-                vm->ip = &vm->frames[vm->frame_index].function->bc.data[dest];
+                vm->ip = &vm->frames[vm->frame_index - 1].function->bc.data[dest];
             } else {
                 vm->ip += 4;
             }
