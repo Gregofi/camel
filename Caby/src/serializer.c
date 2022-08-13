@@ -1,4 +1,5 @@
 #include "serializer.h"
+#include "vm.h"
 
 u32 read_4bytes_be(FILE* f) {
     i8 res[4];
@@ -49,6 +50,7 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
         case OP_PRINT:
         case OP_PUSH_BOOL:
         case OP_DROPN:
+        case OP_CALL_FUNC:
             write_byte(c, fgetc(f));
             break;
         // Three byte size instructions
@@ -72,11 +74,6 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
         case OP_VAR_GLOBAL:
             write_dword(c, read_4bytes_be(f));
             break;
-        // Six byte size instructions
-        case OP_CALL_FUNC:
-            write_dword(c, read_4bytes_be(f));
-            write_byte(c, fgetc(f));
-            break;
         default:
             fprintf(stderr, "Unknown instruction opcode in deserialize: 0x%x", ins);
             exit(-3);
@@ -91,13 +88,14 @@ struct object* serialize_object(FILE* f) {
         case TAG_FUNCTION: {
             u32 name = read_4bytes_be(f);
             u8 parameters = fgetc(f);
+            u16 locals_cnt = read_2bytes_be(f);
             u32 body_len = read_4bytes_be(f);
             struct bc_chunk bc;
             init_bc_chunk(&bc);
             for (u32 i = 0; i < body_len; ++i) {
                 serialize_instruction(f, &bc);
             }
-            return (struct object*)new_function(parameters, bc, name);
+            return (struct object*)new_function(parameters, locals_cnt, bc, name);
         }
         case TAG_STRING: {
             u32 len = read_4bytes_be(f);
@@ -137,6 +135,11 @@ struct vm_state serialize(FILE* f) {
     state.const_pool = cp;
 
     u32 entry_point = read_4bytes_be(f);
-    state.chunk = &as_function_s(state.const_pool.data[entry_point])->bc;
+    struct call_frame* entry = &state.frames[state.frame_len++];
+    entry->function = (struct object_function*)cp.data[entry_point];
+    // There should never be a return from global
+    entry->ret = 0;
+    entry->slots = state.locals;
+    state.ip = entry->function->bc.data;
     return state;
 }

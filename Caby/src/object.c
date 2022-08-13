@@ -56,9 +56,10 @@ struct object_string* as_string_s(struct object* object) {
     return NULL;
 }
 
-struct object_function* new_function(u8 arity, struct bc_chunk c, u32 name) {
+struct object_function* new_function(u8 arity, u16 locals, struct bc_chunk c, u32 name) {
     struct object_function* f = vmalloc(sizeof(*f));
     f->arity = arity;
+    f->locals = locals;
     f->object.type = OBJECT_FUNCTION;
     f->bc = c;
     f->name = name;

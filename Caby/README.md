@@ -12,8 +12,7 @@ This is a table of constant values that will not change in the program. Followin
 `0x01 | length - 4 bytes | the string`
 The string is NOT zero terminated.
 - Function
-`0x00 | name - 4 bytes index to constant pool | parameters count - 1 byte | code length (in instructions) - 4 bytes | code ...`
-There probably should be serialized local variables...
+`0x00 | name - 4 bytes index to constant pool | parameters count - 1 byte | number of locals slots - 2b | code length (in instructions) - 4 bytes | code ...`
 - Class, method and member variable
 - Enum
 - TBD...
@@ -45,9 +44,9 @@ Push the value of a local variable onto the stack
 - set_local = 0x07 | 2B Index to local frame  
 Pop a value from the operand stack and write it into the given local frame
 
-- call_func = 0x08 | 4B Index to constant pool | 1B Arguments count  
-Calls a function (not an object method) at given constant pool index.
-Pops arguments of an operand stack
+- call_func = 0x08 | 1B Arguments count  
+Calls a function (not an object method) at the top of the stack.
+Pops arguments of an operand stack. First popped should be the first argument etc.
 
 - ret = 0x09  
 Exits the function.
@@ -88,9 +87,11 @@ Push the value of a global variable which name is stored in constant pool to the
 - set_global 0x14 | 4B index to constant pool
 Pop value from the top of the stack and assign it into variable which name is equal to the constant pool string indexed.
 - def_val_global 0x15 | 4B index to constant pool
-Defines a new immutable global variable. The cp index points to a string which is the variable name. Last byte signals if the value is mutable.
+Defines a new immutable global variable. The cp index points to a string which is the variable name.
+Pops value of the stack and assigns it to the variable.
 - def_var_global 0x16 | 4B index to constant pool
-Defines a new mutable global variable. The cp index points to a string which is the variable name. Last byte signals if the value is mutable.
+Defines a new mutable global variable. The cp index points to a string which is the variable name.
+Pops value of the stack and assigns it to the variable.
 
 #### Arithmetic operations
 - iadd 0x30
