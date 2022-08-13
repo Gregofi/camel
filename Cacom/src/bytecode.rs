@@ -24,19 +24,13 @@ pub enum Bytecode {
     GetLocal(LocalIndex),
     SetLocal(LocalIndex),
 
-    DeclValGlobal {
-        name: ConstantPoolIndex,
-    },
-    DeclVarGlobal {
-        name: ConstantPoolIndex,
-    },
+    DeclValGlobal { name: ConstantPoolIndex },
+    DeclVarGlobal { name: ConstantPoolIndex },
 
     GetGlobal(ConstantPoolIndex),
     SetGlobal(ConstantPoolIndex),
 
-    CallFunc {
-        arg_cnt: u8,
-    },
+    CallFunc { arg_cnt: u8 },
     Ret,
 
     Label(String),
@@ -60,9 +54,7 @@ pub enum Bytecode {
     BranchFalse(u32),
     BranchLongFalse(u64),
 
-    Print {
-        arg_cnt: u8,
-    },
+    Print { arg_cnt: u8 },
 
     Iadd,
     Isub,
@@ -283,9 +275,7 @@ impl Bytecode {
             Bytecode::DeclVarGlobal { .. } => 4,
             Bytecode::GetGlobal(_) => 4,
             Bytecode::SetGlobal(_) => 4,
-            Bytecode::CallFunc { arg_cnt } => {
-                std::mem::size_of_val(arg_cnt)
-            }
+            Bytecode::CallFunc { arg_cnt } => std::mem::size_of_val(arg_cnt),
             Bytecode::Ret => 0,
             Bytecode::Label(_) => unreachable!(),
             Bytecode::JmpLabel(_) => 4,

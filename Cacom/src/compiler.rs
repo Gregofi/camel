@@ -390,7 +390,12 @@ impl Compiler {
                 self.add_instruction(code, Bytecode::PushLiteral(fun_idx));
                 match &mut self.location {
                     Location::Global => {
-                        self.add_instruction(code, Bytecode::DeclValGlobal { name: new_fun_name_idx });
+                        self.add_instruction(
+                            code,
+                            Bytecode::DeclValGlobal {
+                                name: new_fun_name_idx,
+                            },
+                        );
                     }
                     Location::Local(env) => {
                         todo!("Nested functions are not yet implemented");
