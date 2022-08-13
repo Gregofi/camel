@@ -93,7 +93,7 @@ struct value interpret_string_concat(struct object* o1, struct object* o2) {
     memcpy(new_char + str1->size, str2->data, str2->size);
     new_char[size] = '\0';
 
-    return NEW_OBJECT((struct object*)new_string_move(new_char, size));
+    return NEW_OBJECT(new_string_move(new_char, size));
 }
 
 void interpret_print(struct vm_state* vm) {
