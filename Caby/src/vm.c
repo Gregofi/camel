@@ -39,7 +39,7 @@ static void push_frame(struct vm_state* vm, struct object_function* f) {
 
 static void pop_frame(struct vm_state* vm) {
     assert(vm->frame_index > 0);
-    struct call_frame* curr_frame = &vm->frames[vm->frame_index];
+    struct call_frame* curr_frame = &vm->frames[vm->frame_index - 1];
     vm->ip = curr_frame->ret;
     vm->frame_index -= 1;
 }
@@ -196,8 +196,9 @@ bool interpret_eq(struct vm_state* vm) {
 static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
     switch (ins) {
         case OP_RETURN: {
-            if (vm->frame_index > 0) {
+            if (vm->frame_index > 1) {
                 pop_frame(vm);
+            // Only the last global frame is remaining
             } else {
                 return INTERPRET_RETURN;
             }
