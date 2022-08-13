@@ -9,6 +9,12 @@
 #include <stdio.h>
 #include <assert.h>
 
+#ifdef __DEBUG__
+    #define DUMP_INS(ins) do {dissasemble_instruction(stderr, ins);fprintf(stderr, "\n");} while(false)
+#else
+    #define DUMP_INS(ins)
+#endif
+
 void init_vm_state(struct vm_state* vm) {
     init_constant_pool(&vm->const_pool);
     init_table(&vm->globals);
@@ -407,6 +413,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
 static int run(struct vm_state* vm) {
     u8 ins;
     while (true) {
+        DUMP_INS(vm->ip);
         ins = READ_IP();
         enum interpret_result res = interpret_ins(vm, ins);
         if (res == INTERPRET_ERROR) {
