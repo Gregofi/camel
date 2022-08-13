@@ -96,6 +96,7 @@ u32 value_hash(struct value v) {
             len = sizeof(v.double_num);
             break;
         case VAL_OBJECT:
+            // TODO: should be able to use the below pointer hash when strings are interned
             switch(v.object->type) {
                 case OBJECT_STRING: {
                     struct object_string* s = as_string(v.object);
