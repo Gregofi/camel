@@ -77,3 +77,36 @@ struct object_function* as_function_s(struct object* object) {
     }
     return NULL;
 }
+
+bool value_eq(struct value v1, struct value v2) {
+    if (v1.type != v2.type)
+        return false;
+    switch (v1.type) {
+        case VAL_INT:
+            return v1.integer == v2.integer;
+        case VAL_BOOL:
+            return v1.boolean == v2.boolean;
+        case VAL_DOUBLE:
+            return v1.double_num == v2.double_num;
+        case VAL_OBJECT:
+            switch(v1.object->type) {
+                case OBJECT_STRING: {
+                    // TODO: use the below pointer comparison when strings are interned
+                    struct object_string* s1 = as_string(v1.object);
+                    struct object_string* s2 = as_string(v2.object);
+                    if (s1->size != s2->size)
+                        return false;
+                    if (s1->hash != s2->hash)
+                        return false;
+                    return memcmp(s1->data, s2->data, s1->size) == 0;
+                }
+                default:
+                    // Equal means "the same object" in the shallow sense,
+                    // not structurally equal
+                    return v1.object == v2.object;
+            }
+        case VAL_NONE:
+            return true;
+    }
+    UNREACHABLE();
+}

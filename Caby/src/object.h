@@ -101,3 +101,6 @@ struct object_function* new_function(u8 arity, u16 locals, struct bc_chunk c, u3
 struct object_function* as_function(struct object* object);
 
 struct object_function* as_function_s(struct object* object);
+
+// Compares two values for equality
+bool value_eq(struct value v1, struct value v2);

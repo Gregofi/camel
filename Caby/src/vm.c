@@ -160,42 +160,6 @@ void interpret_print(struct vm_state* vm) {
     push(vm, NEW_NONE());
 }
 
-bool interpret_eq(struct vm_state* vm) {
-    struct value v1 = pop(vm);
-    struct value v2 = pop(vm);
-    bool eq = false;
-    if (v1.type == v2.type) {
-        switch (v1.type) {
-            case VAL_INT:
-                eq = v1.integer == v2.integer;
-                break;
-            case VAL_BOOL:
-                eq = v1.boolean == v2.boolean;
-                break;
-            case VAL_DOUBLE:
-                eq = v1.double_num == v2.double_num;
-                break;
-            case VAL_OBJECT:
-                switch(v1.object->type) {
-                    case OBJECT_STRING:
-                        // TODO: Maybe compare hashes?
-                        eq = strcmp(as_string(v1.object)->data,
-                                    as_string(v2.object)->data) == 0;
-                        break;
-                    case OBJECT_FUNCTION: {
-                        NOT_IMPLEMENTED();
-                        break;
-                    }
-                }
-                break;
-            case VAL_NONE:
-                eq = true;
-                break;
-        }
-    }
-    return eq;
-}
-
 static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
     switch (ins) {
         case OP_RETURN: {
@@ -300,7 +264,9 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             break;
         }
         case OP_EQ: {
-            bool res = interpret_eq(vm);
+            struct value v1 = pop(vm);
+            struct value v2 = pop(vm);
+            bool res = value_eq(v1, v2);
             push(vm, NEW_BOOL(res));
             break;
         }
