@@ -86,7 +86,11 @@ impl fmt::Display for Object {
                 locals_cnt,
                 body,
             } => {
-                writeln!(f, "Function: {}, parameters: {}, locals: {}", name, parameters_cnt, locals_cnt)?;
+                writeln!(
+                    f,
+                    "Function: {}, parameters: {}, locals: {}",
+                    name, parameters_cnt, locals_cnt
+                )?;
                 writeln!(f, "{}", body)
             }
         }

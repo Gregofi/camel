@@ -370,7 +370,10 @@ impl Compiler {
                     // Since we just added scope it will always be local
                     if let Location::Local(env) = &mut self.location {
                         env.add_local(par.clone(), self.local_count, false)?;
-                        self.add_instruction(&mut new_code, Bytecode::SetLocal(idx.try_into().unwrap()));
+                        self.add_instruction(
+                            &mut new_code,
+                            Bytecode::SetLocal(idx.try_into().unwrap()),
+                        );
                         self.add_locals(1);
                     }
                 }

@@ -284,7 +284,9 @@ impl Bytecode {
             Bytecode::DeclVarGlobal { .. } => 4,
             Bytecode::GetGlobal(_) => 4,
             Bytecode::SetGlobal(_) => 4,
-            Bytecode::CallFunc { index, arg_cnt } => std::mem::size_of_val(index) + std::mem::size_of_val(arg_cnt),
+            Bytecode::CallFunc { index, arg_cnt } => {
+                std::mem::size_of_val(index) + std::mem::size_of_val(arg_cnt)
+            }
             Bytecode::Ret => 0,
             Bytecode::Label(_) => unreachable!(),
             Bytecode::JmpLabel(_) => 4,
