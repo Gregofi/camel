@@ -376,9 +376,9 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             break;
         }
         case OP_GET_LOCAL: {
-            u16 frame_idx = READ_2BYTES_BE(vm->ip);
+            u16 slot_idx = READ_2BYTES_BE(vm->ip);
             vm->ip += 2;
-            struct value v = vm->locals[frame_idx];
+            struct value v = vm->frames[vm->frame_index - 1].slots[slot_idx];
             push(vm, v);
             break;
         }
@@ -386,7 +386,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             u16 frame_idx = READ_2BYTES_BE(vm->ip);
             vm->ip += 2;
             struct value v = pop(vm);
-            vm->locals[frame_idx] = v;
+            vm->frames[vm->frame_index - 1].slots[frame_idx] = v;
             break;
         }
         case OP_CALL_FUNC: {
