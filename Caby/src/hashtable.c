@@ -15,14 +15,15 @@ void free_table(struct table* t) {
 /// Returns the entry where the key should be inserted if it's not in table,
 /// otherwise returns entry saved under the key.
 static struct entry* find_entry(struct entry* entries, size_t capacity,
-                                struct object_string* key) {
-    // Assume the capacity is a power of two and do fast modulo using mask.
-    u32 idx = key->hash & (capacity - 1);
+                                struct value key) {
+    // Assume the capacity is a power of two and do fast modulo using and.
+    u32 hash = value_hash(key);
+    u32 idx = hash & (capacity - 1);
     struct entry* tombstone = NULL;
 
     for (;;) {
         struct entry* e = &entries[idx];
-        if (e->key == NULL) {
+        if (e->key.type == VAL_NONE) {
             // empty entry
             if (e->val.type == VAL_NONE) {
                 return tombstone != NULL ? tombstone : e;
@@ -33,7 +34,7 @@ static struct entry* find_entry(struct entry* entries, size_t capacity,
                     tombstone = e;
                 }
             }
-        } else if (strcmp(e->key->data, key->data) == 0) {
+        } else if (value_eq(e->key, key)) {
             return e;
         }
 
@@ -46,7 +47,7 @@ static void adjust_capacity(struct table* t, size_t capacity) {
     struct entry* entries = vmalloc(sizeof(*entries) * capacity);
 
     for (size_t i = 0; i < capacity; ++i) {
-        entries[i].key = NULL;
+        entries[i].key = NEW_NONE();
         entries[i].val = NEW_NONE();
     }
     t->count = 0;
@@ -54,7 +55,7 @@ static void adjust_capacity(struct table* t, size_t capacity) {
     // Rehash the entire table
     for (size_t i = 0; i < t->capacity; ++i) {
         struct entry* e = &t->entries[i];
-        if (e->key == NULL) {
+        if (e->key.type == VAL_NONE) {
             continue;
         }
 
@@ -69,14 +70,14 @@ static void adjust_capacity(struct table* t, size_t capacity) {
     t->capacity = capacity;
 }
 
-bool table_set(struct table* t, struct object_string* key, struct value val) {
+bool table_set(struct table* t, struct value key, struct value val) {
     if (t->count >= t->capacity * TABLE_MAX_LOAD) {
         u64 capacity = get_cap(t->capacity);
         adjust_capacity(t, capacity);
     }
 
     struct entry* e = find_entry(t->entries, t->capacity, key);
-    bool is_new_key = e->key == NULL;
+    bool is_new_key = e->key.type == VAL_NONE;
     // Only increment count if the bucket doesn't contain tombstone
     if (is_new_key && e->val.type == VAL_NONE) {
         t->count += 1;
@@ -87,13 +88,13 @@ bool table_set(struct table* t, struct object_string* key, struct value val) {
     return is_new_key;
 }
 
-bool table_get(struct table* t, struct object_string* key, struct value* val) {
+bool table_get(struct table* t, struct value key, struct value* val) {
     if (t->count == 0) {
         return false;
     }
 
     struct entry* e = find_entry(t->entries, t->capacity, key);
-    if (e->key == NULL) {
+    if (e->key.type == VAL_NONE) {
         return false;
     }
 
@@ -101,18 +102,18 @@ bool table_get(struct table* t, struct object_string* key, struct value* val) {
     return true;
 }
 
-bool table_delete(struct table* t, struct object_string* key) {
+bool table_delete(struct table* t, struct value key) {
     if (t->count == 0) {
         return false;
     }
 
     struct entry* e = find_entry(t->entries, t->capacity, key);
-    if (e->key == NULL) {
+    if (e->key.type == VAL_NONE) {
         return false;
     }
 
     // tombstone
-    e->key = NULL;
+    e->key.type = VAL_NONE;
     e->val = NEW_BOOL(true);
     return true;
 }

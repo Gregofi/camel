@@ -7,7 +7,7 @@
 #define TABLE_MAX_LOAD 0.75
 
 struct entry {
-    struct object_string* key;
+    struct value key;
     struct value val;
 };
 
@@ -23,8 +23,8 @@ void free_table(struct table* t);
 
 /// Inserts the value under key.
 /// Returns true if the key wasn't in the table, otherwise returns false.
-bool table_set(struct table* t, struct object_string* key, struct value val);
+bool table_set(struct table* t, struct value key, struct value val);
 
-bool table_get(struct table* t, struct object_string* key, struct value* val);
+bool table_get(struct table* t, struct value key, struct value* val);
 
-bool table_delete(struct table* t, struct object_string* key);
+bool table_delete(struct table* t, struct value key);

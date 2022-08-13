@@ -312,7 +312,8 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             u32 name_idx = READ_4BYTES_BE(vm->ip);
             vm->ip += 4;
             struct object_string* name = read_string_cp(&vm->const_pool, name_idx);
-            bool new_v = table_set(&vm->globals, name, val);
+            struct value name_obj = NEW_OBJECT(name);
+            bool new_v = table_set(&vm->globals, name_obj, val);
             if (!new_v) {
                 fprintf(stderr, "Error: Variable '%s' is already defined.\n", name->data);
                 exit(6);
@@ -323,8 +324,9 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             u32 name_idx = READ_4BYTES_BE(vm->ip);
             vm->ip += 4;
             struct object_string* name = read_string_cp(&vm->const_pool, name_idx);
+            struct value name_obj = NEW_OBJECT(name);
             struct value val;
-            if (!table_get(&vm->globals, name, &val)) {
+            if (!table_get(&vm->globals, name_obj, &val)) {
                 fprintf(stderr, "Error: Access to undefined variable '%s'.\n", name->data);
                 exit(6);
             }
@@ -335,8 +337,9 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             u32 name_idx = READ_4BYTES_BE(vm->ip);
             vm->ip += 4;
             struct object_string* name = read_string_cp(&vm->const_pool, name_idx);
+            struct value name_obj = NEW_OBJECT(name);
             struct value v = pop(vm);
-            if (table_set(&vm->globals, name, v)) {
+            if (table_set(&vm->globals, name_obj, v)) {
                 fprintf(stderr, "Global variable '%s' is not defined!\n", name->data);
                 exit(1);
             }

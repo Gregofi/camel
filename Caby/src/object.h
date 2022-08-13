@@ -102,5 +102,10 @@ struct object_function* as_function(struct object* object);
 
 struct object_function* as_function_s(struct object* object);
 
+
+// Computes hash of a value.
+// (Hashing of strings is separate, this hashes the pointer to string.)
+u32 value_hash(struct value v);
+
 // Compares two values for equality
 bool value_eq(struct value v1, struct value v2);

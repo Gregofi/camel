@@ -78,6 +78,46 @@ struct object_function* as_function_s(struct object* object) {
     return NULL;
 }
 
+
+u32 value_hash(struct value v) {
+    u8* p;
+    size_t len;
+    switch (v.type) {
+        case VAL_INT:
+            p = (u8*)&v.integer;
+            len = sizeof(v.integer);
+            break;
+        case VAL_BOOL:
+            p = (u8*)&v.boolean;
+            len = sizeof(v.boolean);
+            break;
+        case VAL_DOUBLE:
+            p = (u8*)&v.double_num;
+            len = sizeof(v.double_num);
+            break;
+        case VAL_OBJECT:
+            switch(v.object->type) {
+                case OBJECT_STRING: {
+                    struct object_string* s = as_string(v.object);
+                    return s->hash;
+                }
+                default:
+                    p = (u8*)&v.object;
+                    len = sizeof(v.object);
+            }
+            break;
+        case VAL_NONE:
+            len = 0;
+            break;
+    }
+    uint32_t hash = 2166136261u;
+    for (size_t i = 0; i < len; i++) {
+      hash ^= p[i];
+      hash *= 16777619;
+    }
+    return hash;
+}
+
 bool value_eq(struct value v1, struct value v2) {
     if (v1.type != v2.type)
         return false;
