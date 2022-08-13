@@ -357,7 +357,7 @@ impl Compiler {
             } => {
                 let locals_backup = self.reset_locals();
 
-                let new_fun_idx = self.constant_pool.add(Object::from(name.clone()));
+                let new_fun_name_idx = self.constant_pool.add(Object::from(name.clone()));
 
                 // The function just acts as another scope.
                 // For global function this behaves as expected,
@@ -380,7 +380,7 @@ impl Compiler {
                 self.leave_scope();
 
                 let fun = Object::Function {
-                    name: new_fun_idx,
+                    name: new_fun_name_idx,
                     parameters_cnt: parameters.len().try_into().unwrap(),
                     locals_cnt: self.local_max,
                     body: new_code,
@@ -390,7 +390,7 @@ impl Compiler {
                 self.add_instruction(code, Bytecode::PushLiteral(fun_idx));
                 match &mut self.location {
                     Location::Global => {
-                        self.add_instruction(code, Bytecode::SetGlobal(new_fun_idx));
+                        self.add_instruction(code, Bytecode::DeclValGlobal { name: new_fun_name_idx });
                     }
                     Location::Local(env) => {
                         todo!("Nested functions are not yet implemented");
