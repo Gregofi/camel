@@ -50,6 +50,7 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
         case OP_PRINT:
         case OP_PUSH_BOOL:
         case OP_DROPN:
+        case OP_CALL_FUNC:
             write_byte(c, fgetc(f));
             break;
         // Three byte size instructions
@@ -72,11 +73,6 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
         case OP_VAL_GLOBAL:
         case OP_VAR_GLOBAL:
             write_dword(c, read_4bytes_be(f));
-            break;
-        // Six byte size instructions
-        case OP_CALL_FUNC:
-            write_dword(c, read_4bytes_be(f));
-            write_byte(c, fgetc(f));
             break;
         default:
             fprintf(stderr, "Unknown instruction opcode in deserialize: 0x%x", ins);
@@ -139,7 +135,7 @@ struct vm_state serialize(FILE* f) {
     state.const_pool = cp;
 
     u32 entry_point = read_4bytes_be(f);
-    struct call_frame* entry = &state.frames[0];
+    struct call_frame* entry = &state.frames[state.frame_index++];
     entry->function = (struct object_function*)cp.data[entry_point];
     // There should never be a return from global
     entry->ret = 0;
