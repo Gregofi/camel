@@ -79,6 +79,8 @@ static struct object_string* pop_string(struct vm_state* vm) {
 // =========== Interpreting functions ===========
 
 #define READ_IP() (*vm->ip++)
+#define TOP_FRAME() (vm->frames[vm->frame_len - 1])
+#define CURRENT_FUNCTION() (TOP_FRAME().function)
 
 /// Returns new 'struct value' containing string object which is contatenation of o1 and o2
 struct value interpret_string_concat(struct object* o1, struct object* o2) {
@@ -320,7 +322,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             vm->stack_len -= *vm->ip++;
             break;
         case OP_JMP:
-            vm->ip = &vm->frames[vm->frame_len - 1].function->bc.data[READ_4BYTES_BE(vm->ip)];
+            vm->ip = &CURRENT_FUNCTION()->bc.data[READ_4BYTES_BE(vm->ip)];
             break;
         case OP_BRANCH_FALSE:
             fallthrough;
@@ -332,7 +334,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             }
             if ((ins == OP_BRANCH && val.boolean) || (ins == OP_BRANCH_FALSE && !val.boolean)) {
                 u32 dest = READ_4BYTES_BE(vm->ip);
-                vm->ip = &vm->frames[vm->frame_len - 1].function->bc.data[dest];
+                vm->ip = &CURRENT_FUNCTION()->bc.data[dest];
             } else {
                 vm->ip += 4;
             }
@@ -378,7 +380,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
         case OP_GET_LOCAL: {
             u16 slot_idx = READ_2BYTES_BE(vm->ip);
             vm->ip += 2;
-            struct value v = vm->frames[vm->frame_len - 1].slots[slot_idx];
+            struct value v = TOP_FRAME().slots[slot_idx];
             push(vm, v);
             break;
         }
@@ -386,7 +388,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             u16 frame_idx = READ_2BYTES_BE(vm->ip);
             vm->ip += 2;
             struct value v = pop(vm);
-            vm->frames[vm->frame_len - 1].slots[frame_idx] = v;
+            TOP_FRAME().slots[frame_idx] = v;
             break;
         }
         case OP_CALL_FUNC: {
@@ -433,3 +435,4 @@ int interpret(struct vm_state* vm) {
 }
 
 #undef READ_IP
+#undef TOP_FRAME
