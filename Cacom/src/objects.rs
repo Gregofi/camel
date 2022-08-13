@@ -3,8 +3,7 @@ use std::fs::File;
 use std::io;
 use std::io::prelude::*;
 
-use crate::bytecode::Code;
-use crate::bytecode::ConstantPoolIndex;
+use crate::bytecode::{Code, ConstantPoolIndex, LocalIndex};
 use crate::serializable::Serializable;
 
 pub enum Object {
@@ -12,6 +11,7 @@ pub enum Object {
     Function {
         name: ConstantPoolIndex,
         parameters_cnt: u8,
+        locals_cnt: LocalIndex,
         body: Code,
     },
 }
@@ -83,9 +83,10 @@ impl fmt::Display for Object {
             Object::Function {
                 name,
                 parameters_cnt,
+                locals_cnt,
                 body,
             } => {
-                writeln!(f, "Function: {}, parameters: {}", name, parameters_cnt)?;
+                writeln!(f, "Function: {}, parameters: {}, locals: {}", name, parameters_cnt, locals_cnt)?;
                 writeln!(f, "{}", body)
             }
         }
@@ -110,10 +111,12 @@ impl Serializable for Object {
             Object::Function {
                 name,
                 parameters_cnt,
+                locals_cnt,
                 body,
             } => {
                 f.write_all(&name.to_le_bytes())?;
                 f.write_all(&parameters_cnt.to_le_bytes())?;
+                f.write_all(&locals_cnt.to_le_bytes())?;
                 body.serialize(f)
             }
         }

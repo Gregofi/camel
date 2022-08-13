@@ -34,6 +34,7 @@ struct object_string {
 struct object_function {
     struct object object;
     uint8_t arity;
+    u16 locals;
     struct bc_chunk bc;
     /// Index to constant pool
     u32 name;
@@ -95,7 +96,7 @@ struct object_string* as_string(struct object* object);
 struct object_string* as_string_s(struct object* object);
 
 /// Returns new function object, takes ownership of 'name'.
-struct object_function* new_function(u8 arity, struct bc_chunk c, u32 name);
+struct object_function* new_function(u8 arity, u16 locals, struct bc_chunk c, u32 name);
 
 struct object_function* as_function(struct object* object);
 

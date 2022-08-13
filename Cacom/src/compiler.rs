@@ -335,13 +335,15 @@ impl Compiler {
                 parameters,
                 body,
             } => {
-                todo!();
+                // let locals_backup = self.local_count;
+                // self.local_count = 0;
                 let new_fun_idx = self.constant_pool.add(Object::from(name.clone()));
 
                 // Create new env and populate it with parameters
                 let mut new_env = Environment::new();
-                for par in parameters {
+                for (idx, par) in parameters.iter().enumerate() {
                     new_env.add_local(par.clone(), self.local_count, false)?;
+                    self.add_instruction(code, Bytecode::SetLocal(idx.try_into().unwrap()));
                     self.local_count += 1;
                 }
                 let code = self.compile_fun(body)?;
@@ -349,6 +351,7 @@ impl Compiler {
                 let fun = Object::Function {
                     name: new_fun_idx,
                     parameters_cnt: parameters.len().try_into().unwrap(),
+                    locals_cnt: self.local_count,
                     body: code,
                 };
 
@@ -362,6 +365,8 @@ impl Compiler {
                         todo!("Nested functions are not yet implemented");
                     }
                 };
+
+                // self.local_count = locals_backup;
             }
             AST::Top(stmts) => self.compile_block(stmts, code)?,
             AST::While { guard, body } => todo!(),
@@ -467,10 +472,10 @@ pub fn compile(ast: &AST) -> Result<(ConstantPool, ConstantPoolIndex), &'static 
     let main_fun = Object::Function {
         name: idx,
         parameters_cnt: 0,
+        locals_cnt: compiler.local_count,
         body: code,
     };
     let main_fun_idx = compiler.constant_pool.add(main_fun);
-
     compiler.constant_pool.data = compiler
         .constant_pool
         .data
@@ -480,12 +485,14 @@ pub fn compile(ast: &AST) -> Result<(ConstantPool, ConstantPoolIndex), &'static 
                 body,
                 name,
                 parameters_cnt,
+                locals_cnt,
             } => Object::Function {
                 body: Code {
                     code: jump_pass(body.code),
                 },
                 name,
                 parameters_cnt,
+                locals_cnt,
             },
             _ => f,
         })

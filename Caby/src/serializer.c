@@ -91,13 +91,14 @@ struct object* serialize_object(FILE* f) {
         case TAG_FUNCTION: {
             u32 name = read_4bytes_be(f);
             u8 parameters = fgetc(f);
+            u16 locals_cnt = read_2bytes_be(f);
             u32 body_len = read_4bytes_be(f);
             struct bc_chunk bc;
             init_bc_chunk(&bc);
             for (u32 i = 0; i < body_len; ++i) {
                 serialize_instruction(f, &bc);
             }
-            return (struct object*)new_function(parameters, bc, name);
+            return (struct object*)new_function(parameters, locals_cnt, bc, name);
         }
         case TAG_STRING: {
             u32 len = read_4bytes_be(f);

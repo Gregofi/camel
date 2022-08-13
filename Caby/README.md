@@ -12,8 +12,7 @@ This is a table of constant values that will not change in the program. Followin
 `0x01 | length - 4 bytes | the string`
 The string is NOT zero terminated.
 - Function
-`0x00 | name - 4 bytes index to constant pool | parameters count - 1 byte | code length (in instructions) - 4 bytes | code ...`
-There probably should be serialized local variables...
+`0x00 | name - 4 bytes index to constant pool | parameters count - 1 byte | number of locals slots - 2b | code length (in instructions) - 4 bytes | code ...`
 - Class, method and member variable
 - Enum
 - TBD...
