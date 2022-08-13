@@ -65,6 +65,9 @@ size_t dissasemble_instruction(FILE* f, u8* ins) {
         case OP_PRINT:
             fprintf(f, "PRINT args: %d", ins[1]);
             return 2;
+        case OP_CALL_FUNC:
+            fprintf(f, "CALL_FUNC, args: %d", *(ins + 1));
+            return 2;
         case OP_PUSH_SHORT:
             fprintf(f, "PUSH_SHORT %d", READ_2BYTES_BE(ins + 1));
             return 3;
@@ -110,9 +113,6 @@ size_t dissasemble_instruction(FILE* f, u8* ins) {
         case OP_PUSH_LITERAL:
             fprintf(f, "PUSH_LITERAL %d", READ_4BYTES_BE(ins + 1));
             return 5;
-        case OP_CALL_FUNC:
-            fprintf(f, "CALL_FUNC func: %d, args: %d", READ_4BYTES_BE(ins + 1), ins[5]);
-            return 6;
         default:
             fprintf(f, "UNKNOWN_INSTRUCTION 0x%x", *ins);
             return 1;

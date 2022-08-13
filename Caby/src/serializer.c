@@ -143,6 +143,7 @@ struct vm_state serialize(FILE* f) {
     entry->function = (struct object_function*)cp.data[entry_point];
     // There should never be a return from global
     entry->ret = 0;
-    entry->slots = 0;
+    entry->slots = state.locals;
+    state.ip = entry->function->bc.data;
     return state;
 }
