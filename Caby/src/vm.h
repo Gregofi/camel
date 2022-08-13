@@ -23,7 +23,7 @@ struct call_frame {
 
 struct vm_state {
     struct call_frame frames[FRAME_DEPTH];
-    u16 frame_index;
+    u16 frame_len;
     u8* ip;
 
     struct constant_pool const_pool;

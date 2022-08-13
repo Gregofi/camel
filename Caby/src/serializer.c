@@ -135,7 +135,7 @@ struct vm_state serialize(FILE* f) {
     state.const_pool = cp;
 
     u32 entry_point = read_4bytes_be(f);
-    struct call_frame* entry = &state.frames[state.frame_index++];
+    struct call_frame* entry = &state.frames[state.frame_len++];
     entry->function = (struct object_function*)cp.data[entry_point];
     // There should never be a return from global
     entry->ret = 0;

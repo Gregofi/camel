@@ -21,27 +21,27 @@ void init_vm_state(struct vm_state* vm) {
     vm->locals = malloc(sizeof(*vm->locals) * (1 << 16));
     vm->op_stack = NULL;
     memset(vm->frames, 0, sizeof(vm->frames));
-    vm->frame_index = 0;
+    vm->frame_len = 0;
     vm->stack_cap = 0;
     vm->stack_len = 0;
 }
 
 static void push_frame(struct vm_state* vm, struct object_function* f) {
-    assert(vm->frame_index > 0);
-    struct call_frame* new_frame = &vm->frames[vm->frame_index];
-    struct call_frame* previous  = &vm->frames[vm->frame_index - 1];
+    assert(vm->frame_len > 0);
+    struct call_frame* new_frame = &vm->frames[vm->frame_len];
+    struct call_frame* previous  = &vm->frames[vm->frame_len - 1];
     new_frame->function = f;
     new_frame->slots = previous->slots + previous->function->locals;
     new_frame->ret = vm->ip;
     vm->ip = new_frame->function->bc.data;
-    vm->frame_index += 1;
+    vm->frame_len += 1;
 }
 
 static void pop_frame(struct vm_state* vm) {
-    assert(vm->frame_index > 0);
-    struct call_frame* curr_frame = &vm->frames[vm->frame_index - 1];
+    assert(vm->frame_len > 0);
+    struct call_frame* curr_frame = &vm->frames[vm->frame_len - 1];
     vm->ip = curr_frame->ret;
-    vm->frame_index -= 1;
+    vm->frame_len -= 1;
 }
 
 void free_vm_state(struct vm_state* vm) {
@@ -196,7 +196,7 @@ bool interpret_eq(struct vm_state* vm) {
 static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
     switch (ins) {
         case OP_RETURN: {
-            if (vm->frame_index > 1) {
+            if (vm->frame_len > 1) {
                 pop_frame(vm);
             // Only the last global frame is remaining
             } else {
@@ -320,7 +320,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             vm->stack_len -= *vm->ip++;
             break;
         case OP_JMP:
-            vm->ip = &vm->frames[vm->frame_index - 1].function->bc.data[READ_4BYTES_BE(vm->ip)];
+            vm->ip = &vm->frames[vm->frame_len - 1].function->bc.data[READ_4BYTES_BE(vm->ip)];
             break;
         case OP_BRANCH_FALSE:
             fallthrough;
@@ -332,7 +332,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             }
             if ((ins == OP_BRANCH && val.boolean) || (ins == OP_BRANCH_FALSE && !val.boolean)) {
                 u32 dest = READ_4BYTES_BE(vm->ip);
-                vm->ip = &vm->frames[vm->frame_index - 1].function->bc.data[dest];
+                vm->ip = &vm->frames[vm->frame_len - 1].function->bc.data[dest];
             } else {
                 vm->ip += 4;
             }
@@ -378,7 +378,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
         case OP_GET_LOCAL: {
             u16 slot_idx = READ_2BYTES_BE(vm->ip);
             vm->ip += 2;
-            struct value v = vm->frames[vm->frame_index - 1].slots[slot_idx];
+            struct value v = vm->frames[vm->frame_len - 1].slots[slot_idx];
             push(vm, v);
             break;
         }
@@ -386,7 +386,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             u16 frame_idx = READ_2BYTES_BE(vm->ip);
             vm->ip += 2;
             struct value v = pop(vm);
-            vm->frames[vm->frame_index - 1].slots[frame_idx] = v;
+            vm->frames[vm->frame_len - 1].slots[frame_idx] = v;
             break;
         }
         case OP_CALL_FUNC: {
