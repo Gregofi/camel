@@ -77,7 +77,10 @@ struct Compiler {
     constant_pool: ConstantPool,
     location: Location,
     label_generator: LabelGenerator,
+    // Current local variables that are active
     local_count: LocalIndex,
+    /// Tracks maximum number of local slots needed by function
+    local_max: LocalIndex,
 }
 
 impl Compiler {
@@ -87,7 +90,25 @@ impl Compiler {
             location: Location::Global,
             label_generator: LabelGenerator::new(),
             local_count: 0,
+            local_max: 0,
         }
+    }
+
+    fn add_locals(&mut self, cnt: LocalIndex) {
+        self.local_count += cnt;
+        self.local_max = std::cmp::max(self.local_count, self.local_max);
+    }
+
+    fn reset_locals(&mut self) -> (LocalIndex, LocalIndex) {
+        let backup = (self.local_count, self.local_max);
+        self.local_count = 0;
+        self.local_max = 0;
+        backup
+    }
+
+    fn restore_locals(&mut self, backup: (LocalIndex, LocalIndex)) {
+        self.local_count = backup.0;
+        self.local_max = backup.1;
     }
 
     fn enter_scope(&mut self) {
@@ -307,7 +328,7 @@ impl Compiler {
                     Location::Local(env) => {
                         env.add_local(name.clone(), self.local_count, *mutable)?;
                         self.add_instruction(code, Bytecode::SetLocal(self.local_count));
-                        self.local_count += 1;
+                        self.add_locals(1);
                     }
                 }
             }
@@ -335,38 +356,46 @@ impl Compiler {
                 parameters,
                 body,
             } => {
-                // let locals_backup = self.local_count;
-                // self.local_count = 0;
+                let locals_backup = self.reset_locals();
+
                 let new_fun_idx = self.constant_pool.add(Object::from(name.clone()));
 
-                // Create new env and populate it with parameters
-                let mut new_env = Environment::new();
+                // The function just acts as another scope.
+                // For global function this behaves as expected,
+                // for nested it allows for closures (althrough
+                // the indexes won't match).
+                self.enter_scope();
+                let mut new_code = Code::new();
                 for (idx, par) in parameters.iter().enumerate() {
-                    new_env.add_local(par.clone(), self.local_count, false)?;
-                    self.add_instruction(code, Bytecode::SetLocal(idx.try_into().unwrap()));
-                    self.local_count += 1;
+                    // Since we just added scope it will always be local
+                    if let Location::Local(env) = &mut self.location {
+                        env.add_local(par.clone(), self.local_count, false)?;
+                        self.add_instruction(&mut new_code, Bytecode::SetLocal(idx.try_into().unwrap()));
+                        self.add_locals(1);
+                    }
                 }
-                let code = self.compile_fun(body)?;
+                self.compile_fun(&mut new_code, body)?;
+                self.leave_scope();
 
                 let fun = Object::Function {
                     name: new_fun_idx,
                     parameters_cnt: parameters.len().try_into().unwrap(),
-                    locals_cnt: self.local_count,
-                    body: code,
+                    locals_cnt: self.local_max,
+                    body: new_code,
                 };
 
                 let fun_idx = self.constant_pool.add(fun);
-
+                self.add_instruction(code, Bytecode::PushLiteral(fun_idx));
                 match &mut self.location {
                     Location::Global => {
-                        todo!();
+                        self.add_instruction(code, Bytecode::SetGlobal(new_fun_idx));
                     }
                     Location::Local(env) => {
                         todo!("Nested functions are not yet implemented");
                     }
                 };
 
-                // self.local_count = locals_backup;
+                self.restore_locals(locals_backup);
             }
             AST::Top(stmts) => self.compile_block(stmts, code)?,
             AST::While { guard, body } => todo!(),
@@ -376,18 +405,16 @@ impl Compiler {
         Ok(())
     }
 
-    fn compile_fun(&mut self, ast: &Expr) -> Result<Code, &'static str> {
-        let mut code = Code::new();
-
-        self.compile_expr(ast, &mut code, false)?;
+    fn compile_fun(&mut self, code: &mut Code, ast: &Expr) -> Result<(), &'static str> {
+        self.compile_expr(ast, code, false)?;
         if code.code.is_empty() {
-            self.add_instruction(&mut code, Bytecode::PushNone);
+            self.add_instruction(code, Bytecode::PushNone);
         }
         // Return last statement if return is omitted
         if !matches!(code.code.last().unwrap(), Bytecode::Ret) {
-            self.add_instruction(&mut code, Bytecode::Ret);
+            self.add_instruction(code, Bytecode::Ret);
         }
-        Ok(code)
+        Ok(())
     }
 }
 
@@ -472,7 +499,7 @@ pub fn compile(ast: &AST) -> Result<(ConstantPool, ConstantPoolIndex), &'static 
     let main_fun = Object::Function {
         name: idx,
         parameters_cnt: 0,
-        locals_cnt: compiler.local_count,
+        locals_cnt: compiler.local_max,
         body: code,
     };
     let main_fun_idx = compiler.constant_pool.add(main_fun);

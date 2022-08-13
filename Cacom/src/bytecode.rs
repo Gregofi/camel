@@ -116,7 +116,7 @@ impl fmt::Display for Bytecode {
             Bytecode::GetGlobal(v) => write!(f, "Get global: {}", v),
             Bytecode::SetGlobal(v) => write!(f, "Set global: {}", v),
             Bytecode::CallFunc { index, arg_cnt } => {
-                write!(f, "Call function {}: {}", index, arg_cnt)
+                write!(f, "Call function {}, args: {}", index, arg_cnt)
             }
             Bytecode::Ret => write!(f, "Ret"),
             Bytecode::Label(v) => write!(f, "{}:", v),
@@ -284,7 +284,7 @@ impl Bytecode {
             Bytecode::DeclVarGlobal { .. } => 4,
             Bytecode::GetGlobal(_) => 4,
             Bytecode::SetGlobal(_) => 4,
-            Bytecode::CallFunc { .. } => todo!(),
+            Bytecode::CallFunc { index, arg_cnt } => std::mem::size_of_val(index) + std::mem::size_of_val(arg_cnt),
             Bytecode::Ret => 0,
             Bytecode::Label(_) => unreachable!(),
             Bytecode::JmpLabel(_) => 4,
