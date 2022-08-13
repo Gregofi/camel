@@ -326,7 +326,6 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             vm->ip = &CURRENT_FUNCTION()->bc.data[READ_4BYTES_BE(vm->ip)];
             break;
         case OP_BRANCH_FALSE:
-            fallthrough;
         case OP_BRANCH: {
             struct value val = pop(vm);
             if (val.type != VAL_BOOL) {
@@ -342,7 +341,6 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             break;
         }
         case OP_VAL_GLOBAL:
-        fallthrough;
         case OP_VAR_GLOBAL: {
             struct value val = pop(vm);
             u32 name_idx = READ_4BYTES_BE(vm->ip);
