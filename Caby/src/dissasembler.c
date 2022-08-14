@@ -128,7 +128,7 @@ void disassemble_value(FILE* f, struct value v) {
             fprintf(f, "BOOL: %d", v.boolean);
             break;
         case VAL_DOUBLE:
-            fprintf(f, "BOOL: %f", v.double_num);
+            fprintf(f, "DOUBLE: %f", v.double_num);
             break;
         case VAL_OBJECT:
             dissasemble_object(f, v.object);
