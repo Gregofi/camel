@@ -27,12 +27,16 @@ static void runtime_error(const char* str, ...) {
 void init_vm_state(struct vm_state* vm) {
     init_constant_pool(&vm->const_pool);
     init_table(&vm->globals);
-    vm->locals = malloc(sizeof(*vm->locals) * (1 << 16));
+    vm->locals = NULL;
     vm->op_stack = NULL;
     memset(vm->frames, 0, sizeof(vm->frames));
     vm->frame_len = 0;
     vm->stack_cap = 0;
     vm->stack_len = 0;
+}
+
+void alloc_frames(struct vm_state* vm) {
+    vm->locals = malloc(sizeof(*vm->locals) * (1 << 16));
 }
 
 static void push_frame(struct vm_state* vm, struct object_function* f) {
@@ -411,6 +415,7 @@ static int run(struct vm_state* vm) {
 int interpret(struct constant_pool* cp, u32 ep) {
     struct vm_state vm;
     init_vm_state(&vm);
+    alloc_frames(&vm);
     vm.const_pool = *cp;
 
     struct call_frame* entry = &vm.frames[vm.frame_len++];
