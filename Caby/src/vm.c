@@ -11,9 +11,24 @@
 #include <assert.h>
 
 #ifdef __DEBUG__
-    #define DUMP_INS(ins) do {dissasemble_instruction(stderr, ins);runtime_error("\n");} while(false)
+    #define DUMP_INS(ins) do {dissasemble_instruction(stderr, ins);fprintf(stderr, "\n");} while(false)
 #else
     #define DUMP_INS(ins)
+#endif
+
+static void disassemble_stack(struct vm_state* vm) {
+    for (size_t i = 0; i < vm->stack_len; ++i) {
+        fprintf(stderr, "[");
+        disassemble_value(stderr, vm->op_stack[i]);
+        fprintf(stderr, "]");
+    }
+    fprintf(stderr, "\n");
+}
+
+#ifdef __DEBUG__
+    #define DUMP_STACK(vm) do { disassemble_stack(vm); } while (false)
+#else
+    #define DUMP_STACK(vm)
 #endif
 
 static void runtime_error(const char* str, ...) {
@@ -400,6 +415,7 @@ static int run(struct vm_state* vm) {
     u8 ins;
     while (true) {
         DUMP_INS(vm->ip);
+        DUMP_STACK(vm);
         ins = READ_IP();
         enum interpret_result res = interpret_ins(vm, ins);
         if (res == INTERPRET_ERROR) {
