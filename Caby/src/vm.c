@@ -281,6 +281,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             if (v1.type == VAL_INT && v2.type == VAL_INT) {
                 if (v2.integer == 0) {
                     runtime_error("Division by zero error");
+                    return INTERPRET_ERROR;
                 }
                 push(vm, NEW_INT(v1.integer / v2.integer));
             } else if (v1.type == VAL_DOUBLE && v2.type == VAL_DOUBLE) {
