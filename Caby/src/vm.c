@@ -399,7 +399,6 @@ static int run(struct vm_state* vm) {
         ins = READ_IP();
         enum interpret_result res = interpret_ins(vm, ins);
         if (res == INTERPRET_ERROR) {
-            runtime_error("Error, halting\n");
             exit(-1);
         } else if (res == INTERPRET_RETURN) {
             return 0;
