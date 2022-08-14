@@ -4,6 +4,10 @@
 #include <math.h>
 
 struct value clock_nat(int arg_cnt, struct value* args) {
+    if (arg_cnt != 0) {
+        fprintf(stderr, "Wrong number of arguments!");
+        exit(1);
+    }
     return NEW_DOUBLE((double)clock() / CLOCKS_PER_SEC);
 }
 
