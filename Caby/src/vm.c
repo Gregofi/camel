@@ -416,9 +416,9 @@ static int run(struct vm_state* vm) {
     u8 ins;
     while (true) {
         DUMP_INS(vm->ip);
-        DUMP_STACK(vm);
         ins = READ_IP();
         enum interpret_result res = interpret_ins(vm, ins);
+        DUMP_STACK(vm);
         if (res == INTERPRET_ERROR) {
             exit(-1);
         } else if (res == INTERPRET_RETURN) {
