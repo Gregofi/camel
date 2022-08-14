@@ -397,9 +397,20 @@ static int run(struct vm_state* vm) {
 }
 
 // TODO: Maybe this guy shouldn't receive vm state at all and rather
-//       get constant pool, globals and entry point.
-int interpret(struct vm_state* vm) {
-    return run(vm);
+//       get constant pool and entry point.
+int interpret(struct constant_pool* cp, u32 ep) {
+    struct vm_state vm;
+    init_vm_state(&vm);
+    vm.const_pool = *cp;
+
+    struct call_frame* entry = &vm.frames[vm.frame_len++];
+    entry->function = (struct object_function*)vm.const_pool.data[ep];
+    // There should never be a return from global
+    entry->ret = 0;
+    entry->slots = vm.locals;
+    vm.ip = entry->function->bc.data;
+
+    return run(&vm);
 }
 
 #undef READ_IP
