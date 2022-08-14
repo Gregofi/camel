@@ -1,3 +1,4 @@
+#!/bin/bash
 # A script for quick build and compile
 
 if [[ "$#" -ne 1 ]]; then
