@@ -3,6 +3,7 @@
 #include "bytecode.h"
 #include "object.h"
 #include "hashtable.h"
+#include "native.h"
 
 #define FRAME_DEPTH 128
 

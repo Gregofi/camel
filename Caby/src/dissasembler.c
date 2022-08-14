@@ -150,6 +150,10 @@ void dissasemble_object(FILE* f, struct object* obj) {
             dissasemble_chunk(f, &fun->bc, " ");
             break;
         }
+        case OBJECT_NATIVE: {
+            fprintf(f, "<native function>");
+            break;
+        }
       break;
     }
 }

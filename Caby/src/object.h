@@ -12,6 +12,7 @@
 enum object_type {
     OBJECT_STRING,
     OBJECT_FUNCTION,
+    OBJECT_NATIVE,
 };
 
 /**
@@ -38,6 +39,13 @@ struct object_function {
     struct bc_chunk bc;
     /// Index to constant pool
     u32 name;
+};
+
+typedef struct value (*native_fn_t)(int arg_cnt, struct value* args);
+
+struct object_native {
+    struct object object;
+    native_fn_t function;
 };
 
 enum value_type {
@@ -102,6 +110,11 @@ struct object_function* as_function(struct object* object);
 
 struct object_function* as_function_s(struct object* object);
 
+struct object_native* new_native(native_fn_t fun);
+
+struct object_native* as_native(struct object* object);
+
+struct object_native* as_native_s(struct object* object);
 
 // Computes hash of a value.
 // (Hashing of strings is separate, this hashes the pointer to string.)

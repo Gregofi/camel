@@ -4,11 +4,13 @@
 #include "hashtable.h"
 #include "object.h"
 #include "dissasembler.h"
+#include "native.h"
 
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <assert.h>
+#include <time.h>
 
 #ifdef __DEBUG__
     #define DUMP_INS(ins) do {dissasemble_instruction(stderr, ins);fprintf(stderr, "\n");} while(false)
@@ -37,6 +39,14 @@ static void runtime_error(const char* str, ...) {
     fprintf(stderr, "Runtime error occured: ");
     vfprintf(stderr, str, args);
     va_end(args);
+}
+
+static void def_native(struct vm_state* vm, const char* name, native_fn_t fun) {
+    push(vm, NEW_OBJECT(new_string(name)));
+    push(vm, NEW_OBJECT(new_native(fun)));
+    table_set(&vm->globals, vm->op_stack[0], vm->op_stack[1]);
+    pop(vm);
+    pop(vm);
 }
 
 void init_vm_state(struct vm_state* vm) {
@@ -390,14 +400,22 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
         }
         case OP_CALL_FUNC: {
             struct value v = pop(vm);
-            if (v.type == VAL_OBJECT && v.object->type == OBJECT_FUNCTION) {
-                struct object_function* f = as_function(v.object);
+            if (v.type == VAL_OBJECT) {
                 u8 arity = READ_IP();
-                if (arity != f->arity) {
-                    runtime_error("Got '%d' arguments, expected '%d'", arity, f->arity);
-                    return INTERPRET_ERROR;
+                if (v.object->type == OBJECT_FUNCTION) {
+                    struct object_function* f = as_function(v.object);
+                    if (arity != f->arity) {
+                        runtime_error("Got '%d' arguments, expected '%d'", arity, f->arity);
+                        return INTERPRET_ERROR;
+                    }
+                    push_frame(vm, f);
+                } else if (v.object->type == OBJECT_NATIVE) {
+                    struct object_native* nat = as_native(v.object);
+                    DUMP_STACK(vm);
+                    struct value res = nat->function(arity, vm->op_stack + vm->stack_len - arity);
+                    vm->stack_len -= arity;
+                    push(vm, res);
                 }
-                push_frame(vm, f);
             } else {
                 runtime_error("Only functions can be called\n");
                 return INTERPRET_ERROR;
@@ -434,6 +452,9 @@ int interpret(struct constant_pool* cp, u32 ep) {
     init_vm_state(&vm);
     alloc_frames(&vm);
     vm.const_pool = *cp;
+
+    def_native(&vm, "clock", clock_nat);
+    def_native(&vm, "pow", pow_nat);
 
     struct call_frame* entry = &vm.frames[vm.frame_len++];
     entry->function = (struct object_function*)vm.const_pool.data[ep];
