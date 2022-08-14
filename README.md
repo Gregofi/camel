@@ -7,7 +7,7 @@ Camel is a dynamic scripting language. It is primarily meant as a toy project fo
 The language is very simple, here is an example of calculating factorial:
 
 ```
-fun fact(x) = if x == 0 { x } else { x * fact(x - 1) }
+def fact(x) = if x == 0 { x } else { x * fact(x - 1) };
 
 print("{}\n", fact(10));
 ```
@@ -15,14 +15,14 @@ print("{}\n", fact(10));
 And here is another example of finding maximum value in list:
 
 ```
-fun max(lst) = {
-    max = 0
+def max(lst) = {
+    var max = 0;
     for x in lst {
         if x > max {
             max = x
         }
-    }
-    return max
+    };
+    max
 }
 
 lst = [1, 2, 5, 3, 1];
