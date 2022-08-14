@@ -241,7 +241,6 @@ impl Compiler {
                             arg_cnt: arguments.len().try_into().unwrap(),
                         },
                     );
-                    self.add_instruction(code, Bytecode::PushNone);
                 } else {
                     let cp_idx = self.constant_pool.add(Object::from(name.clone()));
                     self.add_instruction(code, Bytecode::GetGlobal(cp_idx));
