@@ -1,3 +1,4 @@
+#![allow(unused_imports, dead_code, unused_variables)]
 #[macro_use]
 extern crate lalrpop_util;
 extern crate clap;

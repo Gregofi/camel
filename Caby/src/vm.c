@@ -89,10 +89,11 @@ struct value interpret_string_concat(struct object* o1, struct object* o2) {
 
     u32 size = str1->size + str2->size;
     char* new_char = vmalloc(size + 1);
-    strncpy(new_char, str1->data, str1->size);
-    strcpy(new_char + str1->size, str2->data);
+    memcpy(new_char, str1->data, str1->size);
+    memcpy(new_char + str1->size, str2->data, str2->size);
+    new_char[size] = '\0';
 
-    return NEW_OBJECT((struct object*)new_string_move(new_char, size));
+    return NEW_OBJECT(new_string_move(new_char, size));
 }
 
 void interpret_print(struct vm_state* vm) {
@@ -157,42 +158,6 @@ void interpret_print(struct vm_state* vm) {
     }
 
     push(vm, NEW_NONE());
-}
-
-bool interpret_eq(struct vm_state* vm) {
-    struct value v1 = pop(vm);
-    struct value v2 = pop(vm);
-    bool eq = false;
-    if (v1.type == v2.type) {
-        switch (v1.type) {
-            case VAL_INT:
-                eq = v1.integer == v2.integer;
-                break;
-            case VAL_BOOL:
-                eq = v1.boolean == v2.boolean;
-                break;
-            case VAL_DOUBLE:
-                eq = v1.double_num == v2.double_num;
-                break;
-            case VAL_OBJECT:
-                switch(v1.object->type) {
-                    case OBJECT_STRING:
-                        // TODO: Maybe compare hashes?
-                        eq = strcmp(as_string(v1.object)->data,
-                                    as_string(v2.object)->data) == 0;
-                        break;
-                    case OBJECT_FUNCTION: {
-                        NOT_IMPLEMENTED();
-                        break;
-                    }
-                }
-                break;
-            case VAL_NONE:
-                eq = true;
-                break;
-        }
-    }
-    return eq;
 }
 
 static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
@@ -299,7 +264,9 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             break;
         }
         case OP_EQ: {
-            bool res = interpret_eq(vm);
+            struct value v1 = pop(vm);
+            struct value v2 = pop(vm);
+            bool res = value_eq(v1, v2);
             push(vm, NEW_BOOL(res));
             break;
         }
@@ -325,7 +292,6 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             vm->ip = &CURRENT_FUNCTION()->bc.data[READ_4BYTES_BE(vm->ip)];
             break;
         case OP_BRANCH_FALSE:
-            fallthrough;
         case OP_BRANCH: {
             struct value val = pop(vm);
             if (val.type != VAL_BOOL) {
@@ -341,13 +307,13 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             break;
         }
         case OP_VAL_GLOBAL:
-        fallthrough;
         case OP_VAR_GLOBAL: {
             struct value val = pop(vm);
             u32 name_idx = READ_4BYTES_BE(vm->ip);
             vm->ip += 4;
             struct object_string* name = read_string_cp(&vm->const_pool, name_idx);
-            bool new_v = table_set(&vm->globals, name, val);
+            struct value name_obj = NEW_OBJECT(name);
+            bool new_v = table_set(&vm->globals, name_obj, val);
             if (!new_v) {
                 fprintf(stderr, "Error: Variable '%s' is already defined.\n", name->data);
                 exit(6);
@@ -358,8 +324,9 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             u32 name_idx = READ_4BYTES_BE(vm->ip);
             vm->ip += 4;
             struct object_string* name = read_string_cp(&vm->const_pool, name_idx);
+            struct value name_obj = NEW_OBJECT(name);
             struct value val;
-            if (!table_get(&vm->globals, name, &val)) {
+            if (!table_get(&vm->globals, name_obj, &val)) {
                 fprintf(stderr, "Error: Access to undefined variable '%s'.\n", name->data);
                 exit(6);
             }
@@ -370,8 +337,9 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             u32 name_idx = READ_4BYTES_BE(vm->ip);
             vm->ip += 4;
             struct object_string* name = read_string_cp(&vm->const_pool, name_idx);
+            struct value name_obj = NEW_OBJECT(name);
             struct value v = pop(vm);
-            if (table_set(&vm->globals, name, v)) {
+            if (table_set(&vm->globals, name_obj, v)) {
                 fprintf(stderr, "Global variable '%s' is not defined!\n", name->data);
                 exit(1);
             }

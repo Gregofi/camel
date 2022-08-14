@@ -65,7 +65,7 @@ struct value {
 #define NEW_INT(val) (struct value){.type = VAL_INT, .integer = (val)}
 #define NEW_BOOL(val) (struct value){.type = VAL_BOOL, .boolean = (val)}
 #define NEW_DOUBLE(val) (struct value){.type = VAL_DOUBLE, .double_num = (val)}
-#define NEW_OBJECT(val) (struct value){.type = VAL_OBJECT, .object = val}
+#define NEW_OBJECT(val) (struct value){.type = VAL_OBJECT, .object = (struct object*)(val)}
 #define NEW_NONE() (struct value){.type = VAL_NONE}
 
 /*
@@ -101,3 +101,11 @@ struct object_function* new_function(u8 arity, u16 locals, struct bc_chunk c, u3
 struct object_function* as_function(struct object* object);
 
 struct object_function* as_function_s(struct object* object);
+
+
+// Computes hash of a value.
+// (Hashing of strings is separate, this hashes the pointer to string.)
+u32 value_hash(struct value v);
+
+// Compares two values for equality
+bool value_eq(struct value v1, struct value v2);
