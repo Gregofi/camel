@@ -1,0 +1,4 @@
+
+print("{}\n", pow(2, 2));
+print("{}\n", pow(3, 4));
+print("{}\n", pow(5, 3));

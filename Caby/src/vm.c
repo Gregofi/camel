@@ -4,16 +4,33 @@
 #include "hashtable.h"
 #include "object.h"
 #include "dissasembler.h"
+#include "native.h"
 
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <assert.h>
+#include <time.h>
 
 #ifdef __DEBUG__
-    #define DUMP_INS(ins) do {dissasemble_instruction(stderr, ins);runtime_error("\n");} while(false)
+    #define DUMP_INS(ins) do {dissasemble_instruction(stderr, ins);fprintf(stderr, "\n");} while(false)
 #else
     #define DUMP_INS(ins)
+#endif
+
+static void disassemble_stack(struct vm_state* vm) {
+    for (size_t i = 0; i < vm->stack_len; ++i) {
+        fprintf(stderr, "[");
+        disassemble_value(stderr, vm->op_stack[i]);
+        fprintf(stderr, "]");
+    }
+    fprintf(stderr, "\n");
+}
+
+#ifdef __DEBUG__
+    #define DUMP_STACK(vm) do { disassemble_stack(vm); } while (false)
+#else
+    #define DUMP_STACK(vm)
 #endif
 
 static void runtime_error(const char* str, ...) {
@@ -22,6 +39,14 @@ static void runtime_error(const char* str, ...) {
     fprintf(stderr, "Runtime error occured: ");
     vfprintf(stderr, str, args);
     va_end(args);
+}
+
+static void def_native(struct vm_state* vm, const char* name, native_fn_t fun) {
+    push(vm, NEW_OBJECT(new_string(name)));
+    push(vm, NEW_OBJECT(new_native(fun)));
+    table_set(&vm->globals, vm->op_stack[0], vm->op_stack[1]);
+    pop(vm);
+    pop(vm);
 }
 
 void init_vm_state(struct vm_state* vm) {
@@ -266,6 +291,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             if (v1.type == VAL_INT && v2.type == VAL_INT) {
                 if (v2.integer == 0) {
                     runtime_error("Division by zero error");
+                    return INTERPRET_ERROR;
                 }
                 push(vm, NEW_INT(v1.integer / v2.integer));
             } else if (v1.type == VAL_DOUBLE && v2.type == VAL_DOUBLE) {
@@ -374,14 +400,22 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
         }
         case OP_CALL_FUNC: {
             struct value v = pop(vm);
-            if (v.type == VAL_OBJECT && v.object->type == OBJECT_FUNCTION) {
-                struct object_function* f = as_function(v.object);
+            if (v.type == VAL_OBJECT) {
                 u8 arity = READ_IP();
-                if (arity != f->arity) {
-                    runtime_error("Got '%d' arguments, expected '%d'", arity, f->arity);
-                    return INTERPRET_ERROR;
+                if (v.object->type == OBJECT_FUNCTION) {
+                    struct object_function* f = as_function(v.object);
+                    if (arity != f->arity) {
+                        runtime_error("Got '%d' arguments, expected '%d'", arity, f->arity);
+                        return INTERPRET_ERROR;
+                    }
+                    push_frame(vm, f);
+                } else if (v.object->type == OBJECT_NATIVE) {
+                    struct object_native* nat = as_native(v.object);
+                    DUMP_STACK(vm);
+                    struct value res = nat->function(arity, vm->op_stack + vm->stack_len - arity);
+                    vm->stack_len -= arity;
+                    push(vm, res);
                 }
-                push_frame(vm, f);
             } else {
                 runtime_error("Only functions can be called\n");
                 return INTERPRET_ERROR;
@@ -402,6 +436,7 @@ static int run(struct vm_state* vm) {
         DUMP_INS(vm->ip);
         ins = READ_IP();
         enum interpret_result res = interpret_ins(vm, ins);
+        DUMP_STACK(vm);
         if (res == INTERPRET_ERROR) {
             exit(-1);
         } else if (res == INTERPRET_RETURN) {
@@ -417,6 +452,9 @@ int interpret(struct constant_pool* cp, u32 ep) {
     init_vm_state(&vm);
     alloc_frames(&vm);
     vm.const_pool = *cp;
+
+    def_native(&vm, "clock", clock_nat);
+    def_native(&vm, "pow", pow_nat);
 
     struct call_frame* entry = &vm.frames[vm.frame_len++];
     entry->function = (struct object_function*)vm.const_pool.data[ep];

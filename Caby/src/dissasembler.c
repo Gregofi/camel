@@ -119,6 +119,26 @@ size_t dissasemble_instruction(FILE* f, u8* ins) {
     }
 }
 
+void disassemble_value(FILE* f, struct value v) {
+    switch (v.type) {
+        case VAL_INT:
+            fprintf(f, "INT: %d", v.integer);
+            break;
+        case VAL_BOOL:
+            fprintf(f, "BOOL: %d", v.boolean);
+            break;
+        case VAL_DOUBLE:
+            fprintf(f, "DOUBLE: %f", v.double_num);
+            break;
+        case VAL_OBJECT:
+            dissasemble_object(f, v.object);
+            break;
+        case VAL_NONE:
+            fprintf(f, "NONE");
+            break;
+    }
+}
+
 void dissasemble_object(FILE* f, struct object* obj) {
     switch (obj->type) {
         case OBJECT_STRING:
@@ -128,6 +148,10 @@ void dissasemble_object(FILE* f, struct object* obj) {
             struct object_function* fun = as_function(obj);
             fprintf(f, "FUNCTION arity: %d name: %u\n", fun->arity, fun->name);
             dissasemble_chunk(f, &fun->bc, " ");
+            break;
+        }
+        case OBJECT_NATIVE: {
+            fprintf(f, "<native function>");
             break;
         }
       break;

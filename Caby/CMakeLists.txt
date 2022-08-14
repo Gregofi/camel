@@ -10,7 +10,9 @@ set(CMAKE_C_FLAGS_RELEASE "-O2")
 
 add_executable(caby src/main.c src/dissasembler.c src/bytecode.c
                     src/common.c src/object.c src/memory.c src/vm.c
-                    src/serializer.c src/hashtable.c)
+                    src/serializer.c src/hashtable.c src/native.c)
+
+target_link_libraries(caby m)
 
 enable_testing()
 

@@ -78,6 +78,24 @@ struct object_function* as_function_s(struct object* object) {
     return NULL;
 }
 
+struct object_native* new_native(native_fn_t fun) {
+    struct object_native* native = vmalloc(sizeof(*native));
+    native->object.type = OBJECT_NATIVE;
+    native->function = fun;
+    return native;
+}
+
+struct object_native* as_native(struct object* object) {
+    return (struct object_native*)object;
+}
+
+struct object_native* as_native_s(struct object* object) {
+    if (object->type == OBJECT_NATIVE) {
+        return as_native(object);
+    }
+    return NULL;
+}
+
 
 u32 value_hash(struct value v) {
     u8* p;
