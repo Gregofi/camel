@@ -10,14 +10,14 @@
 
 /// Serializes program into constant pool 'cp'.
 /// Returns non-zero if serialization failed.
-int read_program(const char* filename, struct vm_state* vm) {
+int read_program(const char* filename, struct constant_pool* cp, u32* ep) {
     FILE* f = fopen(filename, "rb");
     if (!f) {
         fprintf(stderr, "Failed to open file '%s'.", filename);
         return 1;
     }
 
-    *vm = serialize(f);
+    serialize(f, cp, ep);
     return 0;
 }
 
@@ -31,12 +31,12 @@ void usage() {
 static int disassemble(const char* argv[]) {
     const char* filename = *argv++;
 
-    struct vm_state vm;
-    init_vm_state(&vm);
-    read_program(filename, &vm);
+    struct constant_pool cp;
+    u32 ep;
+    read_program(filename, &cp, &ep);
 
-    disassemble_constant_pool(stdout, &vm.const_pool);
-    free_vm_state(&vm);
+    disassemble_constant_pool(stdout, &cp);
+    free_constant_pool(&cp);
 
     return 0;
 }
@@ -48,15 +48,16 @@ static int execute(const char* argv[]) {
     }
     const char* filename = *argv++;
 
-    struct vm_state vm;
-    if (read_program(filename, &vm) != 0) {
+    struct constant_pool cp;
+    u32 ep;
+    if (read_program(filename, &cp, &ep) != 0) {
         fprintf(stderr, "Fatal\n");
         exit(4);
     }
 
-    interpret(&vm);
+    interpret(&cp, ep);
 
-    free_vm_state(&vm);
+    free_constant_pool(&cp);
 
     return 0;
 }

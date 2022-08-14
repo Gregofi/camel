@@ -22,4 +22,4 @@ struct object* serialize_object(FILE* f);
 
 struct constant_pool serialize_constant_pool(FILE* f);
 
-struct vm_state serialize(FILE* f);
+void serialize(FILE* f, struct constant_pool* cp, u32* ep);

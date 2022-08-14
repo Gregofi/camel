@@ -16,8 +16,8 @@ struct object* to_object_s(struct value val) {
 }
 
 /// FNV-1a
-static uint32_t hashString(const char* key, int length) {
-  uint32_t hash = 2166136261u;
+static u32 hashString(const char* key, int length) {
+  u32 hash = 2166136261u;
   for (int i = 0; i < length; i++) {
     hash ^= (u8)key[i];
     hash *= 16777619;
@@ -111,7 +111,7 @@ u32 value_hash(struct value v) {
             len = 0;
             break;
     }
-    uint32_t hash = 2166136261u;
+    u32 hash = 2166136261u;
     for (size_t i = 0; i < len; i++) {
       hash ^= p[i];
       hash *= 16777619;

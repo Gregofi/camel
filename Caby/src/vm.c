@@ -5,25 +5,38 @@
 #include "object.h"
 #include "dissasembler.h"
 
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <assert.h>
 
 #ifdef __DEBUG__
-    #define DUMP_INS(ins) do {dissasemble_instruction(stderr, ins);fprintf(stderr, "\n");} while(false)
+    #define DUMP_INS(ins) do {dissasemble_instruction(stderr, ins);runtime_error("\n");} while(false)
 #else
     #define DUMP_INS(ins)
 #endif
 
+static void runtime_error(const char* str, ...) {
+    va_list args;
+    va_start(args, str);
+    fprintf(stderr, "Runtime error occured: ");
+    vfprintf(stderr, str, args);
+    va_end(args);
+}
+
 void init_vm_state(struct vm_state* vm) {
     init_constant_pool(&vm->const_pool);
     init_table(&vm->globals);
-    vm->locals = malloc(sizeof(*vm->locals) * (1 << 16));
+    vm->locals = NULL;
     vm->op_stack = NULL;
     memset(vm->frames, 0, sizeof(vm->frames));
     vm->frame_len = 0;
     vm->stack_cap = 0;
     vm->stack_len = 0;
+}
+
+void alloc_frames(struct vm_state* vm) {
+    vm->locals = malloc(sizeof(*vm->locals) * (1 << 16));
 }
 
 static void push_frame(struct vm_state* vm, struct object_function* f) {
@@ -70,7 +83,7 @@ struct value peek(struct vm_state* vm, size_t p) {
 static struct object_string* pop_string(struct vm_state* vm) {
     struct value v = pop(vm);
     if (v.type != VAL_OBJECT || v.object->type != OBJECT_STRING) {
-        fprintf(stderr, "Expected string on top of stack.\n");
+        runtime_error("Expected string on top of stack.\n");
         exit(1);
     }
     return as_string(v.object);
@@ -96,13 +109,13 @@ struct value interpret_string_concat(struct object* o1, struct object* o2) {
     return NEW_OBJECT(new_string_move(new_char, size));
 }
 
-void interpret_print(struct vm_state* vm) {
+enum interpret_result interpret_print(struct vm_state* vm) {
     u8 arg_cnt = READ_IP() - 1;
 
     struct value v = pop(vm);
     if (v.type != VAL_OBJECT || v.object->type != OBJECT_STRING) {
-        fprintf(stderr, "First 'print' argument must be a string.\n");
-        exit(-1);
+        runtime_error("First 'print' argument must be a string.\n");
+        return INTERPRET_ERROR;
     }
     struct object_string* obj = as_string(v.object);
 
@@ -110,8 +123,8 @@ void interpret_print(struct vm_state* vm) {
     for (const char* c = obj->data; *c != '\0'; ++c) {
         if (*c == '{' && c[1] != '\0' && c[1] == '}') {
             if (arg_cnt == 0) {
-                fprintf(stderr, "There are more '{}' than arguments.\n");
-                exit(-1);
+                runtime_error("There are more '{}' than arguments.\n");
+                return INTERPRET_ERROR;
             }
             arg_cnt -= 1;
             c += 1;
@@ -135,8 +148,8 @@ void interpret_print(struct vm_state* vm) {
                             fputs(as_string(v.object)->data, stdout);
                             break;
                         default:
-                            fprintf(stderr, "Can't print this type.\n");
-                            exit(-1);
+                            runtime_error("Can't print this type.\n");
+                            return INTERPRET_ERROR;
                     }
                     break;
                 }
@@ -153,11 +166,12 @@ void interpret_print(struct vm_state* vm) {
         }
     }
     if (arg_cnt != 0) {
-        fprintf(stderr, "There are more arguments than '{}'.\n");
-        exit(-1);
+        runtime_error("There are more arguments than '{}'.\n");
+        return INTERPRET_ERROR;
     }
 
     push(vm, NEW_NONE());
+    return INTERPRET_CONTINUE;
 }
 
 static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
@@ -172,8 +186,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             break;
         }
         case OP_PRINT:
-            interpret_print(vm);
-            break;
+            return interpret_print(vm);
         case OP_PUSH_SHORT: {
             i16 val = READ_2BYTES_BE(vm->ip);
             vm->ip += 2;
@@ -215,7 +228,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
                     && v2.object->type == OBJECT_STRING) {
                 push(vm, interpret_string_concat(v1.object, v2.object));
             } else {
-                fprintf(stderr, "Incopatible types for operator '+'\n");
+                runtime_error("Incopatible types for operator '+'\n");
                 return INTERPRET_ERROR;
             }
             break;
@@ -228,7 +241,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             } else if (v1.type == VAL_DOUBLE && v2.type == VAL_DOUBLE) {
                 push(vm, NEW_DOUBLE(v1.double_num - v2.double_num));
             } else {
-                fprintf(stderr, "Incopatible types for operator '-'\n");
+                runtime_error("Incopatible types for operator '-'\n");
                 return INTERPRET_ERROR;
             }
             break;
@@ -242,7 +255,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
                 push(vm, NEW_DOUBLE(v1.double_num * v2.double_num));
             // TODO: List and string multiplication
             } else {
-                fprintf(stderr, "Incopatible types for operator '-'\n");
+                runtime_error("Incopatible types for operator '-'\n");
                 return INTERPRET_ERROR;
             }
             break;
@@ -252,13 +265,13 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             struct value v2 = pop(vm);
             if (v1.type == VAL_INT && v2.type == VAL_INT) {
                 if (v2.integer == 0) {
-                    fprintf(stderr, "Division by zero error");
+                    runtime_error("Division by zero error");
                 }
                 push(vm, NEW_INT(v1.integer / v2.integer));
             } else if (v1.type == VAL_DOUBLE && v2.type == VAL_DOUBLE) {
                 push(vm, NEW_DOUBLE(v1.double_num / v2.double_num));
             } else {
-                fprintf(stderr, "Incopatible types for operator '-'\n");
+                runtime_error("Incopatible types for operator '-'\n");
                 return INTERPRET_ERROR;
             }
             break;
@@ -277,7 +290,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             } else if (v.type == VAL_DOUBLE) {
                 push(vm, NEW_DOUBLE(-v.integer));
             } else {
-                fprintf(stderr, "Incopatible type for operator unary '-'\n");
+                runtime_error("Incopatible type for operator unary '-'\n");
                 return INTERPRET_ERROR;
             }
             break;
@@ -295,8 +308,8 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
         case OP_BRANCH: {
             struct value val = pop(vm);
             if (val.type != VAL_BOOL) {
-                fprintf(stderr, "Expected type 'bool' in if condition");
-                exit(-1);
+                runtime_error("Expected type 'bool' in if condition");
+                return INTERPRET_ERROR;
             }
             if ((ins == OP_BRANCH && val.boolean) || (ins == OP_BRANCH_FALSE && !val.boolean)) {
                 u32 dest = READ_4BYTES_BE(vm->ip);
@@ -315,8 +328,8 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             struct value name_obj = NEW_OBJECT(name);
             bool new_v = table_set(&vm->globals, name_obj, val);
             if (!new_v) {
-                fprintf(stderr, "Error: Variable '%s' is already defined.\n", name->data);
-                exit(6);
+                runtime_error("Error: Variable '%s' is already defined.\n", name->data);
+                return INTERPRET_ERROR;
             }
             break;
         }
@@ -327,8 +340,8 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             struct value name_obj = NEW_OBJECT(name);
             struct value val;
             if (!table_get(&vm->globals, name_obj, &val)) {
-                fprintf(stderr, "Error: Access to undefined variable '%s'.\n", name->data);
-                exit(6);
+                runtime_error("Error: Access to undefined variable '%s'.\n", name->data);
+                return INTERPRET_ERROR;
             }
             push(vm, val);
             break;
@@ -340,8 +353,8 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             struct value name_obj = NEW_OBJECT(name);
             struct value v = pop(vm);
             if (table_set(&vm->globals, name_obj, v)) {
-                fprintf(stderr, "Global variable '%s' is not defined!\n", name->data);
-                exit(1);
+                runtime_error("Global variable '%s' is not defined!\n", name->data);
+                return INTERPRET_ERROR;
             }
             break;
         }
@@ -365,19 +378,21 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
                 struct object_function* f = as_function(v.object);
                 u8 arity = READ_IP();
                 if (arity != f->arity) {
-                    fprintf(stderr, "Got '%d' arguments, expected '%d'", arity, f->arity);
+                    runtime_error("Got '%d' arguments, expected '%d'", arity, f->arity);
                     return INTERPRET_ERROR;
                 }
                 push_frame(vm, f);
             } else {
-                fprintf(stderr, "Only functions can be called\n");
+                runtime_error("Only functions can be called\n");
                 return INTERPRET_ERROR;
             }
             break;
         }
         default:
-            fprintf(stderr, "Unknown instruction 0x%x!\n", ins);
+            runtime_error("Unknown instruction 0x%x! Skipping...\n", ins);
     }
+    // Some branches return when successfull (like print),
+    // be careful if you add code here.
     return INTERPRET_CONTINUE;
 }
 
@@ -388,7 +403,6 @@ static int run(struct vm_state* vm) {
         ins = READ_IP();
         enum interpret_result res = interpret_ins(vm, ins);
         if (res == INTERPRET_ERROR) {
-            fprintf(stderr, "Error, halting\n");
             exit(-1);
         } else if (res == INTERPRET_RETURN) {
             return 0;
@@ -397,9 +411,21 @@ static int run(struct vm_state* vm) {
 }
 
 // TODO: Maybe this guy shouldn't receive vm state at all and rather
-//       get constant pool, globals and entry point.
-int interpret(struct vm_state* vm) {
-    return run(vm);
+//       get constant pool and entry point.
+int interpret(struct constant_pool* cp, u32 ep) {
+    struct vm_state vm;
+    init_vm_state(&vm);
+    alloc_frames(&vm);
+    vm.const_pool = *cp;
+
+    struct call_frame* entry = &vm.frames[vm.frame_len++];
+    entry->function = (struct object_function*)vm.const_pool.data[ep];
+    // There should never be a return from global
+    entry->ret = 0;
+    entry->slots = vm.locals;
+    vm.ip = entry->function->bc.data;
+
+    return run(&vm);
 }
 
 #undef READ_IP
