@@ -206,9 +206,15 @@ impl Bytecode {
             Bytecode::CallFunc { .. } => 0x08,
             Bytecode::Ret => 0x09,
             Bytecode::Label(_) => 0x00,
-            Bytecode::BranchLabel(_) => panic!("Label jumps are not meant to exist in final bytecode!"),
-            Bytecode::BranchLabelFalse(_) => panic!("Label jumps are not meant to exist in final bytecode!"),
-            Bytecode::JmpLabel(_) => panic!("Label jumps are not meant to exist in final bytecode!"),
+            Bytecode::BranchLabel(_) => {
+                panic!("Label jumps are not meant to exist in final bytecode!")
+            }
+            Bytecode::BranchLabelFalse(_) => {
+                panic!("Label jumps are not meant to exist in final bytecode!")
+            }
+            Bytecode::JmpLabel(_) => {
+                panic!("Label jumps are not meant to exist in final bytecode!")
+            }
             Bytecode::JmpShort(_) => 0x0A,
             Bytecode::Jmp(_) => 0x0B,
             Bytecode::JmpLong(_) => 0x0C,
@@ -316,8 +322,12 @@ impl Serializable for Bytecode {
             Bytecode::CallFunc { arg_cnt } => f.write_all(&arg_cnt.to_le_bytes())?,
             Bytecode::Ret => {}
             Bytecode::Label(_) => todo!(),
-            Bytecode::BranchLabel(_) => panic!("Jump labels are not meant to exist in final bytecode"),
-            Bytecode::BranchLabelFalse(_) => panic!("Jump labels are not meant to exist in final bytecode"),
+            Bytecode::BranchLabel(_) => {
+                panic!("Jump labels are not meant to exist in final bytecode")
+            }
+            Bytecode::BranchLabelFalse(_) => {
+                panic!("Jump labels are not meant to exist in final bytecode")
+            }
             Bytecode::JmpLabel(_) => panic!("Jump labels are not meant to exist in final bytecode"),
             Bytecode::JmpShort(dst) => f.write_all(&dst.to_le_bytes())?,
             Bytecode::Jmp(dst) => f.write_all(&dst.to_le_bytes())?,
