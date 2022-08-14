@@ -2,6 +2,11 @@
 /// All native functions which the VM provides.
 /// Native functions should always have suffix
 /// _nat.
+/// Because of how are the arguments stored on the
+/// stack (first is on top, etc...) you need to
+/// access them accordingly, so first argument
+/// is at args[arg_cnt - 1], second at args[arg_cnt - 2]
+/// and so on...
 #include <time.h>
 
 #include "object.h"
