@@ -25,7 +25,7 @@ struct object {
 struct object_string {
     struct object object;
     /// Length of the string WITHOUT zero terminator.
-    uint64_t size;
+    u64 size;
     u32 hash;
     /// Contains zero terminated string.
     char* data;
@@ -33,7 +33,7 @@ struct object_string {
 
 struct object_function {
     struct object object;
-    uint8_t arity;
+    u8 arity;
     u16 locals;
     struct bc_chunk bc;
     /// Index to constant pool
