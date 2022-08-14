@@ -96,13 +96,13 @@ struct value interpret_string_concat(struct object* o1, struct object* o2) {
     return NEW_OBJECT(new_string_move(new_char, size));
 }
 
-void interpret_print(struct vm_state* vm) {
+enum interpret_result interpret_print(struct vm_state* vm) {
     u8 arg_cnt = READ_IP() - 1;
 
     struct value v = pop(vm);
     if (v.type != VAL_OBJECT || v.object->type != OBJECT_STRING) {
         fprintf(stderr, "First 'print' argument must be a string.\n");
-        exit(-1);
+        return INTERPRET_ERROR;
     }
     struct object_string* obj = as_string(v.object);
 
@@ -111,7 +111,7 @@ void interpret_print(struct vm_state* vm) {
         if (*c == '{' && c[1] != '\0' && c[1] == '}') {
             if (arg_cnt == 0) {
                 fprintf(stderr, "There are more '{}' than arguments.\n");
-                exit(-1);
+                return INTERPRET_ERROR;
             }
             arg_cnt -= 1;
             c += 1;
@@ -136,7 +136,7 @@ void interpret_print(struct vm_state* vm) {
                             break;
                         default:
                             fprintf(stderr, "Can't print this type.\n");
-                            exit(-1);
+                            return INTERPRET_ERROR;
                     }
                     break;
                 }
@@ -154,10 +154,11 @@ void interpret_print(struct vm_state* vm) {
     }
     if (arg_cnt != 0) {
         fprintf(stderr, "There are more arguments than '{}'.\n");
-        exit(-1);
+        return INTERPRET_ERROR;
     }
 
     push(vm, NEW_NONE());
+    return INTERPRET_CONTINUE;
 }
 
 static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
@@ -172,8 +173,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             break;
         }
         case OP_PRINT:
-            interpret_print(vm);
-            break;
+            return interpret_print(vm);
         case OP_PUSH_SHORT: {
             i16 val = READ_2BYTES_BE(vm->ip);
             vm->ip += 2;
@@ -296,7 +296,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             struct value val = pop(vm);
             if (val.type != VAL_BOOL) {
                 fprintf(stderr, "Expected type 'bool' in if condition");
-                exit(-1);
+                return INTERPRET_ERROR;
             }
             if ((ins == OP_BRANCH && val.boolean) || (ins == OP_BRANCH_FALSE && !val.boolean)) {
                 u32 dest = READ_4BYTES_BE(vm->ip);
@@ -316,7 +316,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             bool new_v = table_set(&vm->globals, name_obj, val);
             if (!new_v) {
                 fprintf(stderr, "Error: Variable '%s' is already defined.\n", name->data);
-                exit(6);
+                return INTERPRET_ERROR;
             }
             break;
         }
@@ -328,7 +328,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             struct value val;
             if (!table_get(&vm->globals, name_obj, &val)) {
                 fprintf(stderr, "Error: Access to undefined variable '%s'.\n", name->data);
-                exit(6);
+                return INTERPRET_ERROR;
             }
             push(vm, val);
             break;
@@ -341,7 +341,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             struct value v = pop(vm);
             if (table_set(&vm->globals, name_obj, v)) {
                 fprintf(stderr, "Global variable '%s' is not defined!\n", name->data);
-                exit(1);
+                return INTERPRET_ERROR;
             }
             break;
         }
@@ -376,8 +376,10 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
             break;
         }
         default:
-            fprintf(stderr, "Unknown instruction 0x%x!\n", ins);
+            fprintf(stderr, "Unknown instruction 0x%x! Skipping...\n", ins);
     }
+    // Some branches return when successfull (like print),
+    // be careful if you add code here.
     return INTERPRET_CONTINUE;
 }
 
