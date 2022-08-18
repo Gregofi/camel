@@ -8,6 +8,10 @@ void init_table(struct table* t) {
 }
 
 void free_table(struct table* t) {
+    for (size_t i = 0; i < t->capacity; ++i) {
+        free_value(&t->entries[i].key);
+        free_value(&t->entries[i].val);
+    }
     free(t->entries);
     init_table(t);
 }

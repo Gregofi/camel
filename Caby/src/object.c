@@ -120,6 +120,12 @@ void free_object(struct object* obj) {
     vfree(obj);
 }
 
+void free_value(struct value* val) {
+    if (val->type == VAL_OBJECT) {
+        free_object(val->object);
+    }
+}
+
 u32 value_hash(struct value v) {
     u8* p;
     size_t len;
