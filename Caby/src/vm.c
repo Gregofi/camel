@@ -88,6 +88,7 @@ static void pop_frame(struct vm_state* vm) {
 void free_vm_state(struct vm_state* vm) {
     free_table(&vm->globals);
     free(vm->locals);
+    vfree(vm->op_stack);
     init_vm_state(vm);
 }
 
