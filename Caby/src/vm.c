@@ -60,7 +60,7 @@ void init_vm_state(struct vm_state* vm) {
     vm->stack_len = 0;
 }
 
-void alloc_frames(struct vm_state* vm) {
+static void alloc_frames(struct vm_state* vm) {
     vm->locals = malloc(sizeof(*vm->locals) * (1 << 16));
 }
 
@@ -82,8 +82,10 @@ static void pop_frame(struct vm_state* vm) {
     vm->frame_len -= 1;
 }
 
+/// Frees up structures owned by vm state.
+/// Does not free constant pool, since that
+/// is not owned.
 void free_vm_state(struct vm_state* vm) {
-    free_constant_pool(&vm->const_pool);
     free_table(&vm->globals);
     free(vm->locals);
     init_vm_state(vm);
@@ -461,7 +463,11 @@ int interpret(struct constant_pool* cp, u32 ep) {
     entry->slots = vm.locals;
     vm.ip = entry->function->bc.data;
 
-    return run(&vm);
+    int res = run(&vm);
+
+    free_vm_state(&vm);
+
+    return res;
 }
 
 #undef READ_IP
