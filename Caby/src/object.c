@@ -1,4 +1,6 @@
 #include "object.h"
+#include "bytecode.h"
+
 #include <assert.h>
 
 bool is_object_type(struct value* val, enum object_type type) {
@@ -104,8 +106,11 @@ void free_object(struct object* obj) {
             vfree(s->data);
             break;
         }
-        case OBJECT_FUNCTION:
+        case OBJECT_FUNCTION: {
+            struct object_function* f = as_function(obj);
+            free_bc_chunk(&f->bc);
             break;
+        }
         case OBJECT_NATIVE: {
             break;
         }
