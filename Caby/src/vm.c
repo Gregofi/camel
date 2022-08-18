@@ -11,7 +11,7 @@
 #include <assert.h>
 
 #ifdef __DEBUG__
-    #define DUMP_INS(ins) do {dissasemble_instruction(stderr, ins);runtime_error("\n");} while(false)
+    #define DUMP_INS(ins) do {dissasemble_instruction(stderr, ins);fprintf(stderr, "\n");} while(false)
 #else
     #define DUMP_INS(ins)
 #endif
