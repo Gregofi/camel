@@ -445,8 +445,6 @@ static int run(struct vm_state* vm) {
     }
 }
 
-// TODO: Maybe this guy shouldn't receive vm state at all and rather
-//       get constant pool and entry point.
 int interpret(struct constant_pool* cp, u32 ep) {
     struct vm_state vm;
     init_vm_state(&vm);
