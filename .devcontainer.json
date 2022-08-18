@@ -1,0 +1,14 @@
+{
+    "build" : {
+        "dockerfile": "Dockerfile"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "vadimcn.vscode-lldb",
+                "llvm-vs-code-extensions.vscode-clangd",
+                "rust-lang.rust-analyzer"
+        ]
+        }
+    }
+}

@@ -4,9 +4,9 @@
 cd Caby &&
 mkdir -p build;
 cd build;
-cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake .. -DCMAKE_BUILD_TYPE=${VM_TYPE:-Release}
 make
 cd ../..;
 cd Cacom;
-cargo build --release
+cargo build --${COMPILER_TYPE:-release}
 cd ..;
