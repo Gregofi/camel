@@ -36,6 +36,9 @@ void init_constant_pool(struct constant_pool* cp) {
 }
 
 void free_constant_pool(struct constant_pool* cp) {
+    for (size_t i = 0; i < cp->len; ++ i) {
+        free_object(cp->data[i]);
+    }
     vfree(cp->data);
     init_constant_pool(cp);
 }

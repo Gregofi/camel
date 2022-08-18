@@ -88,6 +88,8 @@ struct value {
  */
 bool is_object_type(struct value* val, enum object_type type);
 
+void free_object(struct object* obj);
+
 struct object* to_object(struct value val);
 
 struct object* to_object_s(struct value val);
