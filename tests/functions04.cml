@@ -3,7 +3,8 @@ def foo() = {
     var x = 1;
     var y = 2;
     var z = 3;
-};
+    {}
+}
 
 def bar() = {
     var x = 5;
@@ -11,6 +12,7 @@ def bar() = {
     var z = 7;
     foo();
     print("{} {} {}\n", x, y, z);
-};
+    {}
+}
 
-bar()
+bar();

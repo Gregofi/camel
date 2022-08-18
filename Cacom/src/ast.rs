@@ -56,9 +56,8 @@ pub enum AST {
 /// But for, while, assignment and so on does not leave any
 /// value on the stack.
 ///
-/// Blocks of statements are also expression, the value
-/// is either the one of last statement or none if the
-/// block is empty.
+/// Blocks of are also expression, they contain statements and at the end an
+/// expression that they evaluate to.
 #[derive(Debug, Clone)]
 pub enum Expr {
     Integer(i32),
@@ -67,7 +66,7 @@ pub enum Expr {
     NoneVal,
     String(String),
 
-    Block(Vec<AST>),
+    Block(Vec<AST>, Box<Expr>),
 
     List {
         size: Box<Expr>,
@@ -159,10 +158,11 @@ impl Expr {
                     arg.dump(prefix.clone() + " ");
                 }
             }
-            Expr::Block(vals) => {
+            Expr::Block(vals, expr) => {
                 for stmt in vals {
                     stmt.dump(prefix.clone());
                 }
+                expr.dump(prefix);
             }
         }
     }

@@ -56,11 +56,9 @@ match {
 }
 
 pub TopLevel: AST = {
-    TopLevelExpressions => AST::Top(<>),
+    TopLevelExpression+ => AST::Top(<>),
                         => AST::Top(vec![AST::Expression(Expr::NoneVal)]),
 }
-
-TopLevelExpressions: Vec<AST> = SeparatedLeastOne<TopLevelExpression, SEMICOLON>;
 
 TopLevelExpression: AST = {
     // FIXME: This permits 'return' in top level
@@ -73,19 +71,29 @@ TopLevelExpression: AST = {
 // (ie. in binary operations, conditions and so on...)
 // here belongs for example while or for cycle.
 Statement: AST = {
-    Expr => AST::Expression(<>), // All subexpressions - contains binaryop, ifs, calls and so on.
+    BlockOrTerminatedExpr => AST::Expression(<>), // All subexpressions - contains binaryop, ifs, calls and so on.
     Return => <>,
     VarDecl => <>,
     Assignment => <>,
 }
 
+BlockOrTerminatedExpr: Expr = {
+    Block,
+    <ExprNoBlock> SEMICOLON => <>,
+}
+
+pub Expr: Expr = {
+    Block,
+    ExprNoBlock,
+}
+
 Assignment: AST = {
-    <name: Identifier> ASSIGN <value: Expr> => AST::AssignVariable { name, value }
+    <name: Identifier> ASSIGN <value: BlockOrTerminatedExpr> => AST::AssignVariable { name, value }
 }
 
 VarDecl: AST = {
-    VAL <name: Identifier> ASSIGN <value: Expr> => AST::Variable { name, mutable: false, value },
-    VAR <name: Identifier> ASSIGN <value: Expr> => AST::Variable { name, mutable: true, value },
+    VAL <name: Identifier> ASSIGN <value: BlockOrTerminatedExpr> => AST::Variable { name, mutable: false, value },
+    VAR <name: Identifier> ASSIGN <value: BlockOrTerminatedExpr> => AST::Variable { name, mutable: true, value },
 }
 
 LeftAssoc<Op, NextLevel>: Expr = {
@@ -98,7 +106,7 @@ Unary<Op, NextLevel>: Expr = {
     NextLevel,
 }
 
-Expr = LeftAssoc<LogicalOp, AExpr>;
+ExprNoBlock = LeftAssoc<LogicalOp, AExpr>;
 
 LogicalOp: Opcode = {
     LESS => Opcode::Less,
@@ -135,7 +143,6 @@ Primary: Expr = {
     String => Expr::String(<>),
     Call => <>,
     LPAREN <expr: Expr> RPAREN => expr,
-    Block => <>,
     Conditional => <>,
     Identifier => Expr::AccessVariable{name: <>},
 }
@@ -159,13 +166,12 @@ String: String = {
 }
 
 Block: Expr = {
-    CURLYBOPEN <Statements> CURLYBCLOSE => Expr::Block(<>),
+    CURLYBOPEN <v: Statement*> <e: Expr> CURLYBCLOSE => Expr::Block(v, Box::new(e)),
     CURLYBOPEN CURLYBCLOSE => Expr::NoneVal,
 }
-Statements = SeparatedLeastOne<Statement, SEMICOLON>;
 
 FunDecl: AST = {
-    DEF <name: Identifier> LPAREN <parameters: Parameters> RPAREN ASSIGN <body: Expr> => {
+    DEF <name: Identifier> LPAREN <parameters: Parameters> RPAREN ASSIGN <body: BlockOrTerminatedExpr> => {
         AST::Function{name, parameters, body: body}
     }
 }
@@ -179,7 +185,7 @@ Conditional: Expr = {
 }
 
 Return: AST = {
-    RETURN <Expr> => AST::Return(<>)
+    RETURN <BlockOrTerminatedExpr> => AST::Return(<>)
 }
 
 // Macros
@@ -189,7 +195,3 @@ Separated<T, S>: Vec<T> = {
         Some(e) => { v.push(e); v }
     }
 }
-
-SeparatedLeastOne<T, S>: Vec<T> = {
-    <mut v: (<T> S)*> <e: T> S? => { v.push(e); v }
-};

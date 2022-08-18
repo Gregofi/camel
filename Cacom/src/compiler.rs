@@ -207,9 +207,11 @@ impl Compiler {
                     self.constant_pool.add(Object::from(lit.clone()));
                 self.add_instruction(code, Bytecode::PushLiteral(str_index));
             }
-            Expr::Block(stmts) => {
+            Expr::Block(stmts, expr) => {
                 self.enter_scope();
                 self.compile_block(stmts, code)?;
+                // don't drop, we drop it below
+                self.compile_expr(expr, code, false)?;
                 self.leave_scope();
             }
             Expr::List { size, values } => todo!(),
@@ -284,25 +286,9 @@ impl Compiler {
     }
 
     fn compile_block(&mut self, stmts: &[AST], code: &mut Code) -> Result<(), &'static str> {
-        let mut it = stmts.iter().peekable();
-        while let Some(stmt) = it.next() {
-            // Drop everything but the last result
-            // Hovewer if it is statement, do NOT drop it because it does not
-            // produces any value. Hovewer, if it is the last value, the block
-            // returns none.
-            match stmt {
-                // Never drop the last value, if it should be dropped then
-                // not here, but the parent of this block will drop it
-                AST::Expression(expr) => self.compile_expr(expr, code, it.peek().is_some())?,
-                _ => {
-                    self.compile_stmt(stmt, code)?;
-                    if it.peek().is_none() {
-                        self.add_instruction(code, Bytecode::PushNone);
-                    }
-                }
-            }
+        for stmt in stmts {
+            self.compile_stmt(stmt, code)?;
         }
-
         Ok(())
     }
 
