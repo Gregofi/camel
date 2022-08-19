@@ -104,7 +104,7 @@ mod parser_tests {
             .is_err());
         assert!(TopLevelParser::new().parse("val x = 1; val y = 2;").is_ok());
         assert!(TopLevelParser::new()
-            .parse("val x = 1; { val x = 2; val y = 2};")
+            .parse("val x = 1; { val x = 2; val y = 2;};")
             .is_ok());
         assert!(TopLevelParser::new().parse("val x = {1}").is_ok());
     }
