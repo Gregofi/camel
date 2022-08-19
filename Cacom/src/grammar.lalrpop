@@ -159,8 +159,10 @@ String: String = {
 }
 
 Block: Expr = {
-    CURLYBOPEN <Statements> CURLYBCLOSE => Expr::Block(<>),
-    CURLYBOPEN CURLYBCLOSE => Expr::NoneVal,
+    CURLYBOPEN <v: (<Statement> SEMICOLON)*> <e: Expr?> CURLYBCLOSE => match e {
+        Some(expr) => Expr::Block(v, Box::new(expr)),
+        None => Expr::Block(v, Box::new(Expr::NoneVal)),
+    }
 }
 Statements = SeparatedLeastOne<Statement, SEMICOLON>;
 

@@ -1,5 +1,5 @@
 def fun() = {
-    print("Hello, World!\n");
+    print("Hello, World!\n")
 };
 
-fun();
+fun()
