@@ -207,9 +207,10 @@ impl Compiler {
                     self.constant_pool.add(Object::from(lit.clone()));
                 self.add_instruction(code, Bytecode::PushLiteral(str_index));
             }
-            Expr::Block(stmts) => {
+            Expr::Block(stmts, expr) => {
                 self.enter_scope();
                 self.compile_block(stmts, code)?;
+                self.compile_expr(expr, code, false)?;
                 self.leave_scope();
             }
             Expr::List { size, values } => todo!(),

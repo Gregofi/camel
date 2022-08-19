@@ -67,7 +67,7 @@ pub enum Expr {
     NoneVal,
     String(String),
 
-    Block(Vec<AST>),
+    Block(Vec<AST>, Box<Expr>),
 
     List {
         size: Box<Expr>,
@@ -159,10 +159,11 @@ impl Expr {
                     arg.dump(prefix.clone() + " ");
                 }
             }
-            Expr::Block(vals) => {
+            Expr::Block(vals, expr) => {
                 for stmt in vals {
                     stmt.dump(prefix.clone());
                 }
+                expr.dump(prefix.clone());
             }
         }
     }

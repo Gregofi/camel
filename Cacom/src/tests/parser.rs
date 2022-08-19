@@ -22,12 +22,16 @@ mod parser_tests {
     fn blocks_test() {
         assert!(TopLevelParser::new().parse("{}").is_ok());
         assert!(TopLevelParser::new().parse("{1}").is_ok());
+        assert!(TopLevelParser::new().parse("{1;}").is_ok());
         assert!(TopLevelParser::new().parse("{1;1;1}").is_ok());
         assert!(TopLevelParser::new().parse("1;{1;1;1};1").is_ok());
         assert!(TopLevelParser::new().parse("1;").is_ok());
         assert!(TopLevelParser::new().parse("1;2").is_ok());
         assert!(TopLevelParser::new().parse("1 + {1}").is_ok());
         assert!(TopLevelParser::new().parse("{1;2} + {3;4} * {5}").is_ok());
+        assert!(TopLevelParser::new().parse("{val x = 5}").is_err());
+        assert!(TopLevelParser::new().parse("{val x = 5;}").is_ok());
+        assert!(TopLevelParser::new().parse("{val x = 5;1}").is_ok());
     }
 
     #[test]
