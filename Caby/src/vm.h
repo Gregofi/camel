@@ -22,7 +22,7 @@ struct call_frame {
     struct value* slots;
 };
 
-struct vm_state {
+typedef struct vm_state {
     struct call_frame frames[FRAME_DEPTH];
     u16 frame_len;
     u8* ip;
@@ -36,18 +36,18 @@ struct vm_state {
     struct table globals;
 
     struct value* locals;
-};
+} vm_t;
 
-void init_vm_state(struct vm_state* vm);
+void init_vm_state(vm_t* vm);
 
-void free_vm_state(struct vm_state* vm);
+void free_vm_state(vm_t* vm);
 
 int interpret(struct constant_pool* cp, u32 ep);
 
-void push(struct vm_state* vm, struct value val);
+void push(vm_t* vm, struct value val);
 
-struct value pop(struct vm_state* vm);
+struct value pop(vm_t* vm);
 
 /// Returns value that is 'p' behind the top.
 /// p = 0 returns top, p = 1 returns one behind top...
-struct value peek(struct vm_state* vm, size_t p);
+struct value peek(vm_t* vm, size_t p);
