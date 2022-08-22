@@ -82,10 +82,13 @@ static void pop_frame(vm_t* vm) {
     vm->frame_len -= 1;
 }
 
+/// Frees up structures owned by vm state.
+/// Does not free constant pool, since that
+/// is not owned.
 void free_vm_state(vm_t* vm) {
-    free_constant_pool(&vm->const_pool);
     free_table(&vm->globals);
     free(vm->locals);
+    vfree(vm->op_stack);
     init_vm_state(vm);
 }
 
@@ -445,8 +448,6 @@ static int run(vm_t* vm) {
     }
 }
 
-// TODO: Maybe this guy shouldn't receive vm state at all and rather
-//       get constant pool and entry point.
 int interpret(struct constant_pool* cp, u32 ep) {
     vm_t vm;
     init_vm_state(&vm);
@@ -463,7 +464,11 @@ int interpret(struct constant_pool* cp, u32 ep) {
     entry->slots = vm.locals;
     vm.ip = entry->function->bc.data;
 
-    return run(&vm);
+    int res = run(&vm);
+
+    free_vm_state(&vm);
+
+    return res;
 }
 
 #undef READ_IP

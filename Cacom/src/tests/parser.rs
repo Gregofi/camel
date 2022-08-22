@@ -22,12 +22,16 @@ mod parser_tests {
     fn blocks_test() {
         assert!(TopLevelParser::new().parse("{}").is_ok());
         assert!(TopLevelParser::new().parse("{1}").is_ok());
+        assert!(TopLevelParser::new().parse("{1;}").is_ok());
         assert!(TopLevelParser::new().parse("{1;1;1}").is_ok());
         assert!(TopLevelParser::new().parse("1;{1;1;1};1").is_ok());
         assert!(TopLevelParser::new().parse("1;").is_ok());
         assert!(TopLevelParser::new().parse("1;2").is_ok());
         assert!(TopLevelParser::new().parse("1 + {1}").is_ok());
         assert!(TopLevelParser::new().parse("{1;2} + {3;4} * {5}").is_ok());
+        assert!(TopLevelParser::new().parse("{val x = 5}").is_err());
+        assert!(TopLevelParser::new().parse("{val x = 5;}").is_ok());
+        assert!(TopLevelParser::new().parse("{val x = 5;1}").is_ok());
     }
 
     #[test]
@@ -100,7 +104,7 @@ mod parser_tests {
             .is_err());
         assert!(TopLevelParser::new().parse("val x = 1; val y = 2;").is_ok());
         assert!(TopLevelParser::new()
-            .parse("val x = 1; { val x = 2; val y = 2};")
+            .parse("val x = 1; { val x = 2; val y = 2;};")
             .is_ok());
         assert!(TopLevelParser::new().parse("val x = {1}").is_ok());
     }

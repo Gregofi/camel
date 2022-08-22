@@ -1,4 +1,7 @@
 #include "object.h"
+#include "bytecode.h"
+
+#include <assert.h>
 
 bool is_object_type(struct value* val, enum object_type type) {
     return val->type == VAL_OBJECT && val->object->type == type;
@@ -96,6 +99,32 @@ struct object_native* as_native_s(struct object* object) {
     return NULL;
 }
 
+void free_object(struct object* obj) {
+    switch (obj->type) {
+        case OBJECT_STRING: {
+            struct object_string* s = as_string(obj);
+            vfree(s->data);
+            break;
+        }
+        case OBJECT_FUNCTION: {
+            struct object_function* f = as_function(obj);
+            free_bc_chunk(&f->bc);
+            break;
+        }
+        case OBJECT_NATIVE: {
+            break;
+        }
+        default:
+            assert(false && "Unknown object type");
+    }
+    vfree(obj);
+}
+
+void free_value(struct value* val) {
+    if (val->type == VAL_OBJECT) {
+        free_object(val->object);
+    }
+}
 
 u32 value_hash(struct value v) {
     u8* p;
