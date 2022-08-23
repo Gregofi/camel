@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdlib.h>
+#include <stdbool.h>
 
 void* vmalloc(size_t size);
 
@@ -13,3 +14,4 @@ void* vrealloc(void* ptr, size_t new_size);
 void* vcalloc(size_t num, size_t size);
 
 void vfree(void* ptr);
+

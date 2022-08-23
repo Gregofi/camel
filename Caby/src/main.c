@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include "memory/block_alloc.h"
 #include "serializer.h"
 #include "vm.h"
 #include "dissasembler.h"
@@ -68,6 +69,8 @@ int main(int argc, const char* argv[]) {
         exit(1);
     }
 
+    // 1MB heap
+    init_heap(1024 * 1024 * 1024);
     for (int i = 0; i < argc; ++ i) {
         if (EQ("disassemble", i)) {
             return disassemble(argv + 2);
@@ -75,4 +78,5 @@ int main(int argc, const char* argv[]) {
             return execute(argv + 2);
         }
     }
+    done_heap();
 }
