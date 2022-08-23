@@ -8,7 +8,8 @@ RUN apt-get update -y && \
                        valgrind \
                        lldb \
                        git \
-                       curl
+                       curl \
+                       clangd
 
 # rustup
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y

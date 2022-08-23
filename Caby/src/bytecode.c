@@ -36,7 +36,7 @@ void init_constant_pool(struct constant_pool* cp) {
 }
 
 void free_constant_pool(struct constant_pool* cp) {
-    vfree(cp->data);
+    free(cp->data);
     init_constant_pool(cp);
 }
 

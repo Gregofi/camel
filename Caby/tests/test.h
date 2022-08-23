@@ -15,10 +15,10 @@ return EXIT_FAILURE;                                                            
 do {                                                                                                        \
 if((a) != (b))                                                                                              \
 {                                                                                                           \
-printf("%d:%d - assertion failed in %s\n", __FILE__, __LINE__, __PRETTY_FUNCTION__);                        \
-printf("a=%d, b=%d\n",a,b);                                                                                 \
+printf("%s:%d - assertion failed in %s\n", __FILE__, __LINE__, __PRETTY_FUNCTION__);                        \
+printf("a=%d, b=%d\n",(a),(b));                                                                             \
 return EXIT_FAILURE;                                                                                        \
-} else { void(0); }                                                                                         \
+}                                                                                        \
 } while (0)
 
 #define GREEN_COLOR_TERMINAL "\033[0;32m"

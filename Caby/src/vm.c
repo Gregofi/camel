@@ -88,7 +88,7 @@ static void pop_frame(vm_t* vm) {
 void free_vm_state(vm_t* vm) {
     free_table(&vm->globals);
     free(vm->locals);
-    vfree(vm->op_stack);
+    free(vm->op_stack);
     init_vm_state(vm);
 }
 

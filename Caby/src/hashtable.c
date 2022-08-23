@@ -44,7 +44,7 @@ static struct entry* find_entry(struct entry* entries, size_t capacity,
 }
 
 static void adjust_capacity(struct table* t, size_t capacity) {
-    struct entry* entries = vmalloc(sizeof(*entries) * capacity);
+    struct entry* entries = malloc(sizeof(*entries) * capacity);
 
     for (size_t i = 0; i < capacity; ++i) {
         entries[i].key = NEW_NONE();
@@ -64,7 +64,7 @@ static void adjust_capacity(struct table* t, size_t capacity) {
         dest->val = e->val;
         t->count += 1;
     }
-    vfree(t->entries);
+    free(t->entries);
 
     t->entries = entries;
     t->capacity = capacity;
