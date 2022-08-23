@@ -18,7 +18,7 @@
     #define DUMP_INS(ins)
 #endif
 
-static void disassemble_stack(struct vm_state* vm) {
+static void disassemble_stack(vm_t* vm) {
     for (size_t i = 0; i < vm->stack_len; ++i) {
         fprintf(stderr, "[");
         disassemble_value(stderr, vm->op_stack[i]);
@@ -41,7 +41,7 @@ static void runtime_error(const char* str, ...) {
     va_end(args);
 }
 
-static void def_native(struct vm_state* vm, const char* name, native_fn_t fun) {
+static void def_native(vm_t* vm, const char* name, native_fn_t fun) {
     push(vm, NEW_OBJECT(new_string(name)));
     push(vm, NEW_OBJECT(new_native(fun)));
     table_set(&vm->globals, vm->op_stack[0], vm->op_stack[1]);
@@ -49,7 +49,7 @@ static void def_native(struct vm_state* vm, const char* name, native_fn_t fun) {
     pop(vm);
 }
 
-void init_vm_state(struct vm_state* vm) {
+void init_vm_state(vm_t* vm) {
     init_constant_pool(&vm->const_pool);
     init_table(&vm->globals);
     vm->locals = NULL;
@@ -60,11 +60,11 @@ void init_vm_state(struct vm_state* vm) {
     vm->stack_len = 0;
 }
 
-static void alloc_frames(struct vm_state* vm) {
+void alloc_frames(vm_t* vm) {
     vm->locals = malloc(sizeof(*vm->locals) * (1 << 16));
 }
 
-static void push_frame(struct vm_state* vm, struct object_function* f) {
+static void push_frame(vm_t* vm, struct object_function* f) {
     assert(vm->frame_len > 0);
     struct call_frame* new_frame = &vm->frames[vm->frame_len];
     struct call_frame* previous  = &vm->frames[vm->frame_len - 1];
@@ -75,7 +75,7 @@ static void push_frame(struct vm_state* vm, struct object_function* f) {
     vm->frame_len += 1;
 }
 
-static void pop_frame(struct vm_state* vm) {
+static void pop_frame(vm_t* vm) {
     assert(vm->frame_len > 0);
     struct call_frame* curr_frame = &vm->frames[vm->frame_len - 1];
     vm->ip = curr_frame->ret;
@@ -85,30 +85,30 @@ static void pop_frame(struct vm_state* vm) {
 /// Frees up structures owned by vm state.
 /// Does not free constant pool, since that
 /// is not owned.
-void free_vm_state(struct vm_state* vm) {
+void free_vm_state(vm_t* vm) {
     free_table(&vm->globals);
     free(vm->locals);
     vfree(vm->op_stack);
     init_vm_state(vm);
 }
 
-void push(struct vm_state* vm, struct value val) {
+void push(vm_t* vm, struct value val) {
     vm->op_stack = handle_capacity(vm->op_stack, vm->stack_len,
                                      &vm->stack_cap, sizeof(*vm->op_stack));
 
     vm->op_stack[vm->stack_len++] = val;
 }
 
-struct value pop(struct vm_state* vm) {
+struct value pop(vm_t* vm) {
     assert(vm->stack_len > 0);
     return vm->op_stack[--vm->stack_len];
 }
 
-struct value peek(struct vm_state* vm, size_t p) {
+struct value peek(vm_t* vm, size_t p) {
     return vm->op_stack[vm->stack_len - p];
 }
 
-static struct object_string* pop_string(struct vm_state* vm) {
+static struct object_string* pop_string(vm_t* vm) {
     struct value v = pop(vm);
     if (v.type != VAL_OBJECT || v.object->type != OBJECT_STRING) {
         runtime_error("Expected string on top of stack.\n");
@@ -137,7 +137,7 @@ struct value interpret_string_concat(struct object* o1, struct object* o2) {
     return NEW_OBJECT(new_string_move(new_char, size));
 }
 
-enum interpret_result interpret_print(struct vm_state* vm) {
+enum interpret_result interpret_print(vm_t* vm) {
     u8 arg_cnt = READ_IP() - 1;
 
     struct value v = pop(vm);
@@ -202,7 +202,7 @@ enum interpret_result interpret_print(struct vm_state* vm) {
     return INTERPRET_CONTINUE;
 }
 
-static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
+static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
     switch (ins) {
         case OP_RETURN: {
             if (vm->frame_len > 1) {
@@ -433,7 +433,7 @@ static enum interpret_result interpret_ins(struct vm_state* vm, u8 ins) {
     return INTERPRET_CONTINUE;
 }
 
-static int run(struct vm_state* vm) {
+static int run(vm_t* vm) {
     u8 ins;
     while (true) {
         DUMP_INS(vm->ip);
@@ -449,7 +449,7 @@ static int run(struct vm_state* vm) {
 }
 
 int interpret(struct constant_pool* cp, u32 ep) {
-    struct vm_state vm;
+    vm_t vm;
     init_vm_state(&vm);
     alloc_frames(&vm);
     vm.const_pool = *cp;
