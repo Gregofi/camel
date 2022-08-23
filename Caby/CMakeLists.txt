@@ -24,3 +24,4 @@ add_executable(hashmap_test tests/hashmap_test.c src/hashtable.c src/object.c
 add_executable(blockalloc_test tests/blockalloc_test.c src/memory/block_alloc.c)
 
 add_test(hashmap_test hashmap_test)
+add_test(blockalloc_test blockalloc_test)
