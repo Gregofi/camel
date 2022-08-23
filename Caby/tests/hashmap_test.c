@@ -1,9 +1,13 @@
+// In case any of the tests segfaults for no apparent reason
+// try to enlarge the heap.
 #include <stdbool.h>
 
 #include "test.h"
 #include "../src/hashtable.h"
+#include "../src/memory/block_alloc.h"
 
 TEST(HashMapBasic) {
+    init_heap(1024 * 1024);
     struct table t;
     init_table(&t);
     ASSERT_W(t.capacity == 0);
@@ -391,6 +395,7 @@ TEST(HashMapBasic) {
     ASSERT_W(!table_get(&t, key9, &val_out));
     ASSERT_W(!table_get(&t, key10, &val_out));
 
+    done_heap();
     return 0;
 }
 
