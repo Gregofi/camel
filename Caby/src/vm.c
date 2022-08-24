@@ -356,6 +356,13 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
             push(vm, NEW_BOOL(res));
             break;
         }
+        case OP_NEQ: {
+            struct value v1 = pop(vm);
+            struct value v2 = pop(vm);
+            bool res = !value_eq(v1, v2);
+            push(vm, NEW_BOOL(res));
+            break;
+        }
         case OP_INEG: {
             struct value v = pop(vm);
             if (v.type == VAL_INT) {

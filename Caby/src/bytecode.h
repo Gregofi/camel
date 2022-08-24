@@ -49,6 +49,7 @@ enum opcode {
     OP_IGREATEREQ = 0x3A,
     OP_EQ = 0x3B,
     OP_INEG = 0x3C,
+    OP_NEQ = 0x3D,
 };
 
 struct bc_chunk {

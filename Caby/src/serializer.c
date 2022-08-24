@@ -48,6 +48,7 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
         case OP_IGREATER:
         case OP_IGREATEREQ:
         case OP_EQ:
+        case OP_NEQ:
         case OP_INEG:
         case OP_PUSH_NONE:
             break;

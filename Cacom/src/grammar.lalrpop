@@ -20,8 +20,8 @@ match {
     "}" => CURLYBCLOSE,
     "||" => OR,
     "&&" => AND,
-    "!=" => NEQ,
     "==" => EQ,
+    "!=" => NEQ,
     "="  => ASSIGN,
     ">"  => GREATER,
     "<"  => LESS,
@@ -106,6 +106,7 @@ LogicalOp: Opcode = {
     GREATER => Opcode::Greater,
     GREATEREQ => Opcode::GreaterEq,
     EQ => Opcode::Eq,
+    NEQ => Opcode::Neq,
 }
 
 AExpr = LeftAssoc<ExprOp, Factor>;

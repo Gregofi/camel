@@ -69,6 +69,7 @@ pub enum Bytecode {
     Igreatereq,
     Ieq,
     Ineg,
+    Neq,
     // Rest of binary operations
     Drop,
     Dropn(u8),
@@ -88,6 +89,7 @@ impl From<Opcode> for Bytecode {
             Opcode::Greater => Bytecode::Igreater,
             Opcode::GreaterEq => Bytecode::Igreatereq,
             Opcode::Eq => Bytecode::Ieq,
+            Opcode::Neq => Bytecode::Neq,
             Opcode::Negate => Bytecode::Ineg,
         }
     }
@@ -140,6 +142,7 @@ impl fmt::Display for Bytecode {
             Bytecode::Drop => write!(f, "Drop"),
             Bytecode::Dropn(cnt) => write!(f, "Dropn: {}", cnt),
             Bytecode::Dup => write!(f, "Dup"),
+            Bytecode::Neq => write!(f, "Neq"),
         }
     }
 }
@@ -241,6 +244,7 @@ impl Bytecode {
             Bytecode::Igreatereq => 0x3A,
             Bytecode::Ieq => 0x3B,
             Bytecode::Ineg => 0x3C,
+            Bytecode::Neq => 0x3D,
 
             Bytecode::Drop => 0x11,
             Bytecode::Dropn(_) => 0x25,
@@ -305,6 +309,7 @@ impl Bytecode {
             Bytecode::Igreater => 0,
             Bytecode::Igreatereq => 0,
             Bytecode::Ieq => 0,
+            Bytecode::Neq => 0,
             Bytecode::Ineg => 0,
             Bytecode::Drop => 0,
             Bytecode::Dropn(_) => 1,
@@ -358,6 +363,7 @@ impl Serializable for Bytecode {
             Bytecode::Igreater => {}
             Bytecode::Igreatereq => {}
             Bytecode::Ieq => {}
+            Bytecode::Neq => {}
             Bytecode::Ineg => {}
             Bytecode::Drop => {}
             Bytecode::Dropn(cnt) => f.write_all(&cnt.to_le_bytes())?,

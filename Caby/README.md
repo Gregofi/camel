@@ -109,6 +109,7 @@ Pops value of the stack and assigns it to the variable.
 - igreater 0x39
 - igreatereq 0x3A,
 - ieq  0x3B
+- ineq 0x3C
 Arithmetic operations on integers, pop two from the stack, perform operation, push the result.
 
 NOTE: Bitwise operations will be added later.

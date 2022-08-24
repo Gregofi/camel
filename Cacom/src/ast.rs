@@ -12,6 +12,7 @@ pub enum Opcode {
     Greater,
     GreaterEq,
     Eq,
+    Neq,
     Negate,
 }
 
@@ -114,6 +115,7 @@ impl fmt::Display for Opcode {
                 Opcode::Greater => ">",
                 Opcode::GreaterEq => ">=",
                 Opcode::Eq => "==",
+                Opcode::Neq => "!=",
             }
         )
     }

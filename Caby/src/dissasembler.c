@@ -50,6 +50,9 @@ size_t dissasemble_instruction(FILE* f, u8* ins) {
         case OP_EQ:
             fprintf(f, "EQ");
             return 1;
+        case OP_NEQ:
+            fprintf(f, "NEQ");
+            return 1;
         case OP_ILESS:
             fprintf(f, "ILESS");
             return 1;
