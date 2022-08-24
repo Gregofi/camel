@@ -4,7 +4,7 @@ project(caby C)
 
 message("Build type: ${CMAKE_BUILD_TYPE}")
 
-set(CMAKE_C_FLAGS_SANITIZERS "-g -fsanitize=address -fsanitize=undefined -D__DEBUG__")
+set(CMAKE_C_FLAGS_SANITIZERS "-g -fsanitize=address -fsanitize=undefined -D__DEBUG__ -D__MEM_DEBUG__")
 set(CMAKE_C_FLAGS_DEBUG "-g -Wall -Wextra -pedantic -D__DEBUG__")
 set(CMAKE_C_FLAGS_RELEASE "-O2")
 
