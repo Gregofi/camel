@@ -40,11 +40,16 @@ enum opcode {
     OP_ISUB = 0x31,
     OP_IMUL = 0x32,
     OP_IDIV = 0x33,
-    OP_IREM = 0x34,
+    OP_IMOD = 0x34,
     OP_IAND = 0x35,
     OP_IOR = 0x36,
-    OP_EQ = 0x3b,
-    OP_INEG = 0x3c,
+    OP_ILESS = 0x37,
+    OP_ILESSEQ = 0x38,
+    OP_IGREATER = 0x39,
+    OP_IGREATEREQ = 0x3A,
+    OP_EQ = 0x3B,
+    OP_INEG = 0x3C,
+    OP_NEQ = 0x3D,
 };
 
 struct bc_chunk {

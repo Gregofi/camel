@@ -38,7 +38,7 @@ size_t dissasemble_instruction(FILE* f, u8* ins) {
         case OP_IDIV:
             fprintf(f, "IDIV");
             return 1;
-        case OP_IREM:
+        case OP_IMOD:
             fprintf(f, "IREM");
             return 1;
         case OP_IAND:
@@ -49,6 +49,21 @@ size_t dissasemble_instruction(FILE* f, u8* ins) {
             return 1;
         case OP_EQ:
             fprintf(f, "EQ");
+            return 1;
+        case OP_NEQ:
+            fprintf(f, "NEQ");
+            return 1;
+        case OP_ILESS:
+            fprintf(f, "ILESS");
+            return 1;
+        case OP_ILESSEQ:
+            fprintf(f, "ILESSEQ");
+            return 1;
+        case OP_IGREATER:
+            fprintf(f, "IGREATER");
+            return 1;
+        case OP_IGREATEREQ:
+            fprintf(f, "IGREATEREQ");
             return 1;
         case OP_INEG:
             fprintf(f, "NEG");

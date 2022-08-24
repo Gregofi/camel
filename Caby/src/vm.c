@@ -283,7 +283,7 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
                 push(vm, NEW_DOUBLE(v1.double_num * v2.double_num));
             // TODO: List and string multiplication
             } else {
-                runtime_error("Incopatible types for operator '-'\n");
+                runtime_error("Incopatible types for operator '*'\n");
                 return INTERPRET_ERROR;
             }
             break;
@@ -300,15 +300,66 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
             } else if (v1.type == VAL_DOUBLE && v2.type == VAL_DOUBLE) {
                 push(vm, NEW_DOUBLE(v1.double_num / v2.double_num));
             } else {
-                runtime_error("Incopatible types for operator '-'\n");
+                runtime_error("Incopatible types for operator '/'\n");
                 return INTERPRET_ERROR;
             }
+            break;
+        }
+        case OP_IMOD: {
+            struct value v1 = pop(vm);
+            struct value v2 = pop(vm);
+            if (v1.type == VAL_INT && v2.type == VAL_INT) {
+                if (v2.integer == 0) {
+                    runtime_error("Division by zero error");
+                    return INTERPRET_ERROR;
+                }
+                push(vm, NEW_INT(v1.integer % v2.integer));
+            } else {
+                runtime_error("Incopatible types for operator '\%'\n");
+                return INTERPRET_ERROR;
+            }
+            break;
+
+        }
+        case OP_ILESS: {
+            struct value v1 = pop(vm);
+            struct value v2 = pop(vm);
+            bool res = value_less(v1, v2);
+            push(vm, NEW_BOOL(res));
+            break;
+        }
+        case OP_ILESSEQ: {
+            struct value v1 = pop(vm);
+            struct value v2 = pop(vm);
+            bool res = value_lesseq(v1, v2);
+            push(vm, NEW_BOOL(res));
+            break;
+        }
+        case OP_IGREATER: {
+            struct value v1 = pop(vm);
+            struct value v2 = pop(vm);
+            bool res = value_greater(v1, v2);
+            push(vm, NEW_BOOL(res));
+            break;
+        }
+        case OP_IGREATEREQ: {
+            struct value v1 = pop(vm);
+            struct value v2 = pop(vm);
+            bool res = value_greatereq(v1, v2);
+            push(vm, NEW_BOOL(res));
             break;
         }
         case OP_EQ: {
             struct value v1 = pop(vm);
             struct value v2 = pop(vm);
             bool res = value_eq(v1, v2);
+            push(vm, NEW_BOOL(res));
+            break;
+        }
+        case OP_NEQ: {
+            struct value v1 = pop(vm);
+            struct value v2 = pop(vm);
+            bool res = !value_eq(v1, v2);
             push(vm, NEW_BOOL(res));
             break;
         }

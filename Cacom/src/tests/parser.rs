@@ -16,6 +16,8 @@ mod parser_tests {
         assert!(TopLevelParser::new().parse("1 -1").is_ok());
         assert!(TopLevelParser::new().parse("1 - -1").is_ok());
         assert!(TopLevelParser::new().parse("1 - --1").is_ok());
+        assert!(TopLevelParser::new().parse("1 % 2").is_ok());
+        assert!(TopLevelParser::new().parse("1 % +").is_err());
     }
 
     #[test]

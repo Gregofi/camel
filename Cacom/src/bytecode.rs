@@ -59,6 +59,7 @@ pub enum Bytecode {
     Iadd,
     Isub,
     Imul,
+    Mod,
     Idiv,
     Iand,
     Ior,
@@ -68,6 +69,7 @@ pub enum Bytecode {
     Igreatereq,
     Ieq,
     Ineg,
+    Neq,
     // Rest of binary operations
     Drop,
     Dropn(u8),
@@ -81,11 +83,13 @@ impl From<Opcode> for Bytecode {
             Opcode::Sub => Bytecode::Isub,
             Opcode::Mul => Bytecode::Imul,
             Opcode::Div => Bytecode::Idiv,
+            Opcode::Mod => Bytecode::Mod,
             Opcode::Less => Bytecode::Iless,
             Opcode::LessEq => Bytecode::Ilesseq,
             Opcode::Greater => Bytecode::Igreater,
             Opcode::GreaterEq => Bytecode::Igreatereq,
             Opcode::Eq => Bytecode::Ieq,
+            Opcode::Neq => Bytecode::Neq,
             Opcode::Negate => Bytecode::Ineg,
         }
     }
@@ -126,6 +130,7 @@ impl fmt::Display for Bytecode {
             Bytecode::Isub => write!(f, "Isub"),
             Bytecode::Imul => write!(f, "Imul"),
             Bytecode::Idiv => write!(f, "Idiv"),
+            Bytecode::Mod => write!(f, "Mod"),
             Bytecode::Iand => write!(f, "Iand"),
             Bytecode::Ior => write!(f, "Ior"),
             Bytecode::Iless => write!(f, "Iless"),
@@ -137,6 +142,7 @@ impl fmt::Display for Bytecode {
             Bytecode::Drop => write!(f, "Drop"),
             Bytecode::Dropn(cnt) => write!(f, "Dropn: {}", cnt),
             Bytecode::Dup => write!(f, "Dup"),
+            Bytecode::Neq => write!(f, "Neq"),
         }
     }
 }
@@ -229,6 +235,7 @@ impl Bytecode {
             Bytecode::Isub => 0x31,
             Bytecode::Imul => 0x32,
             Bytecode::Idiv => 0x33,
+            Bytecode::Mod => 0x34,
             Bytecode::Iand => 0x35,
             Bytecode::Ior => 0x36,
             Bytecode::Iless => 0x37,
@@ -237,6 +244,7 @@ impl Bytecode {
             Bytecode::Igreatereq => 0x3A,
             Bytecode::Ieq => 0x3B,
             Bytecode::Ineg => 0x3C,
+            Bytecode::Neq => 0x3D,
 
             Bytecode::Drop => 0x11,
             Bytecode::Dropn(_) => 0x25,
@@ -292,6 +300,7 @@ impl Bytecode {
             Bytecode::Iadd => 0,
             Bytecode::Isub => 0,
             Bytecode::Imul => 0,
+            Bytecode::Mod => 0,
             Bytecode::Idiv => 0,
             Bytecode::Iand => 0,
             Bytecode::Ior => 0,
@@ -300,6 +309,7 @@ impl Bytecode {
             Bytecode::Igreater => 0,
             Bytecode::Igreatereq => 0,
             Bytecode::Ieq => 0,
+            Bytecode::Neq => 0,
             Bytecode::Ineg => 0,
             Bytecode::Drop => 0,
             Bytecode::Dropn(_) => 1,
@@ -345,6 +355,7 @@ impl Serializable for Bytecode {
             Bytecode::Isub => {}
             Bytecode::Imul => {}
             Bytecode::Idiv => {}
+            Bytecode::Mod => {}
             Bytecode::Iand => {}
             Bytecode::Ior => {}
             Bytecode::Iless => {}
@@ -352,6 +363,7 @@ impl Serializable for Bytecode {
             Bytecode::Igreater => {}
             Bytecode::Igreatereq => {}
             Bytecode::Ieq => {}
+            Bytecode::Neq => {}
             Bytecode::Ineg => {}
             Bytecode::Drop => {}
             Bytecode::Dropn(cnt) => f.write_all(&cnt.to_le_bytes())?,

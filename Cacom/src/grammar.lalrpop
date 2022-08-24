@@ -20,8 +20,8 @@ match {
     "}" => CURLYBCLOSE,
     "||" => OR,
     "&&" => AND,
-    "!=" => NEQ,
     "==" => EQ,
+    "!=" => NEQ,
     "="  => ASSIGN,
     ">"  => GREATER,
     "<"  => LESS,
@@ -29,7 +29,7 @@ match {
     "<=" => LESSEQ,
     "*"  => MULTIPLY,
     "/"  => DIVIDE,
-    "%"  => MODULE,
+    "%"  => MODULO,
     "+"  => PLUS,
     "-" => MINUS,
     "if" => IF,
@@ -106,6 +106,7 @@ LogicalOp: Opcode = {
     GREATER => Opcode::Greater,
     GREATEREQ => Opcode::GreaterEq,
     EQ => Opcode::Eq,
+    NEQ => Opcode::Neq,
 }
 
 AExpr = LeftAssoc<ExprOp, Factor>;
@@ -120,6 +121,7 @@ Factor = LeftAssoc<TermOp, Term>;
 TermOp: Opcode = {
     MULTIPLY => Opcode::Mul,
     DIVIDE => Opcode::Div,
+    MODULO => Opcode::Mod,
 }
 
 Term = Unary<UnaryOp, Primary>;

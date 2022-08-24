@@ -431,11 +431,13 @@ fn check_operator_arity(op: &Opcode, len: usize) -> Result<(), &'static str> {
         Opcode::Sub => 2,
         Opcode::Mul => 2,
         Opcode::Div => 2,
+        Opcode::Mod => 2,
         Opcode::Less => 2,
         Opcode::LessEq => 2,
         Opcode::Greater => 2,
         Opcode::GreaterEq => 2,
         Opcode::Eq => 2,
+        Opcode::Neq => 2,
         Opcode::Negate => 1,
     };
     if arity != len {

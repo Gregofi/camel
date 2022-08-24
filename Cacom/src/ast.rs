@@ -6,11 +6,13 @@ pub enum Opcode {
     Sub,
     Mul,
     Div,
+    Mod,
     Less,
     LessEq,
     Greater,
     GreaterEq,
     Eq,
+    Neq,
     Negate,
 }
 
@@ -107,11 +109,13 @@ impl fmt::Display for Opcode {
                 Opcode::Sub | Opcode::Negate => "-",
                 Opcode::Mul => "*",
                 Opcode::Div => "/",
+                Opcode::Mod => "%",
                 Opcode::Less => "<",
                 Opcode::LessEq => "<=",
                 Opcode::Greater => ">",
                 Opcode::GreaterEq => ">=",
                 Opcode::Eq => "==",
+                Opcode::Neq => "!=",
             }
         )
     }
