@@ -283,7 +283,7 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
                 push(vm, NEW_DOUBLE(v1.double_num * v2.double_num));
             // TODO: List and string multiplication
             } else {
-                runtime_error("Incopatible types for operator '-'\n");
+                runtime_error("Incopatible types for operator '*'\n");
                 return INTERPRET_ERROR;
             }
             break;
@@ -300,7 +300,7 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
             } else if (v1.type == VAL_DOUBLE && v2.type == VAL_DOUBLE) {
                 push(vm, NEW_DOUBLE(v1.double_num / v2.double_num));
             } else {
-                runtime_error("Incopatible types for operator '-'\n");
+                runtime_error("Incopatible types for operator '/'\n");
                 return INTERPRET_ERROR;
             }
             break;
