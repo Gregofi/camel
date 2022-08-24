@@ -40,7 +40,7 @@ enum opcode {
     OP_ISUB = 0x31,
     OP_IMUL = 0x32,
     OP_IDIV = 0x33,
-    OP_IREM = 0x34,
+    OP_IMOD = 0x34,
     OP_IAND = 0x35,
     OP_IOR = 0x36,
     OP_EQ = 0x3b,

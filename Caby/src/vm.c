@@ -305,6 +305,22 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
             }
             break;
         }
+        case OP_IMOD: {
+            struct value v1 = pop(vm);
+            struct value v2 = pop(vm);
+            if (v1.type == VAL_INT && v2.type == VAL_INT) {
+                if (v2.integer == 0) {
+                    runtime_error("Division by zero error");
+                    return INTERPRET_ERROR;
+                }
+                push(vm, NEW_INT(v1.integer % v2.integer));
+            } else {
+                runtime_error("Incopatible types for operator '\%'\n");
+                return INTERPRET_ERROR;
+            }
+            break;
+
+        }
         case OP_EQ: {
             struct value v1 = pop(vm);
             struct value v2 = pop(vm);

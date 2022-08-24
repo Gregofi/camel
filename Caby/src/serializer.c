@@ -41,7 +41,7 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
         case OP_IDIV:
         case OP_IAND:
         case OP_IOR:
-        case OP_IREM:
+        case OP_IMOD:
         case OP_LABEL:
         case OP_EQ:
         case OP_INEG:

@@ -38,7 +38,7 @@ size_t dissasemble_instruction(FILE* f, u8* ins) {
         case OP_IDIV:
             fprintf(f, "IDIV");
             return 1;
-        case OP_IREM:
+        case OP_IMOD:
             fprintf(f, "IREM");
             return 1;
         case OP_IAND:
