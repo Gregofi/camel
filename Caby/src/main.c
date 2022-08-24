@@ -71,12 +71,14 @@ int main(int argc, const char* argv[]) {
 
     // 1MB heap
     init_heap(1024 * 1024 * 1024);
+    int exit = 1;
     for (int i = 0; i < argc; ++ i) {
         if (EQ("disassemble", i)) {
-            return disassemble(argv + 2);
+            exit = disassemble(argv + 2);
         } else if (EQ("execute", i)) {
-            return execute(argv + 2);
+            exit = execute(argv + 2);
         }
     }
     done_heap();
+    return exit;
 }

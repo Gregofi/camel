@@ -86,6 +86,8 @@ TEST(Freeing) {
         data[i] = heap_alloc(72);
         ASSERT_W(data[i] != NULL);
     }
+
+    ASSERT_W(heap_alloc(1000) == NULL);
     done_heap();
     return 0;
 }
