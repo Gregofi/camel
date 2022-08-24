@@ -59,6 +59,7 @@ pub enum Bytecode {
     Iadd,
     Isub,
     Imul,
+    Mod,
     Idiv,
     Iand,
     Ior,
@@ -81,6 +82,7 @@ impl From<Opcode> for Bytecode {
             Opcode::Sub => Bytecode::Isub,
             Opcode::Mul => Bytecode::Imul,
             Opcode::Div => Bytecode::Idiv,
+            Opcode::Mod => Bytecode::Mod,
             Opcode::Less => Bytecode::Iless,
             Opcode::LessEq => Bytecode::Ilesseq,
             Opcode::Greater => Bytecode::Igreater,
@@ -126,6 +128,7 @@ impl fmt::Display for Bytecode {
             Bytecode::Isub => write!(f, "Isub"),
             Bytecode::Imul => write!(f, "Imul"),
             Bytecode::Idiv => write!(f, "Idiv"),
+            Bytecode::Mod => write!(f, "Mod"),
             Bytecode::Iand => write!(f, "Iand"),
             Bytecode::Ior => write!(f, "Ior"),
             Bytecode::Iless => write!(f, "Iless"),
@@ -229,6 +232,7 @@ impl Bytecode {
             Bytecode::Isub => 0x31,
             Bytecode::Imul => 0x32,
             Bytecode::Idiv => 0x33,
+            Bytecode::Mod => 0x34,
             Bytecode::Iand => 0x35,
             Bytecode::Ior => 0x36,
             Bytecode::Iless => 0x37,
@@ -292,6 +296,7 @@ impl Bytecode {
             Bytecode::Iadd => 0,
             Bytecode::Isub => 0,
             Bytecode::Imul => 0,
+            Bytecode::Mod => 0,
             Bytecode::Idiv => 0,
             Bytecode::Iand => 0,
             Bytecode::Ior => 0,
@@ -345,6 +350,7 @@ impl Serializable for Bytecode {
             Bytecode::Isub => {}
             Bytecode::Imul => {}
             Bytecode::Idiv => {}
+            Bytecode::Mod => {}
             Bytecode::Iand => {}
             Bytecode::Ior => {}
             Bytecode::Iless => {}

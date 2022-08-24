@@ -29,7 +29,7 @@ match {
     "<=" => LESSEQ,
     "*"  => MULTIPLY,
     "/"  => DIVIDE,
-    "%"  => MODULE,
+    "%"  => MODULO,
     "+"  => PLUS,
     "-" => MINUS,
     "if" => IF,
@@ -120,6 +120,7 @@ Factor = LeftAssoc<TermOp, Term>;
 TermOp: Opcode = {
     MULTIPLY => Opcode::Mul,
     DIVIDE => Opcode::Div,
+    MODULO => Opcode::Mod,
 }
 
 Term = Unary<UnaryOp, Primary>;

@@ -98,7 +98,7 @@ Pops value of the stack and assigns it to the variable.
 - isub 0x31
 - imul 0x32
 - idiv 0x33
-- irem 0x34
+- imod 0x34
 - iand 0x35
 - ior  0x36
 - ieq  0x3b
