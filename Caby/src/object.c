@@ -166,9 +166,37 @@ u32 value_hash(struct value v) {
     return hash;
 }
 
+#define VALUE_COMPARE(fun_name, operator) \
+bool fun_name(struct value v1, struct value v2) {  \
+    if (v1.type != v2.type) {  \
+        return false;  \
+    }  \
+    switch (v1.type) {  \
+        case VAL_INT:  \
+            return v1.integer operator v2.integer;  \
+        case VAL_BOOL:  \
+            return v1.boolean operator v2.boolean;  \
+        case VAL_DOUBLE:  \
+            return v1.double_num operator v2.double_num;  \
+        case VAL_NONE:  \
+            return false;  \
+        default:  \
+            fprintf(stderr, "Unsupported type for <\n");  \
+            exit(-1);  \
+    }  \
+}
+
+VALUE_COMPARE(value_less, <)
+VALUE_COMPARE(value_lesseq, <=)
+VALUE_COMPARE(value_greater, >)
+VALUE_COMPARE(value_greatereq, >=)
+
+#undef VALUE_COMPARE
+
 bool value_eq(struct value v1, struct value v2) {
-    if (v1.type != v2.type)
+    if (v1.type != v2.type) {
         return false;
+    }
     switch (v1.type) {
         case VAL_INT:
             return v1.integer == v2.integer;
@@ -177,7 +205,7 @@ bool value_eq(struct value v1, struct value v2) {
         case VAL_DOUBLE:
             return v1.double_num == v2.double_num;
         case VAL_OBJECT:
-            switch(v1.object->type) {
+            switch (v1.object->type) {
                 case OBJECT_STRING: {
                     // TODO: use the below pointer comparison when strings are interned
                     struct object_string* s1 = as_string(v1.object);

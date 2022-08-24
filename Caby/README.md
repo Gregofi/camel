@@ -99,9 +99,16 @@ Pops value of the stack and assigns it to the variable.
 - imul 0x32
 - idiv 0x33
 - imod 0x34
+- ineg 0x3C
+
 - iand 0x35
 - ior  0x36
-- ieq  0x3b
+
+- iless 0x37
+- ilesseq 0x38
+- igreater 0x39
+- igreatereq 0x3A,
+- ieq  0x3B
 Arithmetic operations on integers, pop two from the stack, perform operation, push the result.
 
 NOTE: Bitwise operations will be added later.

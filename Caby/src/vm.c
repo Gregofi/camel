@@ -321,6 +321,34 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
             break;
 
         }
+        case OP_ILESS: {
+            struct value v1 = pop(vm);
+            struct value v2 = pop(vm);
+            bool res = value_less(v1, v2);
+            push(vm, NEW_BOOL(res));
+            break;
+        }
+        case OP_ILESSEQ: {
+            struct value v1 = pop(vm);
+            struct value v2 = pop(vm);
+            bool res = value_lesseq(v1, v2);
+            push(vm, NEW_BOOL(res));
+            break;
+        }
+        case OP_IGREATER: {
+            struct value v1 = pop(vm);
+            struct value v2 = pop(vm);
+            bool res = value_greater(v1, v2);
+            push(vm, NEW_BOOL(res));
+            break;
+        }
+        case OP_IGREATEREQ: {
+            struct value v1 = pop(vm);
+            struct value v2 = pop(vm);
+            bool res = value_greatereq(v1, v2);
+            push(vm, NEW_BOOL(res));
+            break;
+        }
         case OP_EQ: {
             struct value v1 = pop(vm);
             struct value v2 = pop(vm);

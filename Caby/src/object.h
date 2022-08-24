@@ -128,3 +128,8 @@ u32 value_hash(struct value v);
 
 // Compares two values for equality
 bool value_eq(struct value v1, struct value v2);
+
+bool value_less(struct value v1, struct value v2);
+bool value_lesseq(struct value v1, struct value v2);
+bool value_greater(struct value v1, struct value v2);
+bool value_greatereq(struct value v1, struct value v2);
