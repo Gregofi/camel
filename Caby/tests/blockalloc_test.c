@@ -92,10 +92,6 @@ TEST(Freeing) {
     return 0;
 }
 
-
-
-
-
 int main() {
     RUN_TEST(Allocation);
     RUN_TEST(ComplicatedAllocations);
