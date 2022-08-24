@@ -1,0 +1,7 @@
+
+def gcd(a, b) = if b != 0 { gcd(b, a % b) } else { a };
+
+print("{}\n", gcd(6, 4));
+print("{}\n", gcd(1, 4));
+print("{}\n", gcd(36, 16));
+print("{}\n", gcd(390, 210));
