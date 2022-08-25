@@ -1,4 +1,5 @@
 #include "memory.h"
+#include "gc.h"
 #include "memory/block_alloc.h"
 #include "vm.h"
 
@@ -7,9 +8,16 @@
 
 
 void* vmalloc(vm_t* vm, size_t size) {
-    if (vm != NULL && mem_taken() > vm->gc.next_gc) {
-       vm->gc.next_gc *= GC_HEAP_GROW_FACTOR;
+    #ifdef __GC_STRESS__
+    if (vm != NULL) {
+        gc_collect(vm);
     }
+    #else
+    if (vm != NULL && mem_taken() > vm->gc.next_gc) {
+        gc_collect(vm);
+        vm->gc.next_gc *= GC_HEAP_GROW_FACTOR;
+    }
+    #endif
     return heap_alloc(size);
 }
 

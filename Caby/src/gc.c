@@ -4,11 +4,13 @@
 #include "object.h"
 #include "hashtable.h"
 #include "memory.h"
+#include "dissasembler.h"
 
 #define IS_MARKED(val) ((val & 1) == 1)
 
 void init_gc(struct gc_state* gc) {
     memset(gc, 0, sizeof(*gc));
+    gc->next_gc = GC_THRESHOLD_START;
 }
 
 void free_gc(struct gc_state* gc) {
@@ -30,7 +32,7 @@ static void mark_object(struct gc_state* gc, struct object* obj) {
     gc->worklist[gc->wl_count++] = obj;
 #ifdef __GC_DEBUG__
     GC_LOG("Marking object %p: ", obj);
-    dissasemble_object(obj);
+    dissasemble_object(stderr, obj);
     GC_LOG("\n");
 #endif
 }
@@ -126,6 +128,7 @@ void gc_collect(vm_t* vm) {
 
     mark_roots(vm);
     trace_references(&vm->gc);
+    GC_LOG("Sweeping...\n");
     sweep(vm);
 
     size_t after = mem_taken();
