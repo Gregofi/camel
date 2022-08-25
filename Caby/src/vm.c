@@ -89,6 +89,7 @@ static void pop_frame(vm_t* vm) {
 /// Does not free constant pool, since that
 /// is not owned.
 void free_vm_state(vm_t* vm) {
+    // Free all objects in VM heap
     while (vm->objects) {
         struct object* to_free = vm->objects;
         vm->objects = vm->objects->next;
