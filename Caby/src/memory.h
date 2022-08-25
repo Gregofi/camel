@@ -13,3 +13,6 @@ void* vcalloc(size_t num, size_t size);
 
 void vfree(void* ptr);
 
+size_t mem_taken();
+
+size_t mem_total();

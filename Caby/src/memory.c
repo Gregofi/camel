@@ -22,3 +22,11 @@ void* vcalloc(size_t num, size_t size) {
 void vfree(void* ptr) {
     heap_free(ptr);
 }
+
+size_t mem_taken() {
+    return heap_taken();
+}
+
+size_t mem_total() {
+    return heap_total();
+}

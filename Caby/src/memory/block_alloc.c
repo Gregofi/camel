@@ -93,3 +93,11 @@ void heap_free(void* ptr) {
         next = next->next;
     }
 }
+
+size_t heap_total() {
+    return mempool_total;
+}
+
+size_t heap_taken() {
+    return mempool_taken;
+}

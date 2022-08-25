@@ -26,3 +26,7 @@ void done_heap();
 void* heap_alloc(size_t size);
 
 void heap_free(void* ptr);
+
+size_t heap_total();
+
+size_t heap_taken();
