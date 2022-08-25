@@ -42,7 +42,7 @@ static void runtime_error(const char* str, ...) {
 }
 
 static void def_native(vm_t* vm, const char* name, native_fn_t fun) {
-    push(vm, NEW_OBJECT(new_string(name)));
+    push(vm, NEW_OBJECT(new_string(vm, name)));
     push(vm, NEW_OBJECT(new_native(fun)));
     table_set(&vm->globals, vm->op_stack[0], vm->op_stack[1]);
     pop(vm);
@@ -124,7 +124,7 @@ static struct object_string* pop_string(vm_t* vm) {
 #define CURRENT_FUNCTION() (TOP_FRAME().function)
 
 /// Returns new 'struct value' containing string object which is contatenation of o1 and o2
-struct value interpret_string_concat(struct object* o1, struct object* o2) {
+struct value interpret_string_concat(vm_t* vm, struct object* o1, struct object* o2) {
     struct object_string* str1 = as_string(o1);
     struct object_string* str2 = as_string(o2);
 
@@ -134,7 +134,7 @@ struct value interpret_string_concat(struct object* o1, struct object* o2) {
     memcpy(new_char + str1->size, str2->data, str2->size);
     new_char[size] = '\0';
 
-    return NEW_OBJECT(new_string_move(new_char, size));
+    return NEW_OBJECT(new_string_move(vm, new_char, size));
 }
 
 enum interpret_result interpret_print(vm_t* vm) {
@@ -254,7 +254,7 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
             } else if (v1.type == VAL_OBJECT && v2.type == VAL_OBJECT
                     && v1.object->type == OBJECT_STRING
                     && v2.object->type == OBJECT_STRING) {
-                push(vm, interpret_string_concat(v1.object, v2.object));
+                push(vm, interpret_string_concat(vm, v1.object, v2.object));
             } else {
                 runtime_error("Incopatible types for operator '+'\n");
                 return INTERPRET_ERROR;

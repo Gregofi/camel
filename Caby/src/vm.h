@@ -36,6 +36,9 @@ typedef struct vm_state {
     struct table globals;
 
     struct value* locals;
+
+    /// Linked list of all objects in a program
+    struct object* objects;
 } vm_t;
 
 void init_vm_state(vm_t* vm);

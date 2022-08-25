@@ -1,5 +1,6 @@
 #include "object.h"
 #include "bytecode.h"
+#include "vm.h"
 
 #include <assert.h>
 
@@ -28,9 +29,22 @@ static u32 hashString(const char* key, int length) {
   return hash;
 }
 
-struct object_string* new_string(const char* str) {
+/// If 'vm' is NULL then the object won't be included in VM linked list
+/// (won't be touched by GC).
+static void init_object(vm_t* vm, struct object* obj, enum object_type type) {
+    obj->type = type;
+    if (vm != NULL) {
+        obj->next = vm->objects;
+        vm->objects = obj;
+        obj->gc_data = 0;
+    }
+}
+
+/// 'vm' can be NULL, then the string won't be added to the list of all objects
+/// and it won't be touched by GC.
+struct object_string* new_string(vm_t* vm, const char* str) {
     struct object_string* n = vmalloc(sizeof(*n));
-    n->object.type = OBJECT_STRING;
+    init_object(vm, &n->object, OBJECT_STRING);
     size_t len = strlen(str);
     n->size = len;
     n->hash = hashString(str, n->size);
@@ -40,9 +54,11 @@ struct object_string* new_string(const char* str) {
     return n;
 }
 
-struct object_string* new_string_move(char* str, u32 len) {
+/// 'vm' can be NULL, then the string won't be added to the list of all objects
+/// and it won't be touched by GC.
+struct object_string* new_string_move(vm_t* vm, char* str, u32 len) {
     struct object_string* n = vmalloc(sizeof(*n));
-    n->object.type = OBJECT_STRING;
+    init_object(vm, &n->object, OBJECT_STRING);
     n->size = len;
     n->data = str;
     n->hash = hashString(str, len);
@@ -62,9 +78,9 @@ struct object_string* as_string_s(struct object* object) {
 
 struct object_function* new_function(u8 arity, u16 locals, struct bc_chunk c, u32 name) {
     struct object_function* f = vmalloc(sizeof(*f));
+    f->object.type = OBJECT_FUNCTION;
     f->arity = arity;
     f->locals = locals;
-    f->object.type = OBJECT_FUNCTION;
     f->bc = c;
     f->name = name;
     return f;

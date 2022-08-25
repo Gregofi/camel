@@ -9,6 +9,9 @@
 #include "common.h"
 #include "bytecode.h"
 
+/// Forward decl
+typedef struct vm_state vm_t;
+
 enum object_type {
     OBJECT_STRING,
     OBJECT_FUNCTION,
@@ -20,7 +23,10 @@ enum object_type {
  * functions and so on.
  */
 struct object {
+    struct object* next;
     enum object_type type;
+    /// Internal data used for GC (ie. marked, generation and so on...)
+    u8 gc_data;
 };
 
 struct object_string {
@@ -99,11 +105,11 @@ struct object* to_object(struct value val);
 struct object* to_object_s(struct value val);
 
 /// Returns new object string with contents of 'str', the string is copied.
-struct object_string* new_string(const char* str);
+struct object_string* new_string(vm_t* vm, const char* str);
 
 /// Takes ownership of str, which is zero terminated string.
 /// len is the length of the string without zero terminator.
-struct object_string* new_string_move(char* str, u32 len);
+struct object_string* new_string_move(vm_t* vm, char* str, u32 len);
 
 struct object_string* as_string(struct object* object);
 
