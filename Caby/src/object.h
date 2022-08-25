@@ -97,7 +97,7 @@ bool is_object_type(struct value* val, enum object_type type);
 void free_object(struct object* obj);
 
 /// If the value is object then frees all dynamically allocated memory by it,
-/// otherwise it does nothing.
+/// otherwise it does nothing. It uses the VM internal free.
 void free_value(struct value* val);
 
 struct object* to_object(struct value val);
