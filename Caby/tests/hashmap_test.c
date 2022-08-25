@@ -16,6 +16,7 @@ TEST(HashMapBasic) {
 
     vm_t vm;
     init_vm_state(&vm);
+    vm.gc.gc_off = true;
     struct value val_out;
 
     struct value key1 = NEW_OBJECT(new_string(&vm, "Hello, World!"));
