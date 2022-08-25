@@ -105,14 +105,31 @@ static void sweep(vm_t* vm) {
             free_object(obj);
         }
     }
+
+    // struct object** obj = &vm->objects;
+    // while (*obj) {
+    //     if (IS_MARKED((*obj)->gc_data)) {
+    //         (*obj)->gc_data = 0;
+    //         obj = &(*obj)->next;
+    //     } else {
+    //         struct object* unreached = *obj;
+    //         *obj = (*obj)->next;
+    //         free_object(unreached);
+    //     }
+    // }
 }
 
 void gc_collect(vm_t* vm) {
     GC_LOG("=== GC BEGIN ===\n");
-    
+    size_t before = mem_taken();
+    GC_LOG("Taken memory: %lu/%luB\n", before, mem_total());
+
     mark_roots(vm);
     trace_references(&vm->gc);
     sweep(vm);
 
+    size_t after = mem_taken();
+    GC_LOG("Taken memory: %lu/%luB\n", after, mem_total());
+    GC_LOG("Difference: %luB\n", before - after);
     GC_LOG("=== GC END ===\n\n");
 }
