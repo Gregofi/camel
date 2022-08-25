@@ -132,7 +132,7 @@ struct value interpret_string_concat(vm_t* vm, struct object* o1, struct object*
     struct object_string* str2 = as_string(o2);
 
     u32 size = str1->size + str2->size;
-    char* new_char = vmalloc(size + 1);
+    char* new_char = vmalloc(vm, size + 1);
     memcpy(new_char, str1->data, str1->size);
     memcpy(new_char + str1->size, str2->data, str2->size);
     new_char[size] = '\0';

@@ -1,11 +1,15 @@
 #include "memory.h"
 #include "memory/block_alloc.h"
+#include "vm.h"
 
 #include <stdlib.h>
 #include <string.h>
 
 
-void* vmalloc(size_t size) {
+void* vmalloc(vm_t* vm, size_t size) {
+    if (vm != NULL && mem_taken() > vm->gc.next_gc) {
+       vm->gc.next_gc *= GC_HEAP_GROW_FACTOR;
+    }
     return heap_alloc(size);
 }
 
@@ -13,8 +17,8 @@ void* vmalloc(size_t size) {
  * @param num Number of objects
  * @param size Size of each object
  */
-void* vcalloc(size_t num, size_t size) {
-    void* mem = vmalloc(num * size);
+void* vcalloc(vm_t* vm, size_t num, size_t size) {
+    void* mem = vmalloc(vm, num * size);
     memset(mem, 0, num * size);
     return mem;
 }

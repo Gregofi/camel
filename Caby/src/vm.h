@@ -7,6 +7,7 @@
 #include "gc.h"
 
 #define FRAME_DEPTH 128
+#define GC_HEAP_GROW_FACTOR 2
 
 enum interpret_result {
     INTERPRET_CONTINUE,

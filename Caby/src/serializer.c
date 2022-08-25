@@ -105,7 +105,7 @@ struct object* serialize_object(FILE* f) {
         }
         case TAG_STRING: {
             u32 len = read_4bytes_be(f);
-            char *str = vmalloc(len + 1);
+            char *str = vmalloc(NULL, len + 1);
             fread(str, 1, len, f);
             str[len] = '\0';
             // These guys don't have to be in object linked list, since they

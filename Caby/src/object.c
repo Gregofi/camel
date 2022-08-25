@@ -19,6 +19,14 @@ struct object* to_object_s(struct value val) {
     return NULL;
 }
 
+static void* allocate_object(vm_t* vm, size_t size) {
+    if (vm != NULL) {
+        return vmalloc(vm, size);
+    } else {
+        return malloc(size);
+    }
+}
+
 /// FNV-1a
 static u32 hashString(const char* key, int length) {
   u32 hash = 2166136261u;
@@ -43,12 +51,12 @@ static void init_object(vm_t* vm, struct object* obj, enum object_type type) {
 /// 'vm' can be NULL, then the string won't be added to the list of all objects
 /// and it won't be touched by GC.
 struct object_string* new_string(vm_t* vm, const char* str) {
-    struct object_string* n = vmalloc(sizeof(*n));
+    struct object_string* n = allocate_object(vm, sizeof(*n));
     init_object(vm, &n->object, OBJECT_STRING);
     size_t len = strlen(str);
     n->size = len;
     n->hash = hashString(str, n->size);
-    n->data = vmalloc(len + 1);
+    n->data = vmalloc(vm, len + 1);
     memcpy(n->data, str, n->size);
     n->data[n->size] = '\0';
     return n;
@@ -57,7 +65,7 @@ struct object_string* new_string(vm_t* vm, const char* str) {
 /// 'vm' can be NULL, then the string won't be added to the list of all objects
 /// and it won't be touched by GC.
 struct object_string* new_string_move(vm_t* vm, char* str, u32 len) {
-    struct object_string* n = vmalloc(sizeof(*n));
+    struct object_string* n = allocate_object(vm, sizeof(*n));
     init_object(vm, &n->object, OBJECT_STRING);
     n->size = len;
     n->data = str;
@@ -77,7 +85,7 @@ struct object_string* as_string_s(struct object* object) {
 }
 
 struct object_function* new_function(u8 arity, u16 locals, struct bc_chunk c, u32 name) {
-    struct object_function* f = vmalloc(sizeof(*f));
+    struct object_function* f = malloc(sizeof(*f));
     f->object.type = OBJECT_FUNCTION;
     f->arity = arity;
     f->locals = locals;
@@ -98,7 +106,7 @@ struct object_function* as_function_s(struct object* object) {
 }
 
 struct object_native* new_native(native_fn_t fun) {
-    struct object_native* native = vmalloc(sizeof(*native));
+    struct object_native* native = malloc(sizeof(*native));
     native->object.type = OBJECT_NATIVE;
     native->function = fun;
     return native;
