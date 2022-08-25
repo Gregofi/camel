@@ -97,41 +97,17 @@ static void trace_references(vm_t* vm) {
 }
 
 static void sweep(vm_t* vm) {
-    struct object* prev = NULL;
-    struct object* obj  = vm->objects;
-    while (obj != NULL) {
-        if (IS_MARKED(obj->gc_data)) {
-            obj->gc_data = 0;
-            prev = obj;
-            obj = obj->next;
+    struct object** obj = &vm->objects;
+    while (*obj) {
+        if (IS_MARKED((*obj)->gc_data)) {
+            (*obj)->gc_data = 0;
+            obj = &(*obj)->next;
         } else {
-            struct object* unreached = obj;
-            obj = obj->next;
-            if (prev != NULL) {
-                prev->next = obj;
-            } else {
-                vm->objects = obj;
-            }
-            #ifdef __GC_DEBUG__
-                fprintf(stderr, "Sweeping object ");
-                dissasemble_object(stderr, unreached);
-                fprintf(stderr, "\n");
-            #endif
+            struct object* unreached = *obj;
+            *obj = (*obj)->next;
             free_object(unreached);
         }
     }
-
-    // struct object** obj = &vm->objects;
-    // while (*obj) {
-    //     if (IS_MARKED((*obj)->gc_data)) {
-    //         (*obj)->gc_data = 0;
-    //         obj = &(*obj)->next;
-    //     } else {
-    //         struct object* unreached = *obj;
-    //         *obj = (*obj)->next;
-    //         free_object(unreached);
-    //     }
-    // }
 }
 
 void gc_collect(vm_t* vm) {
