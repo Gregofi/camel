@@ -1,4 +1,5 @@
 #include "vm.h"
+#include "gc.h"
 #include "bytecode.h"
 #include "common.h"
 #include "hashtable.h"
@@ -58,6 +59,7 @@ void init_vm_state(vm_t* vm) {
     vm->frame_len = 0;
     vm->stack_cap = 0;
     vm->stack_len = 0;
+    init_gc(&vm->gc);
 }
 
 void alloc_frames(vm_t* vm) {
@@ -89,6 +91,7 @@ void free_vm_state(vm_t* vm) {
     free_table(&vm->globals);
     free(vm->locals);
     free(vm->op_stack);
+    free_gc(&vm->gc);
     init_vm_state(vm);
 }
 

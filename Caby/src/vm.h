@@ -4,6 +4,7 @@
 #include "object.h"
 #include "hashtable.h"
 #include "native.h"
+#include "gc.h"
 
 #define FRAME_DEPTH 128
 
@@ -39,6 +40,8 @@ typedef struct vm_state {
 
     /// Linked list of all objects in a program
     struct object* objects;
+
+    struct gc_state gc;
 } vm_t;
 
 void init_vm_state(vm_t* vm);
