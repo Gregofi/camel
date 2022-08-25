@@ -135,6 +135,10 @@ static void sweep(vm_t* vm) {
 }
 
 void gc_collect(vm_t* vm) {
+    if (vm->gc.gc_off) {
+        GC_LOG("Collection was called but GC is turned off\n");
+        return;
+    }
     GC_LOG("=== GC BEGIN ===\n");
     size_t before = mem_taken();
     GC_LOG("Taken memory: %lu/%luB\n", before, mem_total());
