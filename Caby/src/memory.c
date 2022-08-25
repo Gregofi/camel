@@ -9,11 +9,14 @@
 
 void* vmalloc(vm_t* vm, size_t size) {
     #ifdef __GC_STRESS__
-    if (vm != NULL) {
-        gc_collect(vm);
-    }
+    assert(vm != NULL);
+    gc_collect(vm);
     #else
-    if (vm != NULL && mem_taken() > vm->gc.next_gc) {
+    if (mem_taken() > vm->gc.next_gc || mem_taken() > mem_total()) {
+        if (mem_taken() > mem_total()) {
+            fprintf(stderr, "Out of memory, aborting...\n");
+            exit(-5);
+        }
         gc_collect(vm);
         vm->gc.next_gc *= GC_HEAP_GROW_FACTOR;
     }
