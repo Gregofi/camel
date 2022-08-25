@@ -79,21 +79,20 @@ static void mark_roots(vm_t* vm) {
     }
 }
 
-static void close_obj(struct object* obj) {
+static void close_obj(vm_t* vm, struct object* obj) {
     switch (obj->type) {
+        case OBJECT_FUNCTION:
         case OBJECT_STRING:
         case OBJECT_NATIVE:
-        // We don't have to handle functions because they are not in the
-        // GC linked list of objects to be collected.
-        case OBJECT_FUNCTION:
-      break;
+            break;
     }
 }
 
-static void trace_references(struct gc_state* gc) {
+static void trace_references(vm_t* vm) {
+    struct gc_state* gc = &vm->gc;
     while (gc->wl_count > 0) {
-        struct object* obj = gc->worklist[--gc->wl_count];
-        close_obj(obj);
+        struct object* obj = vm->gc.worklist[--gc->wl_count];
+        close_obj(vm, obj);
     }
 }
 
