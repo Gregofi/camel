@@ -9,11 +9,6 @@ void* vmalloc(size_t size) {
     return heap_alloc(size);
 }
 
-void* vrealloc(void* ptr, size_t new_size) {
-    heap_free(ptr);
-    return heap_alloc(new_size);
-}
-
 /**
  * @param num Number of objects
  * @param size Size of each object
