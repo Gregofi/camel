@@ -116,13 +116,13 @@ struct object_string* as_string(struct object* object);
 struct object_string* as_string_s(struct object* object);
 
 /// Returns new function object, takes ownership of 'name'.
-struct object_function* new_function(u8 arity, u16 locals, struct bc_chunk c, u32 name);
+struct object_function* new_function(vm_t* vm, u8 arity, u16 locals, struct bc_chunk c, u32 name);
 
 struct object_function* as_function(struct object* object);
 
 struct object_function* as_function_s(struct object* object);
 
-struct object_native* new_native(native_fn_t fun);
+struct object_native* new_native(vm_t* vm, native_fn_t fun);
 
 struct object_native* as_native(struct object* object);
 

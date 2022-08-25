@@ -5,6 +5,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 
 void* vmalloc(vm_t* vm, size_t size) {

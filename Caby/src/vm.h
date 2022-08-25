@@ -49,7 +49,7 @@ void init_vm_state(vm_t* vm);
 
 void free_vm_state(vm_t* vm);
 
-int interpret(struct constant_pool* cp, u32 ep);
+int interpret(vm_t* vm, u32 ep);
 
 void push(vm_t* vm, struct value val);
 

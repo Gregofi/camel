@@ -44,8 +44,8 @@ static void runtime_error(const char* str, ...) {
 
 static void def_native(vm_t* vm, const char* name, native_fn_t fun) {
     // We have vm but pass null to not allocate the object on the GC territory
-    push(vm, NEW_OBJECT(new_string(NULL, name)));
-    push(vm, NEW_OBJECT(new_native(fun)));
+    push(vm, NEW_OBJECT(new_string(vm, name)));
+    push(vm, NEW_OBJECT(new_native(vm, fun)));
     table_set(&vm->globals, vm->op_stack[0], vm->op_stack[1]);
     pop(vm);
     pop(vm);
@@ -89,6 +89,7 @@ static void pop_frame(vm_t* vm) {
 /// Does not free constant pool, since that
 /// is not owned.
 void free_vm_state(vm_t* vm) {
+    free_constant_pool(&vm->const_pool);
     free_table(&vm->globals);
     free(vm->locals);
     free(vm->op_stack);
@@ -503,25 +504,20 @@ static int run(vm_t* vm) {
     }
 }
 
-int interpret(struct constant_pool* cp, u32 ep) {
-    vm_t vm;
-    init_vm_state(&vm);
-    alloc_frames(&vm);
-    vm.const_pool = *cp;
+int interpret(vm_t* vm, u32 ep) {
+    alloc_frames(vm);
 
-    def_native(&vm, "clock", clock_nat);
-    def_native(&vm, "pow", pow_nat);
+    def_native(vm, "clock", clock_nat);
+    def_native(vm, "pow", pow_nat);
 
-    struct call_frame* entry = &vm.frames[vm.frame_len++];
-    entry->function = (struct object_function*)vm.const_pool.data[ep];
+    struct call_frame* entry = &vm->frames[vm->frame_len++];
+    entry->function = (struct object_function*)vm->const_pool.data[ep];
     // There should never be a return from global
     entry->ret = 0;
-    entry->slots = vm.locals;
-    vm.ip = entry->function->bc.data;
+    entry->slots = vm->locals;
+    vm->ip = entry->function->bc.data;
 
-    int res = run(&vm);
-
-    free_vm_state(&vm);
+    int res = run(vm);
 
     return res;
 }
