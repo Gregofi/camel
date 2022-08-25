@@ -19,7 +19,7 @@ enable_testing()
 
 add_executable(hashmap_test tests/hashmap_test.c src/hashtable.c src/object.c
                             src/memory.c src/common.c src/bytecode.c
-                            src/memory/block_alloc.c)
+                            src/memory/block_alloc.c src/gc.c)
 
 add_executable(blockalloc_test tests/blockalloc_test.c src/memory/block_alloc.c)
 
