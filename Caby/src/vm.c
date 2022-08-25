@@ -43,7 +43,6 @@ static void runtime_error(const char* str, ...) {
 }
 
 static void def_native(vm_t* vm, const char* name, native_fn_t fun) {
-    // We have vm but pass null to not allocate the object on the GC territory
     push(vm, NEW_OBJECT(new_string(vm, name)));
     push(vm, NEW_OBJECT(new_native(vm, fun)));
     table_set(&vm->globals, vm->op_stack[0], vm->op_stack[1]);

@@ -35,6 +35,7 @@ void init_heap(size_t size) {
     }
 
     struct heap_header* header = init_header(mempool);
+    mempool_taken = sizeof(*header);
     header->len = size - sizeof(*header);
 }
 
@@ -91,6 +92,7 @@ void heap_free(void* ptr) {
         it->len += sizeof(*next) + next->len;
         it->next = next->next;
         next = next->next;
+        mempool_taken -= sizeof(*next);
     }
 }
 
