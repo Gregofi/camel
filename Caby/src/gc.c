@@ -5,7 +5,7 @@
 #include "hashtable.h"
 #include "memory.h"
 
-#define IS_MARKED(val) (val & 1)
+#define IS_MARKED(val) ((val & 1) == 1)
 
 void init_gc(struct gc_state* gc) {
     memset(gc, 0, sizeof(*gc));
@@ -17,7 +17,7 @@ void free_gc(struct gc_state* gc) {
 }
 
 static void mark_object(struct gc_state* gc, struct object* obj) {
-    if (obj == NULL) {
+    if (obj == NULL || IS_MARKED(obj->gc_data)) {
         return;
     }
     obj->gc_data = 1;
@@ -67,10 +67,52 @@ static void mark_roots(vm_t* vm) {
     }
 }
 
+static void close_obj(struct object* obj) {
+    switch (obj->type) {
+        case OBJECT_STRING:
+        case OBJECT_NATIVE:
+        // We don't have to handle functions because they are not in the
+        // GC linked list of objects to be collected.
+        case OBJECT_FUNCTION:
+      break;
+    }
+}
+
+static void trace_references(struct gc_state* gc) {
+    while (gc->wl_count > 0) {
+        struct object* obj = gc->worklist[--gc->wl_count];
+        close_obj(obj);
+    }
+}
+
+static void sweep(vm_t* vm) {
+    struct object* prev = NULL;
+    struct object* obj  = vm->objects;
+    while (obj != NULL) {
+        if (IS_MARKED(obj->gc_data)) {
+            obj->gc_data = 0;
+            prev = obj;
+            obj = obj->next;
+        } else {
+            struct object* unreached = obj;
+            obj = obj->next;
+            if (prev != NULL) {
+                prev->next = obj;
+            } else {
+                vm->objects = obj;
+            }
+
+            free_object(obj);
+        }
+    }
+}
+
 void gc_collect(vm_t* vm) {
     GC_LOG("=== GC BEGIN ===\n");
     
     mark_roots(vm);
+    trace_references(&vm->gc);
+    sweep(vm);
 
     GC_LOG("=== GC END ===\n\n");
 }
