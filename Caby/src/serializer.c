@@ -135,7 +135,9 @@ void serialize_constant_pool(FILE* f, vm_t* vm) {
 vm_t serialize(FILE* f, u32* ep) {
     vm_t vm;
     init_vm_state(&vm);
+    vm.gc.gc_off = true;
     serialize_constant_pool(f, &vm);
     *ep = read_4bytes_be(f);
+    vm.gc.gc_off = false;
     return vm;
 }

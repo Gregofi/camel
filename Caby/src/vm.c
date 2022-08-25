@@ -60,6 +60,7 @@ void init_vm_state(vm_t* vm) {
     vm->frame_len = 0;
     vm->stack_cap = 0;
     vm->stack_len = 0;
+    vm->objects = NULL;
     init_gc(&vm->gc);
 }
 

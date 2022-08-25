@@ -1,5 +1,6 @@
 #pragma once
 #include <stdlib.h>
+#include <stdbool.h>
 
 #ifdef __GC_DEBUG__
 #define GC_LOG(format, ...) do { fprintf(stderr, format, ##__VA_ARGS__); } while (false)
@@ -17,6 +18,8 @@ struct gc_state {
     struct object** worklist;
 
     size_t next_gc;
+
+    bool gc_off;
 };
 
 void init_gc(struct gc_state* gc);
