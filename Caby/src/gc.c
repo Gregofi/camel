@@ -112,8 +112,12 @@ static void sweep(vm_t* vm) {
             } else {
                 vm->objects = obj;
             }
-
-            free_object(obj);
+            #ifdef __GC_DEBUG__
+                fprintf(stderr, "Sweeping object ");
+                dissasemble_object(stderr, unreached);
+                fprintf(stderr, "\n");
+            #endif
+            free_object(unreached);
         }
     }
 
@@ -136,8 +140,8 @@ void gc_collect(vm_t* vm) {
     GC_LOG("Taken memory: %lu/%luB\n", before, mem_total());
 
     mark_roots(vm);
-    trace_references(&vm->gc);
-    GC_LOG("Sweeping...\n");
+    trace_references(vm);
+    GC_LOG("Begin sweeping\n");
     sweep(vm);
 
     size_t after = mem_taken();
