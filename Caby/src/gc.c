@@ -45,10 +45,10 @@ static void mark_table(struct gc_state* gc, struct table* table) {
     for (size_t i = 0; i < table->capacity; ++i) {
         struct entry* e = &table->entries[i];
         mark_val(gc, &e->key);
-        // TODO
-        // if (e->key.type != VAL_NONE) {
+        // TODO: Maybe not necessary
+        if (e->key.type != VAL_NONE) {
             mark_val(gc, &e->val);
-        // }
+        }
     }
 }
 
