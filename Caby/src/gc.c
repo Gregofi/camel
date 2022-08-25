@@ -1,4 +1,5 @@
 #include "gc.h"
+#include "bytecode.h"
 #include "common.h"
 #include "vm.h"
 #include "object.h"
@@ -6,11 +7,14 @@
 #include "memory.h"
 #include "dissasembler.h"
 
-#define IS_MARKED(val) ((val & 1) == 1)
+#define IS_MARKED(val) (((val) & 1) == 1)
 
 void init_gc(struct gc_state* gc) {
-    memset(gc, 0, sizeof(*gc));
+    gc->wl_capacity = 0;
+    gc->wl_count = 0;
+    gc->worklist = NULL;
     gc->next_gc = GC_THRESHOLD_START;
+    gc->gc_off = false;
 }
 
 void free_gc(struct gc_state* gc) {
