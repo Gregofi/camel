@@ -89,6 +89,11 @@ static void pop_frame(vm_t* vm) {
 /// Does not free constant pool, since that
 /// is not owned.
 void free_vm_state(vm_t* vm) {
+    while (vm->objects) {
+        struct object* to_free = vm->objects;
+        vm->objects = vm->objects->next;
+        free_object(to_free);
+    }
     free_constant_pool(&vm->const_pool);
     free_table(&vm->globals);
     free(vm->locals);
