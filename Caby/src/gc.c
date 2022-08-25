@@ -59,12 +59,18 @@ static void mark_table(struct gc_state* gc, struct table* table) {
 }
 
 static void mark_roots(vm_t* vm) {
+    // constant pool
+    for (size_t i = 0; i < vm->const_pool.len; ++i) {
+        mark_object(&vm->gc, vm->const_pool.data[i]);
+    }
+    
     // stack
     for (size_t i = 0; i < vm->stack_len; ++i) {
         mark_val(&vm->gc, &vm->op_stack[i]);
     }
     // globals
     mark_table(&vm->gc, &vm->globals);
+
     // locals in frames
     for (size_t i = 0; i < vm->frame_len; ++i) {
         for (size_t j = 0; j < vm->frames->function->locals; ++j) {
