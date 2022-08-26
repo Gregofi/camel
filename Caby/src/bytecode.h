@@ -56,6 +56,10 @@ struct bc_chunk {
     u8* data;
     size_t len;
     size_t cap;
+
+    u32* location;
+    size_t location_len;
+    size_t location_cap;
 };
 
 struct constant_pool {

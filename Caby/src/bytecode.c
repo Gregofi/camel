@@ -9,10 +9,15 @@ void init_bc_chunk(struct bc_chunk* c) {
     c->data = NULL;
     c->len = 0;
     c->cap = 0;
+
+    c->location = 0;
+    c->location_cap = 0;
+    c->location_len = 0;
 }
 
 void free_bc_chunk(struct bc_chunk* c) {
     free(c->data);
+    free(c->location);
     init_bc_chunk(c);
 }
 
