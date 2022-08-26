@@ -32,10 +32,10 @@ for file in expected/*.exp; do
 
     # Run VM
     ${VM} execute a.out > out/${file}.out;
-    if [[ $? -ne 0 ]]; then
-        printf "${RED}Test ${file} failed - Interpreting failed${NC}\n";
+    EXIT_CODE=$?
+    if [[ ${EXIT_CODE} -ne 0 ]]; then
+        printf "${RED}Test ${file} failed - Interpreting failed with exit code ${EXIT_CODE}${NC}\n";
         rm a.out;
-        rm out.tmp;
         continue;
     fi;
 

@@ -18,8 +18,8 @@ u16 read_2bytes_be(FILE* f);
 
 void serialize_instruction(FILE* f, struct bc_chunk* c);
 
-struct object* serialize_object(FILE* f);
+struct object* serialize_object(FILE* f, vm_t* vm);
 
-struct constant_pool serialize_constant_pool(FILE* f);
+void serialize_constant_pool(FILE* f, vm_t* vm);
 
-void serialize(FILE* f, struct constant_pool* cp, u32* ep);
+vm_t serialize(FILE* f, u32* ep);

@@ -4,8 +4,10 @@
 #include "object.h"
 #include "hashtable.h"
 #include "native.h"
+#include "gc.h"
 
 #define FRAME_DEPTH 128
+#define GC_HEAP_GROW_FACTOR 2
 
 enum interpret_result {
     INTERPRET_CONTINUE,
@@ -36,13 +38,18 @@ typedef struct vm_state {
     struct table globals;
 
     struct value* locals;
+
+    /// Linked list of all objects in a program
+    struct object* objects;
+
+    struct gc_state gc;
 } vm_t;
 
 void init_vm_state(vm_t* vm);
 
 void free_vm_state(vm_t* vm);
 
-int interpret(struct constant_pool* cp, u32 ep);
+int interpret(vm_t* vm, u32 ep);
 
 void push(vm_t* vm, struct value val);
 

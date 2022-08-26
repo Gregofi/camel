@@ -86,7 +86,7 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
     }
 }
 
-struct object* serialize_object(FILE* f) {
+struct object* serialize_object(FILE* f, vm_t* vm) {
     u8 tag;
     fread(&tag, 1, 1, f);
 
@@ -101,14 +101,16 @@ struct object* serialize_object(FILE* f) {
             for (u32 i = 0; i < body_len; ++i) {
                 serialize_instruction(f, &bc);
             }
-            return (struct object*)new_function(parameters, locals_cnt, bc, name);
+            return (struct object*)new_function(vm, parameters, locals_cnt, bc, name);
         }
         case TAG_STRING: {
             u32 len = read_4bytes_be(f);
-            char *str = vmalloc(len + 1);
+            char *str = vmalloc(vm, len + 1);
             fread(str, 1, len, f);
             str[len] = '\0';
-            struct object_string* obj_str = new_string_move(str, len);
+            // These guys don't have to be in object linked list, since they
+            // will exist for the whole duration of the program.
+            struct object_string* obj_str = new_string_move(vm, str, len);
             return (struct object*)obj_str;
         }
         default:
@@ -117,24 +119,25 @@ struct object* serialize_object(FILE* f) {
     }
 }
 
-struct constant_pool serialize_constant_pool(FILE* f) {
-    struct constant_pool cp;
-    init_constant_pool(&cp);
-
+void serialize_constant_pool(FILE* f, vm_t* vm) {
     u32 len = read_4bytes_be(f);
     for (u32 i = 0; i < len; ++i) {
-        struct object* obj = serialize_object(f);
+        struct object* obj = serialize_object(f, vm);
         if (obj == NULL) {
+            fprintf(stderr, "Unable to serialize object at %u.\n", i);
             exit(-3);
         }
 
-        write_constant_pool(&cp, obj);
+        write_constant_pool(&vm->const_pool, obj);
     }
-
-    return cp;
 }
 
-void serialize(FILE* f, struct constant_pool* cp, u32* ep) {
-    *cp = serialize_constant_pool(f);
+vm_t serialize(FILE* f, u32* ep) {
+    vm_t vm;
+    init_vm_state(&vm);
+    vm.gc.gc_off = true;
+    serialize_constant_pool(f, &vm);
     *ep = read_4bytes_be(f);
+    vm.gc.gc_off = false;
+    return vm;
 }

@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 #include "test.h"
+#include "../src/vm.h"
 #include "../src/hashtable.h"
 #include "../src/memory/block_alloc.h"
 
@@ -13,9 +14,12 @@ TEST(HashMapBasic) {
     ASSERT_W(t.capacity == 0);
     ASSERT_W(t.count == 0);
 
+    vm_t vm;
+    init_vm_state(&vm);
+    vm.gc.gc_off = true;
     struct value val_out;
 
-    struct value key1 = NEW_OBJECT(new_string("Hello, World!"));
+    struct value key1 = NEW_OBJECT(new_string(&vm, "Hello, World!"));
     table_set(&t, key1, NEW_INT(3));
     ASSERT_W(t.count == 1);
     ASSERT_W(table_get(&t, key1, &val_out));
@@ -27,9 +31,9 @@ TEST(HashMapBasic) {
     ASSERT_W(val_out.type == VAL_INT);
     ASSERT_W(val_out.integer == 5);
 
-    struct value key2 = NEW_OBJECT(new_string("FOO"));
-    struct value key3 = NEW_OBJECT(new_string("BAR"));
-    struct value key4 = NEW_OBJECT(new_string("BAZ"));
+    struct value key2 = NEW_OBJECT(new_string(&vm, "FOO"));
+    struct value key3 = NEW_OBJECT(new_string(&vm, "BAR"));
+    struct value key4 = NEW_OBJECT(new_string(&vm, "BAZ"));
     struct value key5 = NEW_INT(1);
     struct value key6 = NEW_INT(2);
 
@@ -54,8 +58,8 @@ TEST(HashMapBasic) {
     ASSERT_W(val_out.type == VAL_OBJECT && val_out.object == key1.object);
 
     // Check reads/writes through equal bot not same "object" keys
-    struct value key7_1 = NEW_OBJECT(new_string("FOOBAR"));
-    struct value key7_2 = NEW_OBJECT(new_string("FOOBAR"));
+    struct value key7_1 = NEW_OBJECT(new_string(&vm, "FOOBAR"));
+    struct value key7_2 = NEW_OBJECT(new_string(&vm, "FOOBAR"));
     ASSERT_W(table_set(&t, key7_1, NEW_INT(9)));
     ASSERT_W(table_get(&t, key7_2, &val_out));
     ASSERT_W(val_out.type == VAL_INT && val_out.integer == 9);
@@ -87,7 +91,7 @@ TEST(HashMapBasic) {
 
     // Add a couple more entries to stress reallocation
     struct value key7 = NEW_DOUBLE(1.111);
-    struct value key8 = NEW_OBJECT(new_string("key8"));
+    struct value key8 = NEW_OBJECT(new_string(&vm, "key8"));
     struct value key9 = NEW_BOOL(true);
     struct value key10 = NEW_BOOL(false);
 
@@ -395,6 +399,8 @@ TEST(HashMapBasic) {
     ASSERT_W(!table_get(&t, key9, &val_out));
     ASSERT_W(!table_get(&t, key10, &val_out));
 
+    free_table(&t);
+    free_vm_state(&vm);
     done_heap();
     return 0;
 }

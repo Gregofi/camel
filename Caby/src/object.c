@@ -1,5 +1,6 @@
 #include "object.h"
 #include "bytecode.h"
+#include "vm.h"
 
 #include <assert.h>
 
@@ -28,24 +29,31 @@ static u32 hashString(const char* key, int length) {
   return hash;
 }
 
-struct object_string* new_string(const char* str) {
-    struct object_string* n = vmalloc(sizeof(*n));
-    n->object.type = OBJECT_STRING;
+static void init_object(vm_t* vm, struct object* obj, enum object_type type) {
+    obj->type = type;
+    obj->next = vm->objects;
+    vm->objects = obj;
+    obj->gc_data = 0;
+}
+
+struct object_string* new_string(vm_t* vm, const char* str) {
+    struct object_string* n = vmalloc(vm, sizeof(*n));
     size_t len = strlen(str);
     n->size = len;
     n->hash = hashString(str, n->size);
-    n->data = vmalloc(len + 1);
+    n->data = vmalloc(vm, len + 1);
     memcpy(n->data, str, n->size);
     n->data[n->size] = '\0';
+    init_object(vm, &n->object, OBJECT_STRING);
     return n;
 }
 
-struct object_string* new_string_move(char* str, u32 len) {
-    struct object_string* n = vmalloc(sizeof(*n));
-    n->object.type = OBJECT_STRING;
+struct object_string* new_string_move(vm_t* vm, char* str, u32 len) {
+    struct object_string* n = vmalloc(vm, sizeof(*n));
     n->size = len;
     n->data = str;
     n->hash = hashString(str, len);
+    init_object(vm, &n->object, OBJECT_STRING);
     return n;
 }
 
@@ -60,11 +68,11 @@ struct object_string* as_string_s(struct object* object) {
     return NULL;
 }
 
-struct object_function* new_function(u8 arity, u16 locals, struct bc_chunk c, u32 name) {
-    struct object_function* f = vmalloc(sizeof(*f));
+struct object_function* new_function(vm_t* vm, u8 arity, u16 locals, struct bc_chunk c, u32 name) {
+    struct object_function* f = vmalloc(vm, sizeof(*f));
+    init_object(vm, &f->object, OBJECT_FUNCTION);
     f->arity = arity;
     f->locals = locals;
-    f->object.type = OBJECT_FUNCTION;
     f->bc = c;
     f->name = name;
     return f;
@@ -81,9 +89,9 @@ struct object_function* as_function_s(struct object* object) {
     return NULL;
 }
 
-struct object_native* new_native(native_fn_t fun) {
-    struct object_native* native = vmalloc(sizeof(*native));
-    native->object.type = OBJECT_NATIVE;
+struct object_native* new_native(vm_t* vm, native_fn_t fun) {
+    struct object_native* native = vmalloc(vm, sizeof(*native));
+    init_object(vm, &native->object, OBJECT_NATIVE);
     native->function = fun;
     return native;
 }

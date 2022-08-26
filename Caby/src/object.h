@@ -9,6 +9,9 @@
 #include "common.h"
 #include "bytecode.h"
 
+/// Forward decl
+typedef struct vm_state vm_t;
+
 enum object_type {
     OBJECT_STRING,
     OBJECT_FUNCTION,
@@ -20,7 +23,10 @@ enum object_type {
  * functions and so on.
  */
 struct object {
+    struct object* next;
     enum object_type type;
+    /// Internal data used for GC (ie. marked, generation and so on...)
+    u8 gc_data;
 };
 
 struct object_string {
@@ -91,7 +97,7 @@ bool is_object_type(struct value* val, enum object_type type);
 void free_object(struct object* obj);
 
 /// If the value is object then frees all dynamically allocated memory by it,
-/// otherwise it does nothing.
+/// otherwise it does nothing. It uses the VM internal free.
 void free_value(struct value* val);
 
 struct object* to_object(struct value val);
@@ -99,24 +105,24 @@ struct object* to_object(struct value val);
 struct object* to_object_s(struct value val);
 
 /// Returns new object string with contents of 'str', the string is copied.
-struct object_string* new_string(const char* str);
+struct object_string* new_string(vm_t* vm, const char* str);
 
 /// Takes ownership of str, which is zero terminated string.
 /// len is the length of the string without zero terminator.
-struct object_string* new_string_move(char* str, u32 len);
+struct object_string* new_string_move(vm_t* vm, char* str, u32 len);
 
 struct object_string* as_string(struct object* object);
 
 struct object_string* as_string_s(struct object* object);
 
 /// Returns new function object, takes ownership of 'name'.
-struct object_function* new_function(u8 arity, u16 locals, struct bc_chunk c, u32 name);
+struct object_function* new_function(vm_t* vm, u8 arity, u16 locals, struct bc_chunk c, u32 name);
 
 struct object_function* as_function(struct object* object);
 
 struct object_function* as_function_s(struct object* object);
 
-struct object_native* new_native(native_fn_t fun);
+struct object_native* new_native(vm_t* vm, native_fn_t fun);
 
 struct object_native* as_native(struct object* object);
 

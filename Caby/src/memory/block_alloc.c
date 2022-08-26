@@ -35,6 +35,7 @@ void init_heap(size_t size) {
     }
 
     struct heap_header* header = init_header(mempool);
+    mempool_taken = 0;
     header->len = size - sizeof(*header);
 }
 
@@ -75,14 +76,14 @@ void* heap_alloc(size_t size) {
         MEM_LOG("Splitting block %lu / %lu\n", it->len, h->len);
     }
 
-    mempool_taken += it->len + sizeof(*it);
+    mempool_taken += it->len;
     MEM_LOG("Allocating %lu memory (%lu/%lu)\n", it->len + sizeof(*it), mempool_taken, mempool_total);
     return (uint8_t*)it + sizeof(*it);
 }
 
 void heap_free(void* ptr) {
     struct heap_header* it = (struct heap_header*)((uint8_t*)ptr - sizeof(*it));
-    mempool_taken -= it->len - sizeof(*it);
+    mempool_taken -= it->len;
     MEM_LOG("Freeing block, size: %lu (%lu/%lu)\n", it->len, mempool_taken, mempool_total);
     it->taken = false;
     struct heap_header* next = it->next;
@@ -92,4 +93,12 @@ void heap_free(void* ptr) {
         it->next = next->next;
         next = next->next;
     }
+}
+
+size_t heap_total() {
+    return mempool_total;
+}
+
+size_t heap_taken() {
+    return mempool_taken;
 }
