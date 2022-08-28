@@ -21,7 +21,7 @@ The string is NOT zero terminated.
 - Function
 ```
 0x00 | name - 4 bytes index to constant pool | parameters count - 1 byte | number of locals slots - 2b
-     | code length (in instructions) - 4 bytes | (code - u8 | location - u32) ... |
+     | code length (in instructions) - 4b | (code - 1b | location begin - 4b | location end - 4b) ... |
 ```
 The code is an array of instruction opcodes (one byte) and its location in the source file (4 bytes).
 - Class, method and member variable
