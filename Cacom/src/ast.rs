@@ -18,7 +18,7 @@ pub enum Opcode {
 
 /// Represents top-level statements, these do not leave anything on the stack
 #[derive(Debug, Clone)]
-pub enum AST {
+pub enum StmtType {
     Variable {
         name: String,
         mutable: bool,
@@ -40,10 +40,10 @@ pub enum AST {
         body: Expr,
     },
 
-    Top(Vec<AST>),
+    Top(Vec<StmtType>),
     While {
         guard: Expr,
-        body: Box<AST>,
+        body: Box<StmtType>,
     },
 
     Return(Expr),
@@ -69,19 +69,19 @@ pub enum Expr {
     NoneVal,
     String(String),
 
-    Block(Vec<AST>, Box<Expr>),
+    Block(Vec<StmtType>, Box<Expr>),
 
     List {
         size: Box<Expr>,
-        values: Vec<AST>,
+        values: Vec<StmtType>,
     },
 
     AccessVariable {
         name: String,
     },
     AccessList {
-        list: Box<AST>,
-        index: Box<AST>,
+        list: Box<StmtType>,
+        index: Box<StmtType>,
     },
     CallFunction {
         name: String,
@@ -173,11 +173,11 @@ impl Expr {
     }
 }
 
-impl AST {
+impl StmtType {
     pub fn dump(&self, prefix: String) {
         print!("{}", prefix);
         match self {
-            AST::Variable {
+            StmtType::Variable {
                 name,
                 mutable,
                 value,
@@ -185,9 +185,9 @@ impl AST {
                 println!("{}: {}", if *mutable { "var" } else { "val" }, name);
                 value.dump(prefix + " ");
             }
-            AST::AssignVariable { name, value } => todo!(),
-            AST::AssignList { list, index, value } => todo!(),
-            AST::Function {
+            StmtType::AssignVariable { name, value } => todo!(),
+            StmtType::AssignList { list, index, value } => todo!(),
+            StmtType::Function {
                 name,
                 parameters,
                 body,
@@ -199,21 +199,21 @@ impl AST {
                 println!("]");
                 body.dump(prefix + " ");
             }
-            AST::Top(vals) => {
+            StmtType::Top(vals) => {
                 for stmt in vals {
                     stmt.dump(String::from(""));
                 }
             }
-            AST::While { guard, body } => {
+            StmtType::While { guard, body } => {
                 println!("While: ");
                 guard.dump(prefix.clone() + " ");
                 body.dump(prefix + " ")
             }
-            AST::Return(expr) => {
+            StmtType::Return(expr) => {
                 println!("Return: ");
                 expr.dump(prefix + " ");
             }
-            AST::Expression(expr) => expr.dump(prefix),
+            StmtType::Expression(expr) => expr.dump(prefix),
         }
     }
 }

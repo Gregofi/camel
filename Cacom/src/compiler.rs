@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt;
 
-use crate::ast::{Expr, Opcode, AST};
+use crate::ast::{Expr, Opcode, StmtType};
 use crate::bytecode::{Bytecode, Code, ConstantPoolIndex, LocalIndex};
 use crate::objects::{ConstantPool, Object};
 use crate::utils::{AtomicInt, LabelGenerator};
@@ -284,7 +284,7 @@ impl Compiler {
         Ok(())
     }
 
-    fn compile_block(&mut self, stmts: &[AST], code: &mut Code) -> Result<(), &'static str> {
+    fn compile_block(&mut self, stmts: &[StmtType], code: &mut Code) -> Result<(), &'static str> {
         let mut it = stmts.iter().peekable();
         while let Some(stmt) = it.next() {
             // Drop everything but the last result
@@ -294,7 +294,7 @@ impl Compiler {
             match stmt {
                 // Never drop the last value, if it should be dropped then
                 // not here, but the parent of this block will drop it
-                AST::Expression(expr) => self.compile_expr(expr, code, it.peek().is_some())?,
+                StmtType::Expression(expr) => self.compile_expr(expr, code, it.peek().is_some())?,
                 _ => {
                     self.compile_stmt(stmt, code)?;
                     if it.peek().is_none() {
@@ -307,9 +307,9 @@ impl Compiler {
         Ok(())
     }
 
-    fn compile_stmt(&mut self, ast: &AST, code: &mut Code) -> Result<(), &'static str> {
+    fn compile_stmt(&mut self, ast: &StmtType, code: &mut Code) -> Result<(), &'static str> {
         match ast {
-            AST::Variable {
+            StmtType::Variable {
                 name,
                 mutable,
                 value,
@@ -331,7 +331,7 @@ impl Compiler {
                     }
                 }
             }
-            AST::AssignVariable { name, value } => {
+            StmtType::AssignVariable { name, value } => {
                 self.compile_expr(value, code, false)?;
                 // TODO: Repeated code!
                 if let Location::Local(env) = &mut self.location {
@@ -349,8 +349,8 @@ impl Compiler {
                     self.add_instruction(code, Bytecode::SetGlobal(idx));
                 }
             }
-            AST::AssignList { list, index, value } => todo!(),
-            AST::Function {
+            StmtType::AssignList { list, index, value } => todo!(),
+            StmtType::Function {
                 name,
                 parameters,
                 body,
@@ -404,10 +404,10 @@ impl Compiler {
 
                 self.restore_locals(locals_backup);
             }
-            AST::Top(stmts) => self.compile_block(stmts, code)?,
-            AST::While { guard, body } => todo!(),
-            AST::Return(_) => todo!(),
-            AST::Expression(expr) => self.compile_expr(expr, code, true)?,
+            StmtType::Top(stmts) => self.compile_block(stmts, code)?,
+            StmtType::While { guard, body } => todo!(),
+            StmtType::Return(_) => todo!(),
+            StmtType::Expression(expr) => self.compile_expr(expr, code, true)?,
         };
         Ok(())
     }
@@ -489,8 +489,8 @@ fn jump_pass(code: Vec<Bytecode>) -> Vec<Bytecode> {
         .collect()
 }
 
-/// Compiles AST into constant pool and returns tuple (constant pool, entry point, globals)
-pub fn compile(ast: &AST) -> Result<(ConstantPool, ConstantPoolIndex), &'static str> {
+/// Compiles StmtType into constant pool and returns tuple (constant pool, entry point, globals)
+pub fn compile(ast: &StmtType) -> Result<(ConstantPool, ConstantPoolIndex), &'static str> {
     let mut compiler = Compiler::new();
     let idx = compiler
         .constant_pool
@@ -498,7 +498,7 @@ pub fn compile(ast: &AST) -> Result<(ConstantPool, ConstantPoolIndex), &'static 
     let mut code = Code::new();
 
     match ast {
-        AST::Top(_) => {
+        StmtType::Top(_) => {
             compiler.compile_stmt(ast, &mut code)?;
             compiler.add_instruction(&mut code, Bytecode::Ret); // Add top level return
         }

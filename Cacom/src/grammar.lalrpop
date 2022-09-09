@@ -2,7 +2,7 @@
 // by Konrad Siek FML Language intepreter, thanks Konrad!
 // https://github.com/kondziu
 
-use crate::ast::{AST, Opcode, Expr};
+use crate::ast::{StmtType, Opcode, Expr};
 use std::collections::VecDeque;
 use std::str::FromStr;
 
@@ -55,14 +55,14 @@ match {
     r#""([^\\"]|\\[~ntr\\"])*""# => STRING_LITERAL,
 }
 
-pub TopLevel: AST = {
-    TopLevelExpressions => AST::Top(<>),
-                        => AST::Top(vec![AST::Expression(Expr::NoneVal)]),
+pub TopLevel: StmtType = {
+    TopLevelExpressions => StmtType::Top(<>),
+                        => StmtType::Top(vec![StmtType::Expression(Expr::NoneVal)]),
 }
 
-TopLevelExpressions: Vec<AST> = SeparatedLeastOne<TopLevelExpression, SEMICOLON>;
+TopLevelExpressions: Vec<StmtType> = SeparatedLeastOne<TopLevelExpression, SEMICOLON>;
 
-TopLevelExpression: AST = {
+TopLevelExpression: StmtType = {
     // FIXME: This permits 'return' in top level
     Statement => <>,
     FunDecl => <>,
@@ -72,20 +72,20 @@ TopLevelExpression: AST = {
 // do not put things that can appear in operations
 // (ie. in binary operations, conditions and so on...)
 // here belongs for example while or for cycle.
-Statement: AST = {
-    Expr => AST::Expression(<>), // All subexpressions - contains binaryop, ifs, calls and so on.
+Statement: StmtType = {
+    Expr => StmtType::Expression(<>), // All subexpressions - contains binaryop, ifs, calls and so on.
     Return => <>,
     VarDecl => <>,
     Assignment => <>,
 }
 
-Assignment: AST = {
-    <name: Identifier> ASSIGN <value: Expr> => AST::AssignVariable { name, value }
+Assignment: StmtType = {
+    <name: Identifier> ASSIGN <value: Expr> => StmtType::AssignVariable { name, value }
 }
 
-VarDecl: AST = {
-    VAL <name: Identifier> ASSIGN <value: Expr> => AST::Variable { name, mutable: false, value },
-    VAR <name: Identifier> ASSIGN <value: Expr> => AST::Variable { name, mutable: true, value },
+VarDecl: StmtType = {
+    VAL <name: Identifier> ASSIGN <value: Expr> => StmtType::Variable { name, mutable: false, value },
+    VAR <name: Identifier> ASSIGN <value: Expr> => StmtType::Variable { name, mutable: true, value },
 }
 
 LeftAssoc<Op, NextLevel>: Expr = {
@@ -168,9 +168,9 @@ Block: Expr = {
 }
 Statements = SeparatedLeastOne<Statement, SEMICOLON>;
 
-FunDecl: AST = {
+FunDecl: StmtType = {
     DEF <name: Identifier> LPAREN <parameters: Parameters> RPAREN ASSIGN <body: Expr> => {
-        AST::Function{name, parameters, body: body}
+        StmtType::Function{name, parameters, body: body}
     }
 }
 Parameters = Separated<Identifier, COMMA>;
@@ -182,8 +182,8 @@ Conditional: Expr = {
                             else_branch: els.map(Box::new)},
 }
 
-Return: AST = {
-    RETURN <Expr> => AST::Return(<>)
+Return: StmtType = {
+    RETURN <Expr> => StmtType::Return(<>)
 }
 
 // Macros
