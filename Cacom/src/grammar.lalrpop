@@ -2,7 +2,7 @@
 // by Konrad Siek FML Language intepreter, thanks Konrad!
 // https://github.com/kondziu
 
-use crate::ast::{StmtType, Opcode, Expr};
+use crate::ast::{StmtType, Opcode, ExprType};
 use std::collections::VecDeque;
 use std::str::FromStr;
 
@@ -57,7 +57,7 @@ match {
 
 pub TopLevel: StmtType = {
     TopLevelExpressions => StmtType::Top(<>),
-                        => StmtType::Top(vec![StmtType::Expression(Expr::NoneVal)]),
+                        => StmtType::Top(vec![StmtType::Expression(ExprType::NoneVal)]),
 }
 
 TopLevelExpressions: Vec<StmtType> = SeparatedLeastOne<TopLevelExpression, SEMICOLON>;
@@ -88,13 +88,13 @@ VarDecl: StmtType = {
     VAR <name: Identifier> ASSIGN <value: Expr> => StmtType::Variable { name, mutable: true, value },
 }
 
-LeftAssoc<Op, NextLevel>: Expr = {
-    <left: LeftAssoc<Op, NextLevel>> <op: Op> <right: NextLevel> => Expr::Operator{ op, arguments: vec![left, right] },
+LeftAssoc<Op, NextLevel>: ExprType = {
+    <left: LeftAssoc<Op, NextLevel>> <op: Op> <right: NextLevel> => ExprType::Operator{ op, arguments: vec![left, right] },
     NextLevel,
 }
 
-Unary<Op, NextLevel>: Expr = {
-    <op: Op> <arg: Unary<Op, NextLevel>> => Expr::Operator{ op, arguments: vec![arg] },
+Unary<Op, NextLevel>: ExprType = {
+    <op: Op> <arg: Unary<Op, NextLevel>> => ExprType::Operator{ op, arguments: vec![arg] },
     NextLevel,
 }
 
@@ -130,21 +130,21 @@ UnaryOp: Opcode = {
     MINUS => Opcode::Negate,
 }
 
-Primary: Expr = {
-    TRUE => Expr::Bool(true),
-    FALSE => Expr::Bool(false),
+Primary: ExprType = {
+    TRUE => ExprType::Bool(true),
+    FALSE => ExprType::Bool(false),
     Number => <>,
-    String => Expr::String(<>),
+    String => ExprType::String(<>),
     Call => <>,
     LPAREN <expr: Expr> RPAREN => expr,
     Block => <>,
     Conditional => <>,
-    Identifier => Expr::AccessVariable{name: <>},
+    Identifier => ExprType::AccessVariable{name: <>},
 }
 
-Call: Expr = {
+Call: ExprType = {
     <function: Identifier> LPAREN <arguments: Arguments> RPAREN => {
-        Expr::CallFunction{ name: function, arguments: arguments }
+        ExprType::CallFunction{ name: function, arguments: arguments }
     }
     // TODO: Method calls over objects, lists, strings and so on.
 }
@@ -152,18 +152,18 @@ Arguments = Separated<Expr, COMMA>;
 
 Identifier: String = IDENTIFIER => <>.to_string();
 
-Number: Expr = {
-    NUMBER => Expr::Integer(i32::from_str(<>).unwrap()),
+Number: ExprType = {
+    NUMBER => ExprType::Integer(i32::from_str(<>).unwrap()),
 }
 
 String: String = {
     <s:STRING_LITERAL> => s[1..s.len()-1].to_string(),
 }
 
-Block: Expr = {
+Block: ExprType = {
     CURLYBOPEN <v: (<Statement> SEMICOLON)*> <e: Expr?> CURLYBCLOSE => match e {
-        Some(expr) => Expr::Block(v, Box::new(expr)),
-        None => Expr::Block(v, Box::new(Expr::NoneVal)),
+        Some(expr) => ExprType::Block(v, Box::new(expr)),
+        None => ExprType::Block(v, Box::new(ExprType::NoneVal)),
     }
 }
 Statements = SeparatedLeastOne<Statement, SEMICOLON>;
@@ -175,9 +175,9 @@ FunDecl: StmtType = {
 }
 Parameters = Separated<Identifier, COMMA>;
 
-Conditional: Expr = {
+Conditional: ExprType = {
     IF <guard: Expr> <then: Block> <els: (ELSE <Block>)?> =>
-                    Expr::Conditional{guard: Box::new(guard),
+                    ExprType::Conditional{guard: Box::new(guard),
                             then_branch: Box::new(then),
                             else_branch: els.map(Box::new)},
 }

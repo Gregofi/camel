@@ -22,32 +22,32 @@ pub enum StmtType {
     Variable {
         name: String,
         mutable: bool,
-        value: Expr,
+        value: ExprType,
     },
     AssignVariable {
         name: String,
-        value: Expr,
+        value: ExprType,
     },
     AssignList {
-        list: Expr,
-        index: Expr,
-        value: Expr,
+        list: ExprType,
+        index: ExprType,
+        value: ExprType,
     },
 
     Function {
         name: String,
         parameters: Vec<String>,
-        body: Expr,
+        body: ExprType,
     },
 
     Top(Vec<StmtType>),
     While {
-        guard: Expr,
+        guard: ExprType,
         body: Box<StmtType>,
     },
 
-    Return(Expr),
-    Expression(Expr),
+    Return(ExprType),
+    Expression(ExprType),
 }
 
 /// Expressions always leave some value on the stack
@@ -62,17 +62,17 @@ pub enum StmtType {
 /// is either the one of last statement or none if the
 /// block is empty.
 #[derive(Debug, Clone)]
-pub enum Expr {
+pub enum ExprType {
     Integer(i32),
     Float(f32),
     Bool(bool),
     NoneVal,
     String(String),
 
-    Block(Vec<StmtType>, Box<Expr>),
+    Block(Vec<StmtType>, Box<ExprType>),
 
     List {
-        size: Box<Expr>,
+        size: Box<ExprType>,
         values: Vec<StmtType>,
     },
 
@@ -85,17 +85,17 @@ pub enum Expr {
     },
     CallFunction {
         name: String,
-        arguments: Vec<Expr>,
+        arguments: Vec<ExprType>,
     },
     Conditional {
-        guard: Box<Expr>,
-        then_branch: Box<Expr>,
-        else_branch: Option<Box<Expr>>,
+        guard: Box<ExprType>,
+        then_branch: Box<ExprType>,
+        else_branch: Option<Box<ExprType>>,
     },
 
     Operator {
         op: Opcode,
-        arguments: Vec<Expr>,
+        arguments: Vec<ExprType>,
     },
 }
 
@@ -121,31 +121,31 @@ impl fmt::Display for Opcode {
     }
 }
 
-impl Expr {
+impl ExprType {
     pub fn dump(&self, prefix: String) {
         print!("{}", prefix);
         match self {
-            Expr::Integer(val) => println!("Integer: {}", val),
-            Expr::Float(val) => println!("Float: {}", val),
-            Expr::Bool(val) => println!("Bool: {}", val),
-            Expr::NoneVal => println!("Unit"),
-            Expr::String(val) => println!("String: {}", val),
-            Expr::List { size, values } => {
+            ExprType::Integer(val) => println!("Integer: {}", val),
+            ExprType::Float(val) => println!("Float: {}", val),
+            ExprType::Bool(val) => println!("Bool: {}", val),
+            ExprType::NoneVal => println!("Unit"),
+            ExprType::String(val) => println!("String: {}", val),
+            ExprType::List { size, values } => {
                 println!("List:");
                 size.dump(prefix.clone() + " ");
                 for val in values {
                     val.dump(prefix.clone() + " ");
                 }
             }
-            Expr::AccessVariable { name } => println!("AccessVariable: {}\n", name),
-            Expr::AccessList { list, index } => todo!(),
-            Expr::CallFunction { name, arguments } => {
+            ExprType::AccessVariable { name } => println!("AccessVariable: {}\n", name),
+            ExprType::AccessList { list, index } => todo!(),
+            ExprType::CallFunction { name, arguments } => {
                 println!("Call: {}", name);
                 for arg in arguments {
                     arg.dump(prefix.clone() + " ");
                 }
             }
-            Expr::Conditional {
+            ExprType::Conditional {
                 guard,
                 then_branch,
                 else_branch,
@@ -157,13 +157,13 @@ impl Expr {
                     else_branch.as_ref().unwrap().dump(prefix + " ");
                 }
             }
-            Expr::Operator { op, arguments } => {
+            ExprType::Operator { op, arguments } => {
                 println!("Operator: {}", op);
                 for arg in arguments {
                     arg.dump(prefix.clone() + " ");
                 }
             }
-            Expr::Block(vals, expr) => {
+            ExprType::Block(vals, expr) => {
                 for stmt in vals {
                     stmt.dump(prefix.clone());
                 }

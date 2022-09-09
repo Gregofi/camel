@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt;
 
-use crate::ast::{Expr, Opcode, StmtType};
+use crate::ast::{ExprType, Opcode, StmtType};
 use crate::bytecode::{Bytecode, Code, ConstantPoolIndex, LocalIndex};
 use crate::objects::{ConstantPool, Object};
 use crate::utils::{AtomicInt, LabelGenerator};
@@ -187,34 +187,34 @@ impl Compiler {
 
     fn compile_expr(
         &mut self,
-        expr: &Expr,
+        expr: &ExprType,
         code: &mut Code,
         drop: bool,
     ) -> Result<(), &'static str> {
         match expr {
-            Expr::Integer(val) => {
+            ExprType::Integer(val) => {
                 self.add_instruction(code, Bytecode::PushInt(*val));
             }
-            Expr::Float(_) => todo!(),
-            Expr::Bool(val) => {
+            ExprType::Float(_) => todo!(),
+            ExprType::Bool(val) => {
                 self.add_instruction(code, Bytecode::PushBool(*val));
             }
-            Expr::NoneVal => {
+            ExprType::NoneVal => {
                 self.add_instruction(code, Bytecode::PushNone);
             }
-            Expr::String(lit) => {
+            ExprType::String(lit) => {
                 let str_index: ConstantPoolIndex =
                     self.constant_pool.add(Object::from(lit.clone()));
                 self.add_instruction(code, Bytecode::PushLiteral(str_index));
             }
-            Expr::Block(stmts, expr) => {
+            ExprType::Block(stmts, expr) => {
                 self.enter_scope();
                 self.compile_block(stmts, code)?;
                 self.compile_expr(expr, code, false)?;
                 self.leave_scope();
             }
-            Expr::List { size, values } => todo!(),
-            Expr::AccessVariable { name } => {
+            ExprType::List { size, values } => todo!(),
+            ExprType::AccessVariable { name } => {
                 // TODO: Repeated code!
                 if let Location::Local(env) = &mut self.location {
                     if let Some(v) = env.fetch_local(name) {
@@ -228,8 +228,8 @@ impl Compiler {
                     self.add_instruction(code, Bytecode::GetGlobal(idx));
                 }
             }
-            Expr::AccessList { list, index } => todo!(),
-            Expr::CallFunction { name, arguments } => {
+            ExprType::AccessList { list, index } => todo!(),
+            ExprType::CallFunction { name, arguments } => {
                 for arg in arguments.iter().rev() {
                     self.compile_expr(arg, code, false)?;
                 }
@@ -253,7 +253,7 @@ impl Compiler {
                     );
                 }
             }
-            Expr::Conditional {
+            ExprType::Conditional {
                 guard,
                 then_branch,
                 else_branch,
@@ -272,7 +272,7 @@ impl Compiler {
                 }
                 self.add_instruction(code, Bytecode::Label(label_end));
             }
-            Expr::Operator { op, arguments } => {
+            ExprType::Operator { op, arguments } => {
                 check_operator_arity(op, arguments.len())?;
                 for arg in arguments.iter().rev() {
                     self.compile_expr(arg, code, false)?;
@@ -359,8 +359,8 @@ impl Compiler {
 
                 let new_fun_name_idx = self.constant_pool.add(Object::from(name.clone()));
 
-                // The function just acts as another scope.
                 // For global function this behaves as expected,
+                // The function just acts as another scope.
                 // for nested it allows for closures (althrough
                 // the indexes won't match).
                 self.enter_scope();
@@ -412,7 +412,7 @@ impl Compiler {
         Ok(())
     }
 
-    fn compile_fun(&mut self, code: &mut Code, ast: &Expr) -> Result<(), &'static str> {
+    fn compile_fun(&mut self, code: &mut Code, ast: &ExprType) -> Result<(), &'static str> {
         self.compile_expr(ast, code, false)?;
         if code.code.is_empty() {
             self.add_instruction(code, Bytecode::PushNone);
