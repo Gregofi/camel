@@ -1,4 +1,4 @@
-use std::fmt;
+use std::fmt::{self, Display};
 
 /// Beginning and end (in byte offset) of the token.
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -7,6 +7,12 @@ pub struct Location(pub usize, pub usize);
 impl Location {
     fn new(begin: usize, end: usize) -> Self {
         Location(begin, end)
+    }
+}
+
+impl Display for Location {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.0, self.1)
     }
 }
 
@@ -144,6 +150,7 @@ impl fmt::Display for Opcode {
 impl Expr {
     pub fn dump(&self, prefix: String) {
         print!("{}", prefix);
+        print!("({}):", self.location);
         match &self.node {
             ExprType::Integer(val) => println!("Integer: {}", val),
             ExprType::Float(val) => println!("Float: {}", val),
@@ -192,6 +199,7 @@ impl Expr {
 impl Stmt {
     pub fn dump(&self, prefix: String) {
         print!("{}", prefix);
+        print!("({}):", self.location);
         match &self.node {
             StmtType::Variable {
                 name,
