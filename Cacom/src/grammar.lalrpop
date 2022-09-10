@@ -2,7 +2,7 @@
 // by Konrad Siek FML Language intepreter, thanks Konrad!
 // https://github.com/kondziu
 
-use crate::ast::{StmtType, Opcode, ExprType, Stmt, Expr, Location};
+use crate::ast::{StmtType, Opcode, ExprType, Stmt, Expr};
 use crate::utils::Location;
 use std::collections::VecDeque;
 use std::str::FromStr;

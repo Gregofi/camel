@@ -44,7 +44,7 @@ impl LabelGenerator {
 }
 
 /// Beginning and end (in byte offset) of the token.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Copy)]
 pub struct Location(pub usize, pub usize);
 
 impl Location {
