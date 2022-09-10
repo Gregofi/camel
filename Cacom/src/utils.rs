@@ -1,3 +1,4 @@
+use core::fmt;
 use std::fmt::Display;
 
 use lazy_static::lazy_static;
