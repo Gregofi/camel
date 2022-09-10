@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt;
 
-use crate::ast::{Expr, Opcode, Stmt, ExprType, StmtType};
+use crate::ast::{Expr, ExprType, Opcode, Stmt, StmtType};
 use crate::bytecode::{Bytecode, Code, ConstantPoolIndex, LocalIndex};
 use crate::objects::{ConstantPool, Object};
 use crate::utils::{AtomicInt, LabelGenerator};

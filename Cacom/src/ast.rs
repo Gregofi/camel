@@ -1,7 +1,7 @@
 use std::fmt;
 
 /// Beginning and end (in byte offset) of the token.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Location(pub usize, pub usize);
 
 impl Location {
@@ -10,7 +10,7 @@ impl Location {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Located<T> {
     pub node: T,
     pub location: Location,
@@ -183,7 +183,7 @@ impl Expr {
                 for stmt in vals {
                     stmt.dump(prefix.clone());
                 }
-                expr.dump(prefix.clone());
+                expr.dump(prefix);
             }
         }
     }
