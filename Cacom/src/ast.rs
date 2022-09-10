@@ -1,20 +1,6 @@
 use std::fmt::{self, Display};
 
-/// Beginning and end (in byte offset) of the token.
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Location(pub usize, pub usize);
-
-impl Location {
-    fn new(begin: usize, end: usize) -> Self {
-        Location(begin, end)
-    }
-}
-
-impl Display for Location {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}", self.0, self.1)
-    }
-}
+use crate::utils::Location;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Located<T> {

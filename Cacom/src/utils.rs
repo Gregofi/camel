@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use lazy_static::lazy_static;
 use regex::Regex;
 
@@ -37,5 +39,21 @@ impl LabelGenerator {
             panic!("string label cannot contain underscore");
         }
         format!("{}_{}", str, self.counter.get_and_inc())
+    }
+}
+
+/// Beginning and end (in byte offset) of the token.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct Location(pub usize, pub usize);
+
+impl Location {
+    fn new(begin: usize, end: usize) -> Self {
+        Location(begin, end)
+    }
+}
+
+impl Display for Location {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.0, self.1)
     }
 }
