@@ -1,5 +1,21 @@
 use std::fmt;
 
+/// Beginning and end (in byte offset) of the token.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Location(pub usize, pub usize);
+
+impl Location {
+    fn new(begin: usize, end: usize) -> Self {
+        Location(begin, end)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Located<T> {
+    pub node: T,
+    pub location: Location,
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum Opcode {
     Add,
@@ -22,33 +38,35 @@ pub enum StmtType {
     Variable {
         name: String,
         mutable: bool,
-        value: ExprType,
+        value: Expr,
     },
     AssignVariable {
         name: String,
-        value: ExprType,
+        value: Expr,
     },
     AssignList {
-        list: ExprType,
-        index: ExprType,
-        value: ExprType,
+        list: Expr,
+        index: Expr,
+        value: Expr,
     },
 
     Function {
         name: String,
         parameters: Vec<String>,
-        body: ExprType,
+        body: Expr,
     },
 
-    Top(Vec<StmtType>),
+    Top(Vec<Stmt>),
     While {
-        guard: ExprType,
-        body: Box<StmtType>,
+        guard: Expr,
+        body: Box<Stmt>,
     },
 
-    Return(ExprType),
-    Expression(ExprType),
+    Return(Expr),
+    Expression(Expr),
 }
+
+pub type Stmt = Located<StmtType>;
 
 /// Expressions always leave some value on the stack
 ///
@@ -69,35 +87,37 @@ pub enum ExprType {
     NoneVal,
     String(String),
 
-    Block(Vec<StmtType>, Box<ExprType>),
+    Block(Vec<Stmt>, Box<Expr>),
 
     List {
-        size: Box<ExprType>,
-        values: Vec<StmtType>,
+        size: Box<Expr>,
+        values: Vec<Stmt>,
     },
 
     AccessVariable {
         name: String,
     },
     AccessList {
-        list: Box<StmtType>,
-        index: Box<StmtType>,
+        list: Box<Stmt>,
+        index: Box<Stmt>,
     },
     CallFunction {
         name: String,
-        arguments: Vec<ExprType>,
+        arguments: Vec<Expr>,
     },
     Conditional {
-        guard: Box<ExprType>,
-        then_branch: Box<ExprType>,
-        else_branch: Option<Box<ExprType>>,
+        guard: Box<Expr>,
+        then_branch: Box<Expr>,
+        else_branch: Option<Box<Expr>>,
     },
 
     Operator {
         op: Opcode,
-        arguments: Vec<ExprType>,
+        arguments: Vec<Expr>,
     },
 }
+
+pub type Expr = Located<ExprType>;
 
 impl fmt::Display for Opcode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -121,21 +141,17 @@ impl fmt::Display for Opcode {
     }
 }
 
-impl ExprType {
+impl Expr {
     pub fn dump(&self, prefix: String) {
         print!("{}", prefix);
-        match self {
+        match &self.node {
             ExprType::Integer(val) => println!("Integer: {}", val),
             ExprType::Float(val) => println!("Float: {}", val),
             ExprType::Bool(val) => println!("Bool: {}", val),
             ExprType::NoneVal => println!("Unit"),
             ExprType::String(val) => println!("String: {}", val),
             ExprType::List { size, values } => {
-                println!("List:");
-                size.dump(prefix.clone() + " ");
-                for val in values {
-                    val.dump(prefix.clone() + " ");
-                }
+                todo!();
             }
             ExprType::AccessVariable { name } => println!("AccessVariable: {}\n", name),
             ExprType::AccessList { list, index } => todo!(),
@@ -173,10 +189,10 @@ impl ExprType {
     }
 }
 
-impl StmtType {
+impl Stmt {
     pub fn dump(&self, prefix: String) {
         print!("{}", prefix);
-        match self {
+        match &self.node {
             StmtType::Variable {
                 name,
                 mutable,

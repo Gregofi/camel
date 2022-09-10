@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt;
 
-use crate::ast::{ExprType, Opcode, StmtType};
+use crate::ast::{Expr, Opcode, Stmt, ExprType, StmtType};
 use crate::bytecode::{Bytecode, Code, ConstantPoolIndex, LocalIndex};
 use crate::objects::{ConstantPool, Object};
 use crate::utils::{AtomicInt, LabelGenerator};
@@ -187,11 +187,11 @@ impl Compiler {
 
     fn compile_expr(
         &mut self,
-        expr: &ExprType,
+        expr: &Expr,
         code: &mut Code,
         drop: bool,
     ) -> Result<(), &'static str> {
-        match expr {
+        match &expr.node {
             ExprType::Integer(val) => {
                 self.add_instruction(code, Bytecode::PushInt(*val));
             }
@@ -284,14 +284,14 @@ impl Compiler {
         Ok(())
     }
 
-    fn compile_block(&mut self, stmts: &[StmtType], code: &mut Code) -> Result<(), &'static str> {
+    fn compile_block(&mut self, stmts: &[Stmt], code: &mut Code) -> Result<(), &'static str> {
         let mut it = stmts.iter().peekable();
         while let Some(stmt) = it.next() {
             // Drop everything but the last result
             // Hovewer if it is statement, do NOT drop it because it does not
             // produces any value. Hovewer, if it is the last value, the block
             // returns none.
-            match stmt {
+            match &stmt.node {
                 // Never drop the last value, if it should be dropped then
                 // not here, but the parent of this block will drop it
                 StmtType::Expression(expr) => self.compile_expr(expr, code, it.peek().is_some())?,
@@ -307,8 +307,8 @@ impl Compiler {
         Ok(())
     }
 
-    fn compile_stmt(&mut self, ast: &StmtType, code: &mut Code) -> Result<(), &'static str> {
-        match ast {
+    fn compile_stmt(&mut self, ast: &Stmt, code: &mut Code) -> Result<(), &'static str> {
+        match &ast.node {
             StmtType::Variable {
                 name,
                 mutable,
@@ -412,7 +412,7 @@ impl Compiler {
         Ok(())
     }
 
-    fn compile_fun(&mut self, code: &mut Code, ast: &ExprType) -> Result<(), &'static str> {
+    fn compile_fun(&mut self, code: &mut Code, ast: &Expr) -> Result<(), &'static str> {
         self.compile_expr(ast, code, false)?;
         if code.code.is_empty() {
             self.add_instruction(code, Bytecode::PushNone);
@@ -490,14 +490,14 @@ fn jump_pass(code: Vec<Bytecode>) -> Vec<Bytecode> {
 }
 
 /// Compiles StmtType into constant pool and returns tuple (constant pool, entry point, globals)
-pub fn compile(ast: &StmtType) -> Result<(ConstantPool, ConstantPoolIndex), &'static str> {
+pub fn compile(ast: &Stmt) -> Result<(ConstantPool, ConstantPoolIndex), &'static str> {
     let mut compiler = Compiler::new();
     let idx = compiler
         .constant_pool
         .add(Object::from(String::from("#main")));
     let mut code = Code::new();
 
-    match ast {
+    match ast.node {
         StmtType::Top(_) => {
             compiler.compile_stmt(ast, &mut code)?;
             compiler.add_instruction(&mut code, Bytecode::Ret); // Add top level return
