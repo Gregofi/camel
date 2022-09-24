@@ -1,30 +1,19 @@
 #include "serializer.h"
 #include "bytecode.h"
+#include "common.h"
 #include "vm.h"
 
-u32 read_4bytes_be(FILE* f) {
-    i8 res[4];
-    res[0] = fgetc(f);
-    res[1] = fgetc(f);
-    res[2] = fgetc(f);
-    res[3] = fgetc(f);
-    if (res[3] == EOF) {
-        fprintf(stderr, "Error reading file\n");
-        exit(3);
-    }
-    return *(u32*)res;
+#define GEN_READ_NBYTES_LE(type, n) \
+type read_##n##bytes_le(FILE* f) {\
+    type data;\
+    fread(&data, (n), 1, f);\
+    return data;\
 }
 
-u16 read_2bytes_be(FILE* f) {
-    i8 res[2];
-    res[0] = fgetc(f);
-    res[1] = fgetc(f);
-    if (res[1] == EOF) {
-        fprintf(stderr, "Error reading file\n");
-        exit(3);
-    }
-    return *(u16*)res;
-}
+GEN_READ_NBYTES_LE(u8, 1);
+GEN_READ_NBYTES_LE(u16, 2);
+GEN_READ_NBYTES_LE(u32, 4);
+GEN_READ_NBYTES_LE(u64, 8);
 
 void serialize_instruction(FILE* f, struct bc_chunk* c) {
     u8 ins = fgetc(f);
@@ -66,7 +55,7 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
         case OP_PUSH_SHORT:
         case OP_SET_LOCAL:
         case OP_GET_LOCAL:
-            write_word(c, read_2bytes_be(f));
+            write_word(c, read_2bytes_le(f));
             break;
         // Five byte size instructions
         case OP_PUSH_INT:
@@ -78,12 +67,13 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
         case OP_GET_GLOBAL:
         case OP_VAL_GLOBAL:
         case OP_VAR_GLOBAL:
-            write_dword(c, read_4bytes_be(f));
+            write_dword(c, read_4bytes_le(f));
             break;
         default:
             fprintf(stderr, "Unknown instruction opcode in deserialize: 0x%x", ins);
             exit(-3);
     }
+    // write_loc(c, )
     // There are locations remaining, skip them for now
     fseek(f, 16, SEEK_CUR);
 }
@@ -94,10 +84,10 @@ struct object* serialize_object(FILE* f, vm_t* vm) {
 
     switch (tag) {
         case TAG_FUNCTION: {
-            u32 name = read_4bytes_be(f);
+            u32 name = read_4bytes_le(f);
             u8 parameters = fgetc(f);
-            u16 locals_cnt = read_2bytes_be(f);
-            u32 body_len = read_4bytes_be(f);
+            u16 locals_cnt = read_2bytes_le(f);
+            u32 body_len = read_4bytes_le(f);
             struct bc_chunk bc;
             init_bc_chunk(&bc);
             for (u32 i = 0; i < body_len; ++i) {
@@ -106,7 +96,7 @@ struct object* serialize_object(FILE* f, vm_t* vm) {
             return (struct object*)new_function(vm, parameters, locals_cnt, bc, name);
         }
         case TAG_STRING: {
-            u32 len = read_4bytes_be(f);
+            u32 len = read_4bytes_le(f);
             char *str = vmalloc(vm, len + 1);
             fread(str, 1, len, f);
             str[len] = '\0';
@@ -122,7 +112,7 @@ struct object* serialize_object(FILE* f, vm_t* vm) {
 }
 
 void serialize_constant_pool(FILE* f, vm_t* vm) {
-    u32 len = read_4bytes_be(f);
+    u32 len = read_4bytes_le(f);
     for (u32 i = 0; i < len; ++i) {
         struct object* obj = serialize_object(f, vm);
         if (obj == NULL) {
@@ -139,7 +129,7 @@ vm_t serialize(FILE* f, u32* ep) {
     init_vm_state(&vm);
     vm.gc.gc_off = true;
     serialize_constant_pool(f, &vm);
-    *ep = read_4bytes_be(f);
+    *ep = read_4bytes_le(f);
     vm.gc.gc_off = false;
     return vm;
 }
