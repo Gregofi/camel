@@ -37,7 +37,7 @@ void write_dword(struct bc_chunk* c, u32 dword) {
 }
 
 void write_loc(struct bc_chunk* c, u64 begin, u64 end) {
-    c->location = handle_capacity(c->location, c->len, &c->cap, sizeof(*c->data));
+    c->location = handle_capacity(c->location, c->location_len, &c->location_cap, sizeof(*c->location));
     c->location[c->location_len++].begin = begin;
     c->location[c->location_len++].end = end;
 }
