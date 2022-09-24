@@ -84,6 +84,8 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
             fprintf(stderr, "Unknown instruction opcode in deserialize: 0x%x", ins);
             exit(-3);
     }
+    // There are locations remaining, skip them for now
+    fseek(f, 16, SEEK_CUR);
 }
 
 struct object* serialize_object(FILE* f, vm_t* vm) {

@@ -1,8 +1,10 @@
 use core::fmt;
-use std::fmt::Display;
+use std::{fmt::Display, fs, io::Write};
 
 use lazy_static::lazy_static;
 use regex::Regex;
+
+use crate::serializable::Serializable;
 
 pub struct AtomicInt(u32);
 
@@ -50,6 +52,13 @@ pub struct Location(pub usize, pub usize);
 impl Location {
     fn new(begin: usize, end: usize) -> Self {
         Location(begin, end)
+    }
+}
+
+impl Serializable for Location {
+    fn serialize(&self, f: &mut fs::File) -> std::io::Result<()> {
+        f.write_all(&self.0.to_le_bytes())?;
+        f.write_all(&self.1.to_le_bytes())
     }
 }
 

@@ -382,6 +382,6 @@ impl Serializable for Bytecode {
             BytecodeType::GetGlobal(idx) => f.write_all(&idx.to_le_bytes())?,
             BytecodeType::SetGlobal(idx) => f.write_all(&idx.to_le_bytes())?,
         };
-        Ok(())
+        self.location.serialize(f)
     }
 }
