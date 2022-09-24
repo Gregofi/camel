@@ -52,12 +52,17 @@ enum opcode {
     OP_NEQ = 0x3D,
 };
 
+struct loc {
+    u64 begin;
+    u64 end;
+};
+
 struct bc_chunk {
     u8* data;
     size_t len;
     size_t cap;
 
-    u32* location;
+    struct loc* location;
     size_t location_len;
     size_t location_cap;
 };
@@ -78,6 +83,8 @@ void write_byte(struct bc_chunk* c, u8 byte);
 void write_word(struct bc_chunk* c, u16 word);
 
 void write_dword(struct bc_chunk* c, u32 dword);
+
+void write_loc(struct bc_chunk* c, u64 begin, u64 end);
 
 void init_constant_pool(struct constant_pool* cp);
 
