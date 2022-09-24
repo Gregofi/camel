@@ -81,7 +81,7 @@ Conditional jump, pops value from stack, if it is *truthy*, then the jump will b
 - branch false_long - 0x0F | 8B address
 
 - print 0x10 | 1B argument count  
-Prints an interpolated string `print "Hello there, {}" "General Kenobi"`
+Prints an interpolated string.
 Pops arguments from stack and tries to replace `{}` in the string with it.
 
 - drop 0x11
