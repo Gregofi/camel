@@ -43,6 +43,9 @@ typedef struct vm_state {
     struct object* objects;
 
     struct gc_state gc;
+
+    // Name of the file that is currently interpreted
+    const char* filename;
 } vm_t;
 
 void init_vm_state(vm_t* vm);

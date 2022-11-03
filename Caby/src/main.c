@@ -18,7 +18,9 @@ vm_t read_program(const char* filename, u32* ep) {
         exit(-2);
     }
 
-    return serialize(f, ep);
+    vm_t vm = serialize(f, ep);
+    vm.filename = filename;
+    return vm;
 }
 
 void usage() {

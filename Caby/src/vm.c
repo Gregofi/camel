@@ -1,4 +1,5 @@
 #include "vm.h"
+#include "error.h"
 #include "gc.h"
 #include "bytecode.h"
 #include "common.h"
@@ -61,6 +62,7 @@ void init_vm_state(vm_t* vm) {
     vm->stack_len = 0;
     vm->objects = NULL;
     init_gc(&vm->gc);
+    vm->filename = NULL;
 }
 
 void alloc_frames(vm_t* vm) {
