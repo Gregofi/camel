@@ -22,7 +22,7 @@ char* readline(FILE *f, size_t* linesize) {
     return line;
 }
 
-void print_error(const char* filename, struct loc location, const char* format, ...) {
+void print_error(const char* filename, struct loc location, const char* format, va_list args) {
     FILE* f = fopen(filename, "r");
     size_t line = 0;
     // Find the line where the error begins
@@ -40,13 +40,10 @@ void print_error(const char* filename, struct loc location, const char* format, 
     }
 
     // TODO: For now, pretend that the error is on single line only
-    fprintf(stderr, "%s:%lu:%lu: Fatal: ", filename, line, location.begin);
+    fprintf(stderr, "%s:%lu:%llu: Fatal: ", filename, line, location.begin);
 
-    va_list args;
-    va_start(args, format);
     vfprintf(stderr, format, args);
     fputc('\n', stderr);
-    va_end(args);
 
     fprintf(stderr, " |%s", line_start);
     for (size_t i = 0; i < linesize; ++ i) {
