@@ -52,6 +52,12 @@ enum opcode {
     OP_NEQ = 0x3D,
 };
 
+size_t ins_size(enum opcode op);
+
+/// Calculates how many instruction are between begin and end
+/// (begin is the lower address).
+size_t range_between(u8* begin, u8* end);
+
 struct loc {
     u64 begin;
     u64 end;

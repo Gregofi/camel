@@ -21,6 +21,64 @@ void free_bc_chunk(struct bc_chunk* c) {
     init_bc_chunk(c);
 }
 
+size_t ins_size(enum opcode op) {
+    switch (op) {
+        case OP_RETURN:
+        case OP_LABEL:
+        case OP_DROP:
+        case OP_DUP:
+        case OP_IADD:
+        case OP_ISUB:
+        case OP_IMUL:
+        case OP_IDIV:
+        case OP_IMOD:
+        case OP_IAND:
+        case OP_IOR:
+        case OP_EQ:
+        case OP_NEQ:
+        case OP_ILESS:
+        case OP_ILESSEQ:
+        case OP_IGREATER:
+        case OP_IGREATEREQ:
+        case OP_INEG:
+        case OP_PUSH_NONE:
+            return 1;
+        case OP_DROPN:
+        case OP_PUSH_BOOL:
+        case OP_PRINT:
+        case OP_CALL_FUNC:
+            return 2;
+        case OP_PUSH_SHORT:
+        case OP_JMP_SHORT:
+        case OP_BRANCH_SHORT:
+        case OP_SET_LOCAL:
+        case OP_GET_LOCAL:
+            return 3;
+        case OP_PUSH_INT:
+        case OP_JMP:
+        case OP_BRANCH:
+        case OP_BRANCH_FALSE:
+        case OP_BRANCH_FALSE_SHORT:
+        case OP_GET_GLOBAL:
+        case OP_SET_GLOBAL:
+        case OP_VAL_GLOBAL:
+        case OP_VAR_GLOBAL:
+        case OP_PUSH_LITERAL:
+            return 5;
+        default:
+            UNREACHABLE();
+    }
+}
+
+size_t range_between(u8* begin, u8* end) {
+    size_t cnt = 0;
+    while (begin < end) {
+        cnt += 1;
+        begin += ins_size(*begin);
+    }
+    return cnt;
+}
+
 void write_byte(struct bc_chunk* c, u8 byte) {
     c->data = handle_capacity(c->data, c->len, &c->cap, sizeof(*c->data));
     c->data[c->len++] = byte;
