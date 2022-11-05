@@ -9,10 +9,7 @@ char* readline(FILE *f, size_t* linesize) {
     char* line = malloc(cap);
     size_t size = 0;
     for (char c = fgetc(f); c != '\n' && c != EOF; c = fgetc(f)) {
-        if (size > cap) {
-            cap *= 2;
-            line = realloc(line, cap);
-        }
+        line = handle_capacity(line, size, &cap, sizeof(*line));
         line[size++] = c;
     }
     if (linesize != NULL) {
