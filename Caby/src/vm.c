@@ -43,7 +43,7 @@ static void runtime_error(vm_t* vm, const char* str, ...) {
     va_list args;
     va_start(args, str);
     struct object_function* f = get_current_fun(vm);
-    size_t loc_idx = range_between(f->bc.data,  vm->ip);
+    size_t loc_idx = range_between(f->bc.data,  vm->ip) - 1;
     struct loc loc = f->bc.location[loc_idx];
     print_error(vm->filename, loc, str, args);
     va_end(args);
@@ -130,7 +130,7 @@ struct value peek(vm_t* vm, size_t p) {
 static struct object_string* pop_string(vm_t* vm) {
     struct value v = pop(vm);
     if (v.type != VAL_OBJECT || v.object->type != OBJECT_STRING) {
-        runtime_error(vm, "Expected string on top of stack.\n");
+        runtime_error(vm, "Expected string on top of stack");
         exit(1);
     }
     return as_string(v.object);
@@ -161,7 +161,7 @@ enum interpret_result interpret_print(vm_t* vm) {
 
     struct value v = pop(vm);
     if (v.type != VAL_OBJECT || v.object->type != OBJECT_STRING) {
-        runtime_error(vm, "First 'print' argument must be a string.\n");
+        runtime_error(vm, "First 'print' argument must be a string");
         return INTERPRET_ERROR;
     }
     struct object_string* obj = as_string(v.object);
@@ -170,7 +170,7 @@ enum interpret_result interpret_print(vm_t* vm) {
     for (const char* c = obj->data; *c != '\0'; ++c) {
         if (*c == '{' && c[1] != '\0' && c[1] == '}') {
             if (arg_cnt == 0) {
-                runtime_error(vm, "There are more '{}' than arguments.\n");
+                runtime_error(vm, "There are more '{}' than arguments");
                 return INTERPRET_ERROR;
             }
             arg_cnt -= 1;
@@ -195,7 +195,7 @@ enum interpret_result interpret_print(vm_t* vm) {
                             fputs(as_string(v.object)->data, stdout);
                             break;
                         default:
-                            runtime_error(vm, "Can't print this type.\n");
+                            runtime_error(vm, "Can't print this type");
                             return INTERPRET_ERROR;
                     }
                     break;
@@ -275,7 +275,7 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
                     && v2.object->type == OBJECT_STRING) {
                 push(vm, interpret_string_concat(vm, v1.object, v2.object));
             } else {
-                runtime_error(vm, "Incopatible types for operator '+'\n");
+                runtime_error(vm, "Incopatible types for operator '+'");
                 return INTERPRET_ERROR;
             }
             break;
@@ -288,7 +288,7 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
             } else if (v1.type == VAL_DOUBLE && v2.type == VAL_DOUBLE) {
                 push(vm, NEW_DOUBLE(v1.double_num - v2.double_num));
             } else {
-                runtime_error(vm, "Incopatible types for operator '-'\n");
+                runtime_error(vm, "Incopatible types for operator '-'");
                 return INTERPRET_ERROR;
             }
             break;
@@ -302,7 +302,7 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
                 push(vm, NEW_DOUBLE(v1.double_num * v2.double_num));
             // TODO: List and string multiplication
             } else {
-                runtime_error(vm, "Incopatible types for operator '*'\n");
+                runtime_error(vm, "Incopatible types for operator '*'");
                 return INTERPRET_ERROR;
             }
             break;
@@ -319,7 +319,7 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
             } else if (v1.type == VAL_DOUBLE && v2.type == VAL_DOUBLE) {
                 push(vm, NEW_DOUBLE(v1.double_num / v2.double_num));
             } else {
-                runtime_error(vm, "Incopatible types for operator '/'\n");
+                runtime_error(vm, "Incopatible types for operator '/'");
                 return INTERPRET_ERROR;
             }
             break;
@@ -334,7 +334,7 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
                 }
                 push(vm, NEW_INT(v1.integer % v2.integer));
             } else {
-                runtime_error(vm, "Incopatible types for operator '\%'\n");
+                runtime_error(vm, "Incopatible types for operator '\%'");
                 return INTERPRET_ERROR;
             }
             break;
@@ -389,7 +389,7 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
             } else if (v.type == VAL_DOUBLE) {
                 push(vm, NEW_DOUBLE(-v.integer));
             } else {
-                runtime_error(vm, "Incopatible type for operator unary '-'\n");
+                runtime_error(vm, "Incopatible type for operator unary '-'");
                 return INTERPRET_ERROR;
             }
             break;
@@ -427,7 +427,7 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
             struct value name_obj = NEW_OBJECT(name);
             bool new_v = table_set(&vm->globals, name_obj, val);
             if (!new_v) {
-                runtime_error(vm, "Error: Variable '%s' is already defined.\n", name->data);
+                runtime_error(vm, "Error: Variable '%s' is already defined", name->data);
                 return INTERPRET_ERROR;
             }
             break;
@@ -439,7 +439,7 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
             struct value name_obj = NEW_OBJECT(name);
             struct value val;
             if (!table_get(&vm->globals, name_obj, &val)) {
-                runtime_error(vm, "Error: Access to undefined variable '%s'.\n", name->data);
+                runtime_error(vm, "Error: Access to undefined variable '%s'.", name->data);
                 return INTERPRET_ERROR;
             }
             push(vm, val);
@@ -452,7 +452,7 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
             struct value name_obj = NEW_OBJECT(name);
             struct value v = pop(vm);
             if (table_set(&vm->globals, name_obj, v)) {
-                runtime_error(vm, "Global variable '%s' is not defined!\n", name->data);
+                runtime_error(vm, "Global variable '%s' is not defined!", name->data);
                 return INTERPRET_ERROR;
             }
             break;
@@ -490,13 +490,13 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
                     push(vm, res);
                 }
             } else {
-                runtime_error(vm, "Only functions can be called\n");
+                runtime_error(vm, "Only functions can be called");
                 return INTERPRET_ERROR;
             }
             break;
         }
         default:
-            runtime_error(vm, "Unknown instruction 0x%x! Skipping...\n", ins);
+            runtime_error(vm, "Unknown instruction 0x%x! Skipping...", ins);
     }
     // Some branches return when successfull (like print),
     // be careful if you add code here.

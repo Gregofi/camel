@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include "common.h"
 #include "memory/block_alloc.h"
 #include "serializer.h"
 #include "vm.h"
@@ -19,7 +20,6 @@ vm_t read_program(const char* filename, u32* ep) {
     }
 
     vm_t vm = serialize(f, ep);
-    vm.filename = filename;
     return vm;
 }
 
@@ -43,14 +43,24 @@ static int disassemble(const char* argv[]) {
 }
 
 static int execute(const char* argv[]) {
-    if (*argv == NULL) {
+    const char* filename = NULL;
+    const char* source = NULL;
+    for (;*argv != NULL; ++ argv) {
+        if (strcmp(*argv, "--source") == 0) {
+            source = *(++argv);
+        } else {
+            filename = *argv;
+        }
+    }
+
+    if (filename == NULL) {
         fprintf(stderr, "Expected file after command 'run'\n");
         exit(4);
     }
-    const char* filename = *argv++;
 
     u32 ep;
     vm_t vm = read_program(filename, &ep);
+    vm.filename = source;
 
     interpret(&vm, ep);
 
