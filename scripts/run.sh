@@ -10,5 +10,5 @@ fi
 
 ./scripts/build.sh
 ./Cacom/target/release/cacom compile --input-file=${1} &&
-./Caby/build/caby execute a.out
+./Caby/build/caby execute a.out --source ${1}
 rm a.out
