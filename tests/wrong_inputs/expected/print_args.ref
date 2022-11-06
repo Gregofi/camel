@@ -1,0 +1,3 @@
+tests/wrong_inputs/print_args.cml:1:1: Fatal: There are more '{}' than arguments
+ | print("Hello, {}!")
+   ^~~~~~~~~~~~~~~~~~~

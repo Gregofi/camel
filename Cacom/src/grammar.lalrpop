@@ -2,9 +2,11 @@
 // by Konrad Siek FML Language intepreter, thanks Konrad!
 // https://github.com/kondziu
 
-use crate::ast::{AST, Opcode, Expr};
+use crate::ast::{StmtType, Opcode, ExprType, Stmt, Expr};
+use crate::utils::Location;
 use std::collections::VecDeque;
 use std::str::FromStr;
+
 
 grammar;
 
@@ -55,14 +57,18 @@ match {
     r#""([^\\"]|\\[~ntr\\"])*""# => STRING_LITERAL,
 }
 
-pub TopLevel: AST = {
-    TopLevelExpressions => AST::Top(<>),
-                        => AST::Top(vec![AST::Expression(Expr::NoneVal)]),
+pub TopLevel: Stmt = {
+    // TODO: Location 0:0 is not right
+    <TopLevelExpressions> => Stmt { node: StmtType::Top(<>), location: Location(0, 0) },
+                          => Stmt {
+        node: StmtType::Top(vec![ Stmt { node: StmtType::Expression(Expr { node: ExprType::NoneVal, location: Location(0, 0) }), location: Location(0, 0) } ]),
+        location: Location(0, 0),
+    },
 }
 
-TopLevelExpressions: Vec<AST> = SeparatedLeastOne<TopLevelExpression, SEMICOLON>;
+TopLevelExpressions: Vec<Stmt> = SeparatedLeastOne<TopLevelExpression, SEMICOLON>;
 
-TopLevelExpression: AST = {
+TopLevelExpression: Stmt = {
     // FIXME: This permits 'return' in top level
     Statement => <>,
     FunDecl => <>,
@@ -72,29 +78,47 @@ TopLevelExpression: AST = {
 // do not put things that can appear in operations
 // (ie. in binary operations, conditions and so on...)
 // here belongs for example while or for cycle.
-Statement: AST = {
-    Expr => AST::Expression(<>), // All subexpressions - contains binaryop, ifs, calls and so on.
+Statement: Stmt = {
+    <l: @L> <expr: Expr> <r: @R> => Stmt {
+        node: StmtType::Expression(expr),
+        location: Location(l, r),
+    }, // All subexpressions - contains binaryop, ifs, calls and so on.
     Return => <>,
     VarDecl => <>,
     Assignment => <>,
 }
 
-Assignment: AST = {
-    <name: Identifier> ASSIGN <value: Expr> => AST::AssignVariable { name, value }
+Assignment: Stmt = {
+    <l: @L> <name: Identifier> ASSIGN <value: Expr> <r: @R> => Stmt {
+        node: StmtType::AssignVariable { name, value },
+        location: Location(l, r),
+    }
 }
 
-VarDecl: AST = {
-    VAL <name: Identifier> ASSIGN <value: Expr> => AST::Variable { name, mutable: false, value },
-    VAR <name: Identifier> ASSIGN <value: Expr> => AST::Variable { name, mutable: true, value },
+VarDecl: Stmt = {
+    <l: @L> VAL <name: Identifier> ASSIGN <value: Expr> <r: @R> => Stmt {
+        node: StmtType::Variable { name, mutable: false, value },
+        location: Location(l, r),
+    },
+    <l: @L> VAR <name: Identifier> ASSIGN <value: Expr> <r: @R> => Stmt {
+        node: StmtType::Variable { name, mutable: true, value },
+        location: Location(l, r),
+    }
 }
 
 LeftAssoc<Op, NextLevel>: Expr = {
-    <left: LeftAssoc<Op, NextLevel>> <op: Op> <right: NextLevel> => Expr::Operator{ op, arguments: vec![left, right] },
+    <l: @L> <left: LeftAssoc<Op, NextLevel>> <op: Op> <right: NextLevel> <r: @R> => Expr {
+        node: ExprType::Operator{ op, arguments: vec![left, right] },
+        location: Location(l, r),
+    },
     NextLevel,
 }
 
 Unary<Op, NextLevel>: Expr = {
-    <op: Op> <arg: Unary<Op, NextLevel>> => Expr::Operator{ op, arguments: vec![arg] },
+    <l: @L> <op: Op> <arg: Unary<Op, NextLevel>> <r: @R> => Expr {
+        node: ExprType::Operator{ op, arguments: vec![arg] },
+        location: Location(l, r),
+    },
     NextLevel,
 }
 
@@ -131,29 +155,49 @@ UnaryOp: Opcode = {
 }
 
 Primary: Expr = {
-    TRUE => Expr::Bool(true),
-    FALSE => Expr::Bool(false),
-    Number => <>,
-    String => Expr::String(<>),
-    Call => <>,
-    LPAREN <expr: Expr> RPAREN => expr,
-    Block => <>,
-    Conditional => <>,
-    Identifier => Expr::AccessVariable{name: <>},
+    <l: @L> TRUE <r: @R> => Expr {
+        node: ExprType::Bool(true),
+        location: Location(l, r)
+    },
+    <l: @L> FALSE <r: @R> => Expr {
+        node: ExprType::Bool(false),
+        location: Location(l, r)
+    },
+    <Number> => <>,
+    <l: @L> <str: String> <r: @R> => Expr {
+        node: ExprType::String(str),
+        location: Location(l, r)
+    },
+    <Call> => <>,
+    // TODO: Does not capture location
+    <l: @L> LPAREN <expr: Expr> RPAREN <r: @R> => expr,
+    <Block> => <>,
+    <Conditional> => <>,
+    <l: @L> <name: Identifier> <r: @R> => Expr {
+        node: ExprType::AccessVariable{name},
+        location: Location(l, r)
+    }
 }
 
 Call: Expr = {
-    <function: Identifier> LPAREN <arguments: Arguments> RPAREN => {
-        Expr::CallFunction{ name: function, arguments: arguments }
+    <l: @L> <function: Identifier> LPAREN <arguments: Arguments> RPAREN <r: @R> => {
+        Expr {
+            node: ExprType::CallFunction{ name: function, arguments: arguments },
+            location: Location(l, r),
+        }
     }
     // TODO: Method calls over objects, lists, strings and so on.
 }
+
 Arguments = Separated<Expr, COMMA>;
 
 Identifier: String = IDENTIFIER => <>.to_string();
 
 Number: Expr = {
-    NUMBER => Expr::Integer(i32::from_str(<>).unwrap()),
+    <l: @L> <n: NUMBER> <r: @R> => Expr {
+        node: ExprType::Integer(i32::from_str(n).unwrap()),
+        location: Location(l, r)
+    },
 }
 
 String: String = {
@@ -161,29 +205,42 @@ String: String = {
 }
 
 Block: Expr = {
-    CURLYBOPEN <v: (<Statement> SEMICOLON)*> <e: Expr?> CURLYBCLOSE => match e {
-        Some(expr) => Expr::Block(v, Box::new(expr)),
-        None => Expr::Block(v, Box::new(Expr::NoneVal)),
+    <l: @L> CURLYBOPEN <v: (<Statement> SEMICOLON)*> <e: Expr?> CURLYBCLOSE <r: @R> => {
+        Expr {
+            node: ExprType::Block(v, match e {
+                Some(expr) => Box::new(expr),
+                None => Box::new(Expr { node: ExprType::NoneVal, location: Location(l, r) } )
+            }),
+            location: Location(l, r),
+        }
     }
 }
+
 Statements = SeparatedLeastOne<Statement, SEMICOLON>;
 
-FunDecl: AST = {
-    DEF <name: Identifier> LPAREN <parameters: Parameters> RPAREN ASSIGN <body: Expr> => {
-        AST::Function{name, parameters, body: body}
+FunDecl: Stmt = {
+    <l: @L> DEF <name: Identifier> LPAREN <parameters: Parameters> RPAREN ASSIGN <body: Expr> <r: @R> => Stmt {
+        node: StmtType::Function{name, parameters, body: body},
+        location: Location(l, r),
     }
 }
+
 Parameters = Separated<Identifier, COMMA>;
 
 Conditional: Expr = {
-    IF <guard: Expr> <then: Block> <els: (ELSE <Block>)?> =>
-                    Expr::Conditional{guard: Box::new(guard),
-                            then_branch: Box::new(then),
-                            else_branch: els.map(Box::new)},
+    <l: @L> IF <guard: Expr> <then: Block> <els: (ELSE <Block>)?> <r: @R> => Expr {
+        node: ExprType::Conditional{guard: Box::new(guard),
+                then_branch: Box::new(then),
+                else_branch: els.map(Box::new)},
+        location: Location(l, r),
+    }
 }
 
-Return: AST = {
-    RETURN <Expr> => AST::Return(<>)
+Return: Stmt = {
+    <l: @L> RETURN <e: Expr> <r: @R> => Stmt {
+        node: StmtType::Return(e),
+        location: Location(l, r),
+    }
 }
 
 // Macros

@@ -1,0 +1,3 @@
+tests/wrong_inputs/type_op1.cml:5:3: Fatal: Incopatible types for operator '+'
+ |   1 + "Hello"
+     ^~~~~~~~~~~

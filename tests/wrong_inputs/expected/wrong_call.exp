@@ -1,0 +1,3 @@
+tests/wrong_inputs/wrong_call.cml:3:1: Fatal: Error: Access to undefined variable 'bar'.
+ | bar()
+   ^~~~~

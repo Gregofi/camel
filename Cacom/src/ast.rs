@@ -1,4 +1,12 @@
-use std::fmt;
+use std::fmt::{self, Display};
+
+use crate::utils::Location;
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct Located<T> {
+    pub node: T,
+    pub location: Location,
+}
 
 #[derive(Debug, Clone, Copy)]
 pub enum Opcode {
@@ -18,7 +26,7 @@ pub enum Opcode {
 
 /// Represents top-level statements, these do not leave anything on the stack
 #[derive(Debug, Clone)]
-pub enum AST {
+pub enum StmtType {
     Variable {
         name: String,
         mutable: bool,
@@ -40,15 +48,17 @@ pub enum AST {
         body: Expr,
     },
 
-    Top(Vec<AST>),
+    Top(Vec<Stmt>),
     While {
         guard: Expr,
-        body: Box<AST>,
+        body: Box<Stmt>,
     },
 
     Return(Expr),
     Expression(Expr),
 }
+
+pub type Stmt = Located<StmtType>;
 
 /// Expressions always leave some value on the stack
 ///
@@ -62,26 +72,26 @@ pub enum AST {
 /// is either the one of last statement or none if the
 /// block is empty.
 #[derive(Debug, Clone)]
-pub enum Expr {
+pub enum ExprType {
     Integer(i32),
     Float(f32),
     Bool(bool),
     NoneVal,
     String(String),
 
-    Block(Vec<AST>, Box<Expr>),
+    Block(Vec<Stmt>, Box<Expr>),
 
     List {
         size: Box<Expr>,
-        values: Vec<AST>,
+        values: Vec<Stmt>,
     },
 
     AccessVariable {
         name: String,
     },
     AccessList {
-        list: Box<AST>,
-        index: Box<AST>,
+        list: Box<Stmt>,
+        index: Box<Stmt>,
     },
     CallFunction {
         name: String,
@@ -98,6 +108,8 @@ pub enum Expr {
         arguments: Vec<Expr>,
     },
 }
+
+pub type Expr = Located<ExprType>;
 
 impl fmt::Display for Opcode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -124,28 +136,25 @@ impl fmt::Display for Opcode {
 impl Expr {
     pub fn dump(&self, prefix: String) {
         print!("{}", prefix);
-        match self {
-            Expr::Integer(val) => println!("Integer: {}", val),
-            Expr::Float(val) => println!("Float: {}", val),
-            Expr::Bool(val) => println!("Bool: {}", val),
-            Expr::NoneVal => println!("Unit"),
-            Expr::String(val) => println!("String: {}", val),
-            Expr::List { size, values } => {
-                println!("List:");
-                size.dump(prefix.clone() + " ");
-                for val in values {
-                    val.dump(prefix.clone() + " ");
-                }
+        print!("({}):", self.location);
+        match &self.node {
+            ExprType::Integer(val) => println!("Integer: {}", val),
+            ExprType::Float(val) => println!("Float: {}", val),
+            ExprType::Bool(val) => println!("Bool: {}", val),
+            ExprType::NoneVal => println!("Unit"),
+            ExprType::String(val) => println!("String: {}", val),
+            ExprType::List { size, values } => {
+                todo!();
             }
-            Expr::AccessVariable { name } => println!("AccessVariable: {}\n", name),
-            Expr::AccessList { list, index } => todo!(),
-            Expr::CallFunction { name, arguments } => {
+            ExprType::AccessVariable { name } => println!("AccessVariable: {}\n", name),
+            ExprType::AccessList { list, index } => todo!(),
+            ExprType::CallFunction { name, arguments } => {
                 println!("Call: {}", name);
                 for arg in arguments {
                     arg.dump(prefix.clone() + " ");
                 }
             }
-            Expr::Conditional {
+            ExprType::Conditional {
                 guard,
                 then_branch,
                 else_branch,
@@ -157,27 +166,28 @@ impl Expr {
                     else_branch.as_ref().unwrap().dump(prefix + " ");
                 }
             }
-            Expr::Operator { op, arguments } => {
+            ExprType::Operator { op, arguments } => {
                 println!("Operator: {}", op);
                 for arg in arguments {
                     arg.dump(prefix.clone() + " ");
                 }
             }
-            Expr::Block(vals, expr) => {
+            ExprType::Block(vals, expr) => {
                 for stmt in vals {
                     stmt.dump(prefix.clone());
                 }
-                expr.dump(prefix.clone());
+                expr.dump(prefix);
             }
         }
     }
 }
 
-impl AST {
+impl Stmt {
     pub fn dump(&self, prefix: String) {
         print!("{}", prefix);
-        match self {
-            AST::Variable {
+        print!("({}):", self.location);
+        match &self.node {
+            StmtType::Variable {
                 name,
                 mutable,
                 value,
@@ -185,9 +195,9 @@ impl AST {
                 println!("{}: {}", if *mutable { "var" } else { "val" }, name);
                 value.dump(prefix + " ");
             }
-            AST::AssignVariable { name, value } => todo!(),
-            AST::AssignList { list, index, value } => todo!(),
-            AST::Function {
+            StmtType::AssignVariable { name, value } => todo!(),
+            StmtType::AssignList { list, index, value } => todo!(),
+            StmtType::Function {
                 name,
                 parameters,
                 body,
@@ -199,21 +209,21 @@ impl AST {
                 println!("]");
                 body.dump(prefix + " ");
             }
-            AST::Top(vals) => {
+            StmtType::Top(vals) => {
                 for stmt in vals {
                     stmt.dump(String::from(""));
                 }
             }
-            AST::While { guard, body } => {
+            StmtType::While { guard, body } => {
                 println!("While: ");
                 guard.dump(prefix.clone() + " ");
                 body.dump(prefix + " ")
             }
-            AST::Return(expr) => {
+            StmtType::Return(expr) => {
                 println!("Return: ");
                 expr.dump(prefix + " ");
             }
-            AST::Expression(expr) => expr.dump(prefix),
+            StmtType::Expression(expr) => expr.dump(prefix),
         }
     }
 }

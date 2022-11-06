@@ -6,11 +6,17 @@ use std::io::prelude::*;
 
 use crate::ast::Opcode;
 use crate::serializable::Serializable;
+use crate::utils::Location;
 
 pub type ConstantPoolIndex = u32;
 pub type LocalIndex = u16;
 
-pub enum Bytecode {
+pub struct Bytecode {
+    pub instr: BytecodeType,
+    pub location: Location,
+}
+
+pub enum BytecodeType {
     PushShort(i8),
     PushInt(i32),
     PushLong(i64),
@@ -76,73 +82,73 @@ pub enum Bytecode {
     Dup,
 }
 
-impl From<Opcode> for Bytecode {
+impl From<Opcode> for BytecodeType {
     fn from(opcode: Opcode) -> Self {
         match opcode {
-            Opcode::Add => Bytecode::Iadd,
-            Opcode::Sub => Bytecode::Isub,
-            Opcode::Mul => Bytecode::Imul,
-            Opcode::Div => Bytecode::Idiv,
-            Opcode::Mod => Bytecode::Mod,
-            Opcode::Less => Bytecode::Iless,
-            Opcode::LessEq => Bytecode::Ilesseq,
-            Opcode::Greater => Bytecode::Igreater,
-            Opcode::GreaterEq => Bytecode::Igreatereq,
-            Opcode::Eq => Bytecode::Ieq,
-            Opcode::Neq => Bytecode::Neq,
-            Opcode::Negate => Bytecode::Ineg,
+            Opcode::Add => BytecodeType::Iadd,
+            Opcode::Sub => BytecodeType::Isub,
+            Opcode::Mul => BytecodeType::Imul,
+            Opcode::Div => BytecodeType::Idiv,
+            Opcode::Mod => BytecodeType::Mod,
+            Opcode::Less => BytecodeType::Iless,
+            Opcode::LessEq => BytecodeType::Ilesseq,
+            Opcode::Greater => BytecodeType::Igreater,
+            Opcode::GreaterEq => BytecodeType::Igreatereq,
+            Opcode::Eq => BytecodeType::Ieq,
+            Opcode::Neq => BytecodeType::Neq,
+            Opcode::Negate => BytecodeType::Ineg,
         }
     }
 }
 
 impl fmt::Display for Bytecode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Bytecode::PushShort(v) => write!(f, "Push short: {}", v),
-            Bytecode::PushInt(v) => write!(f, "Push int: {}", v),
-            Bytecode::PushLong(v) => write!(f, "Push long: {}", v),
-            Bytecode::PushBool(v) => write!(f, "Push bool: {}", v),
-            Bytecode::PushLiteral(v) => write!(f, "Push literal: {}", v),
-            Bytecode::PushNone => write!(f, "Push none"),
-            Bytecode::GetLocal(v) => write!(f, "Get local: {}", v),
-            Bytecode::SetLocal(v) => write!(f, "Set local: {}", v),
-            Bytecode::DeclValGlobal { name } => write!(f, "decl val global: {}", name),
-            Bytecode::DeclVarGlobal { name } => write!(f, "decl var global: {}", name),
-            Bytecode::GetGlobal(v) => write!(f, "Get global: {}", v),
-            Bytecode::SetGlobal(v) => write!(f, "Set global: {}", v),
-            Bytecode::CallFunc { arg_cnt } => write!(f, "Call function, args: {}", arg_cnt),
-            Bytecode::Ret => write!(f, "Ret"),
-            Bytecode::Label(v) => write!(f, "{}:", v),
-            Bytecode::BranchLabel(v) => write!(f, "BranchLabel: {}", v),
-            Bytecode::BranchLabelFalse(v) => write!(f, "BranchLabelFalse: {}", v),
-            Bytecode::JmpLabel(v) => write!(f, "BranchLabel: {}", v),
-            Bytecode::JmpShort(v) => write!(f, "JmpShort: {}", v),
-            Bytecode::Jmp(v) => write!(f, "Jmp: {}", v),
-            Bytecode::JmpLong(v) => write!(f, "JmpLong: {}", v),
-            Bytecode::BranchShort(v) => write!(f, "BranchShort: {}", v),
-            Bytecode::Branch(v) => write!(f, "Branch: {}", v),
-            Bytecode::BranchLong(v) => write!(f, "BranchLong: {}", v),
-            Bytecode::BranchShortFalse(v) => write!(f, "BranchShortFalse: {}", v),
-            Bytecode::BranchFalse(v) => write!(f, "BranchFalse: {}", v),
-            Bytecode::BranchLongFalse(v) => write!(f, "BranchLongFalse: {}", v),
-            Bytecode::Print { arg_cnt } => write!(f, "Print {}", arg_cnt),
-            Bytecode::Iadd => write!(f, "Iadd"),
-            Bytecode::Isub => write!(f, "Isub"),
-            Bytecode::Imul => write!(f, "Imul"),
-            Bytecode::Idiv => write!(f, "Idiv"),
-            Bytecode::Mod => write!(f, "Mod"),
-            Bytecode::Iand => write!(f, "Iand"),
-            Bytecode::Ior => write!(f, "Ior"),
-            Bytecode::Iless => write!(f, "Iless"),
-            Bytecode::Ilesseq => write!(f, "Ilesseq"),
-            Bytecode::Igreater => write!(f, "Igreater"),
-            Bytecode::Igreatereq => write!(f, "Igreatereq"),
-            Bytecode::Ieq => write!(f, "Ieq"),
-            Bytecode::Ineg => write!(f, "Ineg"),
-            Bytecode::Drop => write!(f, "Drop"),
-            Bytecode::Dropn(cnt) => write!(f, "Dropn: {}", cnt),
-            Bytecode::Dup => write!(f, "Dup"),
-            Bytecode::Neq => write!(f, "Neq"),
+        match &self.instr {
+            BytecodeType::PushShort(v) => write!(f, "Push short: {}", v),
+            BytecodeType::PushInt(v) => write!(f, "Push int: {}", v),
+            BytecodeType::PushLong(v) => write!(f, "Push long: {}", v),
+            BytecodeType::PushBool(v) => write!(f, "Push bool: {}", v),
+            BytecodeType::PushLiteral(v) => write!(f, "Push literal: {}", v),
+            BytecodeType::PushNone => write!(f, "Push none"),
+            BytecodeType::GetLocal(v) => write!(f, "Get local: {}", v),
+            BytecodeType::SetLocal(v) => write!(f, "Set local: {}", v),
+            BytecodeType::DeclValGlobal { name } => write!(f, "decl val global: {}", name),
+            BytecodeType::DeclVarGlobal { name } => write!(f, "decl var global: {}", name),
+            BytecodeType::GetGlobal(v) => write!(f, "Get global: {}", v),
+            BytecodeType::SetGlobal(v) => write!(f, "Set global: {}", v),
+            BytecodeType::CallFunc { arg_cnt } => write!(f, "Call function, args: {}", arg_cnt),
+            BytecodeType::Ret => write!(f, "Ret"),
+            BytecodeType::Label(v) => write!(f, "{}:", v),
+            BytecodeType::BranchLabel(v) => write!(f, "BranchLabel: {}", v),
+            BytecodeType::BranchLabelFalse(v) => write!(f, "BranchLabelFalse: {}", v),
+            BytecodeType::JmpLabel(v) => write!(f, "BranchLabel: {}", v),
+            BytecodeType::JmpShort(v) => write!(f, "JmpShort: {}", v),
+            BytecodeType::Jmp(v) => write!(f, "Jmp: {}", v),
+            BytecodeType::JmpLong(v) => write!(f, "JmpLong: {}", v),
+            BytecodeType::BranchShort(v) => write!(f, "BranchShort: {}", v),
+            BytecodeType::Branch(v) => write!(f, "Branch: {}", v),
+            BytecodeType::BranchLong(v) => write!(f, "BranchLong: {}", v),
+            BytecodeType::BranchShortFalse(v) => write!(f, "BranchShortFalse: {}", v),
+            BytecodeType::BranchFalse(v) => write!(f, "BranchFalse: {}", v),
+            BytecodeType::BranchLongFalse(v) => write!(f, "BranchLongFalse: {}", v),
+            BytecodeType::Print { arg_cnt } => write!(f, "Print {}", arg_cnt),
+            BytecodeType::Iadd => write!(f, "Iadd"),
+            BytecodeType::Isub => write!(f, "Isub"),
+            BytecodeType::Imul => write!(f, "Imul"),
+            BytecodeType::Idiv => write!(f, "Idiv"),
+            BytecodeType::Mod => write!(f, "Mod"),
+            BytecodeType::Iand => write!(f, "Iand"),
+            BytecodeType::Ior => write!(f, "Ior"),
+            BytecodeType::Iless => write!(f, "Iless"),
+            BytecodeType::Ilesseq => write!(f, "Ilesseq"),
+            BytecodeType::Igreater => write!(f, "Igreater"),
+            BytecodeType::Igreatereq => write!(f, "Igreatereq"),
+            BytecodeType::Ieq => write!(f, "Ieq"),
+            BytecodeType::Ineg => write!(f, "Ineg"),
+            BytecodeType::Drop => write!(f, "Drop"),
+            BytecodeType::Dropn(cnt) => write!(f, "Dropn: {}", cnt),
+            BytecodeType::Dup => write!(f, "Dup"),
+            BytecodeType::Neq => write!(f, "Neq"),
         }
     }
 }
@@ -196,124 +202,124 @@ impl Serializable for Code {
 
 impl Bytecode {
     fn byte_encode(&self) -> u8 {
-        match self {
-            Bytecode::PushShort(_) => 0x01,
-            Bytecode::PushInt(_) => 0x02,
-            Bytecode::PushLong(_) => 0x03,
-            Bytecode::PushBool(_) => 0x04,
-            Bytecode::PushLiteral(_) => 0x05,
-            Bytecode::PushNone => 0x20,
-            Bytecode::GetLocal(_) => 0x06,
-            Bytecode::SetLocal(_) => 0x07,
-            Bytecode::GetGlobal(_) => 0x13,
-            Bytecode::SetGlobal(_) => 0x14,
-            Bytecode::DeclValGlobal { .. } => 0x15,
-            Bytecode::DeclVarGlobal { .. } => 0x16,
-            Bytecode::CallFunc { .. } => 0x08,
-            Bytecode::Ret => 0x09,
-            Bytecode::Label(_) => 0x00,
-            Bytecode::BranchLabel(_) => {
+        match &self.instr {
+            BytecodeType::PushShort(_) => 0x01,
+            BytecodeType::PushInt(_) => 0x02,
+            BytecodeType::PushLong(_) => 0x03,
+            BytecodeType::PushBool(_) => 0x04,
+            BytecodeType::PushLiteral(_) => 0x05,
+            BytecodeType::PushNone => 0x20,
+            BytecodeType::GetLocal(_) => 0x06,
+            BytecodeType::SetLocal(_) => 0x07,
+            BytecodeType::GetGlobal(_) => 0x13,
+            BytecodeType::SetGlobal(_) => 0x14,
+            BytecodeType::DeclValGlobal { .. } => 0x15,
+            BytecodeType::DeclVarGlobal { .. } => 0x16,
+            BytecodeType::CallFunc { .. } => 0x08,
+            BytecodeType::Ret => 0x09,
+            BytecodeType::Label(_) => 0x00,
+            BytecodeType::BranchLabel(_) => {
                 panic!("Label jumps are not meant to exist in final bytecode!")
             }
-            Bytecode::BranchLabelFalse(_) => {
+            BytecodeType::BranchLabelFalse(_) => {
                 panic!("Label jumps are not meant to exist in final bytecode!")
             }
-            Bytecode::JmpLabel(_) => {
+            BytecodeType::JmpLabel(_) => {
                 panic!("Label jumps are not meant to exist in final bytecode!")
             }
-            Bytecode::JmpShort(_) => 0x0A,
-            Bytecode::Jmp(_) => 0x0B,
-            Bytecode::JmpLong(_) => 0x0C,
-            Bytecode::BranchShort(_) => 0x0D,
-            Bytecode::Branch(_) => 0x0E,
-            Bytecode::BranchLong(_) => 0x0F,
-            Bytecode::BranchShortFalse(_) => 0x2D,
-            Bytecode::BranchFalse(_) => 0x2E,
-            Bytecode::BranchLongFalse(_) => 0x2F,
-            Bytecode::Print { .. } => 0x10,
-            Bytecode::Iadd => 0x30,
-            Bytecode::Isub => 0x31,
-            Bytecode::Imul => 0x32,
-            Bytecode::Idiv => 0x33,
-            Bytecode::Mod => 0x34,
-            Bytecode::Iand => 0x35,
-            Bytecode::Ior => 0x36,
-            Bytecode::Iless => 0x37,
-            Bytecode::Ilesseq => 0x38,
-            Bytecode::Igreater => 0x39,
-            Bytecode::Igreatereq => 0x3A,
-            Bytecode::Ieq => 0x3B,
-            Bytecode::Ineg => 0x3C,
-            Bytecode::Neq => 0x3D,
+            BytecodeType::JmpShort(_) => 0x0A,
+            BytecodeType::Jmp(_) => 0x0B,
+            BytecodeType::JmpLong(_) => 0x0C,
+            BytecodeType::BranchShort(_) => 0x0D,
+            BytecodeType::Branch(_) => 0x0E,
+            BytecodeType::BranchLong(_) => 0x0F,
+            BytecodeType::BranchShortFalse(_) => 0x2D,
+            BytecodeType::BranchFalse(_) => 0x2E,
+            BytecodeType::BranchLongFalse(_) => 0x2F,
+            BytecodeType::Print { .. } => 0x10,
+            BytecodeType::Iadd => 0x30,
+            BytecodeType::Isub => 0x31,
+            BytecodeType::Imul => 0x32,
+            BytecodeType::Idiv => 0x33,
+            BytecodeType::Mod => 0x34,
+            BytecodeType::Iand => 0x35,
+            BytecodeType::Ior => 0x36,
+            BytecodeType::Iless => 0x37,
+            BytecodeType::Ilesseq => 0x38,
+            BytecodeType::Igreater => 0x39,
+            BytecodeType::Igreatereq => 0x3A,
+            BytecodeType::Ieq => 0x3B,
+            BytecodeType::Ineg => 0x3C,
+            BytecodeType::Neq => 0x3D,
 
-            Bytecode::Drop => 0x11,
-            Bytecode::Dropn(_) => 0x25,
-            Bytecode::Dup => 0x12,
+            BytecodeType::Drop => 0x11,
+            BytecodeType::Dropn(_) => 0x25,
+            BytecodeType::Dup => 0x12,
         }
     }
 
     fn update_jump(&mut self, new_dest: usize) {
-        match self {
-            Bytecode::JmpShort(v) => *v = new_dest.try_into().unwrap(),
-            Bytecode::Jmp(v) => *v = new_dest.try_into().unwrap(),
-            Bytecode::JmpLong(v) => *v = new_dest.try_into().unwrap(),
-            Bytecode::BranchShort(v) => *v = new_dest.try_into().unwrap(),
-            Bytecode::Branch(v) => *v = new_dest.try_into().unwrap(),
-            Bytecode::BranchLong(v) => *v = new_dest.try_into().unwrap(),
+        match &mut self.instr {
+            BytecodeType::JmpShort(v) => *v = new_dest.try_into().unwrap(),
+            BytecodeType::Jmp(v) => *v = new_dest.try_into().unwrap(),
+            BytecodeType::JmpLong(v) => *v = new_dest.try_into().unwrap(),
+            BytecodeType::BranchShort(v) => *v = new_dest.try_into().unwrap(),
+            BytecodeType::Branch(v) => *v = new_dest.try_into().unwrap(),
+            BytecodeType::BranchLong(v) => *v = new_dest.try_into().unwrap(),
             _ => panic!("Instruction to be updated is not a jump"),
         }
     }
 
     pub fn size(&self) -> usize {
-        if let Bytecode::Label(_) = self {
+        if let BytecodeType::Label(_) = self.instr {
             return 0;
         }
-        1 + match self {
-            Bytecode::PushShort(_) => 2,
-            Bytecode::PushInt(_) => 4,
-            Bytecode::PushLong(_) => 8,
-            Bytecode::PushBool(_) => 1,
-            Bytecode::PushLiteral(_) => std::mem::size_of::<ConstantPoolIndex>(),
-            Bytecode::PushNone => 0,
-            Bytecode::GetLocal(idx) => std::mem::size_of_val(idx),
-            Bytecode::SetLocal(idx) => std::mem::size_of_val(idx),
-            Bytecode::DeclValGlobal { .. } => 4,
-            Bytecode::DeclVarGlobal { .. } => 4,
-            Bytecode::GetGlobal(_) => 4,
-            Bytecode::SetGlobal(_) => 4,
-            Bytecode::CallFunc { arg_cnt } => std::mem::size_of_val(arg_cnt),
-            Bytecode::Ret => 0,
-            Bytecode::Label(_) => unreachable!(),
-            Bytecode::JmpLabel(_) => 4,
-            Bytecode::BranchLabel(_) => 4,
-            Bytecode::BranchLabelFalse(_) => 4,
-            Bytecode::JmpShort(_) => 2,
-            Bytecode::Jmp(_) => 4,
-            Bytecode::JmpLong(_) => 8,
-            Bytecode::BranchShort(_) => 2,
-            Bytecode::Branch(_) => 4,
-            Bytecode::BranchLong(_) => 8,
-            Bytecode::BranchShortFalse(_) => 2,
-            Bytecode::BranchFalse(_) => 4,
-            Bytecode::BranchLongFalse(_) => 8,
-            Bytecode::Print { .. } => 1,
-            Bytecode::Iadd => 0,
-            Bytecode::Isub => 0,
-            Bytecode::Imul => 0,
-            Bytecode::Mod => 0,
-            Bytecode::Idiv => 0,
-            Bytecode::Iand => 0,
-            Bytecode::Ior => 0,
-            Bytecode::Iless => 0,
-            Bytecode::Ilesseq => 0,
-            Bytecode::Igreater => 0,
-            Bytecode::Igreatereq => 0,
-            Bytecode::Ieq => 0,
-            Bytecode::Neq => 0,
-            Bytecode::Ineg => 0,
-            Bytecode::Drop => 0,
-            Bytecode::Dropn(_) => 1,
-            Bytecode::Dup => 0,
+        1 + match &self.instr {
+            BytecodeType::PushShort(_) => 2,
+            BytecodeType::PushInt(_) => 4,
+            BytecodeType::PushLong(_) => 8,
+            BytecodeType::PushBool(_) => 1,
+            BytecodeType::PushLiteral(_) => std::mem::size_of::<ConstantPoolIndex>(),
+            BytecodeType::PushNone => 0,
+            BytecodeType::GetLocal(idx) => std::mem::size_of_val(idx),
+            BytecodeType::SetLocal(idx) => std::mem::size_of_val(idx),
+            BytecodeType::DeclValGlobal { .. } => 4,
+            BytecodeType::DeclVarGlobal { .. } => 4,
+            BytecodeType::GetGlobal(_) => 4,
+            BytecodeType::SetGlobal(_) => 4,
+            BytecodeType::CallFunc { arg_cnt } => std::mem::size_of_val(arg_cnt),
+            BytecodeType::Ret => 0,
+            BytecodeType::Label(_) => unreachable!(),
+            BytecodeType::JmpLabel(_) => 4,
+            BytecodeType::BranchLabel(_) => 4,
+            BytecodeType::BranchLabelFalse(_) => 4,
+            BytecodeType::JmpShort(_) => 2,
+            BytecodeType::Jmp(_) => 4,
+            BytecodeType::JmpLong(_) => 8,
+            BytecodeType::BranchShort(_) => 2,
+            BytecodeType::Branch(_) => 4,
+            BytecodeType::BranchLong(_) => 8,
+            BytecodeType::BranchShortFalse(_) => 2,
+            BytecodeType::BranchFalse(_) => 4,
+            BytecodeType::BranchLongFalse(_) => 8,
+            BytecodeType::Print { .. } => 1,
+            BytecodeType::Iadd => 0,
+            BytecodeType::Isub => 0,
+            BytecodeType::Imul => 0,
+            BytecodeType::Mod => 0,
+            BytecodeType::Idiv => 0,
+            BytecodeType::Iand => 0,
+            BytecodeType::Ior => 0,
+            BytecodeType::Iless => 0,
+            BytecodeType::Ilesseq => 0,
+            BytecodeType::Igreater => 0,
+            BytecodeType::Igreatereq => 0,
+            BytecodeType::Ieq => 0,
+            BytecodeType::Neq => 0,
+            BytecodeType::Ineg => 0,
+            BytecodeType::Drop => 0,
+            BytecodeType::Dropn(_) => 1,
+            BytecodeType::Dup => 0,
         }
     }
 }
@@ -321,59 +327,61 @@ impl Bytecode {
 impl Serializable for Bytecode {
     fn serialize(&self, f: &mut File) -> io::Result<()> {
         f.write_all(&[self.byte_encode()])?;
-        match self {
-            Bytecode::PushShort(v) => f.write_all(&v.to_le_bytes())?,
-            Bytecode::PushInt(v) => f.write_all(&v.to_le_bytes())?,
-            Bytecode::PushLong(v) => f.write_all(&v.to_le_bytes())?,
-            Bytecode::PushBool(v) => f.write_all(&[*v as u8])?,
-            Bytecode::PushLiteral(v) => f.write_all(&v.to_le_bytes())?,
-            Bytecode::GetLocal(idx) => f.write_all(&idx.to_le_bytes())?,
-            Bytecode::SetLocal(idx) => f.write_all(&idx.to_le_bytes())?,
-            Bytecode::CallFunc { arg_cnt } => f.write_all(&arg_cnt.to_le_bytes())?,
-            Bytecode::Ret => {}
-            Bytecode::Label(_) => todo!(),
-            Bytecode::BranchLabel(_) => {
+        match &self.instr {
+            BytecodeType::PushShort(v) => f.write_all(&v.to_le_bytes())?,
+            BytecodeType::PushInt(v) => f.write_all(&v.to_le_bytes())?,
+            BytecodeType::PushLong(v) => f.write_all(&v.to_le_bytes())?,
+            BytecodeType::PushBool(v) => f.write_all(&[*v as u8])?,
+            BytecodeType::PushLiteral(v) => f.write_all(&v.to_le_bytes())?,
+            BytecodeType::GetLocal(idx) => f.write_all(&idx.to_le_bytes())?,
+            BytecodeType::SetLocal(idx) => f.write_all(&idx.to_le_bytes())?,
+            BytecodeType::CallFunc { arg_cnt } => f.write_all(&arg_cnt.to_le_bytes())?,
+            BytecodeType::Ret => {}
+            BytecodeType::Label(_) => todo!(),
+            BytecodeType::BranchLabel(_) => {
                 panic!("Jump labels are not meant to exist in final bytecode")
             }
-            Bytecode::BranchLabelFalse(_) => {
+            BytecodeType::BranchLabelFalse(_) => {
                 panic!("Jump labels are not meant to exist in final bytecode")
             }
-            Bytecode::JmpLabel(_) => panic!("Jump labels are not meant to exist in final bytecode"),
-            Bytecode::JmpShort(dst) => f.write_all(&dst.to_le_bytes())?,
-            Bytecode::Jmp(dst) => f.write_all(&dst.to_le_bytes())?,
-            Bytecode::JmpLong(dst) => f.write_all(&dst.to_le_bytes())?,
-            Bytecode::BranchShort(dst) => f.write_all(&dst.to_le_bytes())?,
-            Bytecode::Branch(dst) => f.write_all(&dst.to_le_bytes())?,
-            Bytecode::BranchLong(dst) => f.write_all(&dst.to_le_bytes())?,
-            Bytecode::BranchShortFalse(dst) => f.write_all(&dst.to_le_bytes())?,
-            Bytecode::BranchFalse(dst) => f.write_all(&dst.to_le_bytes())?,
-            Bytecode::BranchLongFalse(dst) => f.write_all(&dst.to_le_bytes())?,
-            Bytecode::Print { arg_cnt } => {
+            BytecodeType::JmpLabel(_) => {
+                panic!("Jump labels are not meant to exist in final bytecode")
+            }
+            BytecodeType::JmpShort(dst) => f.write_all(&dst.to_le_bytes())?,
+            BytecodeType::Jmp(dst) => f.write_all(&dst.to_le_bytes())?,
+            BytecodeType::JmpLong(dst) => f.write_all(&dst.to_le_bytes())?,
+            BytecodeType::BranchShort(dst) => f.write_all(&dst.to_le_bytes())?,
+            BytecodeType::Branch(dst) => f.write_all(&dst.to_le_bytes())?,
+            BytecodeType::BranchLong(dst) => f.write_all(&dst.to_le_bytes())?,
+            BytecodeType::BranchShortFalse(dst) => f.write_all(&dst.to_le_bytes())?,
+            BytecodeType::BranchFalse(dst) => f.write_all(&dst.to_le_bytes())?,
+            BytecodeType::BranchLongFalse(dst) => f.write_all(&dst.to_le_bytes())?,
+            BytecodeType::Print { arg_cnt } => {
                 f.write_all(&arg_cnt.to_le_bytes())?;
             }
-            Bytecode::Iadd => {}
-            Bytecode::Isub => {}
-            Bytecode::Imul => {}
-            Bytecode::Idiv => {}
-            Bytecode::Mod => {}
-            Bytecode::Iand => {}
-            Bytecode::Ior => {}
-            Bytecode::Iless => {}
-            Bytecode::Ilesseq => {}
-            Bytecode::Igreater => {}
-            Bytecode::Igreatereq => {}
-            Bytecode::Ieq => {}
-            Bytecode::Neq => {}
-            Bytecode::Ineg => {}
-            Bytecode::Drop => {}
-            Bytecode::Dropn(cnt) => f.write_all(&cnt.to_le_bytes())?,
-            Bytecode::Dup => {}
-            Bytecode::PushNone => {}
-            Bytecode::DeclValGlobal { name } => f.write_all(&name.to_le_bytes())?,
-            Bytecode::DeclVarGlobal { name } => f.write_all(&name.to_le_bytes())?,
-            Bytecode::GetGlobal(idx) => f.write_all(&idx.to_le_bytes())?,
-            Bytecode::SetGlobal(idx) => f.write_all(&idx.to_le_bytes())?,
+            BytecodeType::Iadd => {}
+            BytecodeType::Isub => {}
+            BytecodeType::Imul => {}
+            BytecodeType::Idiv => {}
+            BytecodeType::Mod => {}
+            BytecodeType::Iand => {}
+            BytecodeType::Ior => {}
+            BytecodeType::Iless => {}
+            BytecodeType::Ilesseq => {}
+            BytecodeType::Igreater => {}
+            BytecodeType::Igreatereq => {}
+            BytecodeType::Ieq => {}
+            BytecodeType::Neq => {}
+            BytecodeType::Ineg => {}
+            BytecodeType::Drop => {}
+            BytecodeType::Dropn(cnt) => f.write_all(&cnt.to_le_bytes())?,
+            BytecodeType::Dup => {}
+            BytecodeType::PushNone => {}
+            BytecodeType::DeclValGlobal { name } => f.write_all(&name.to_le_bytes())?,
+            BytecodeType::DeclVarGlobal { name } => f.write_all(&name.to_le_bytes())?,
+            BytecodeType::GetGlobal(idx) => f.write_all(&idx.to_le_bytes())?,
+            BytecodeType::SetGlobal(idx) => f.write_all(&idx.to_le_bytes())?,
         };
-        Ok(())
+        self.location.serialize(f)
     }
 }

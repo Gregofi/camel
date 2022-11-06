@@ -52,10 +52,25 @@ enum opcode {
     OP_NEQ = 0x3D,
 };
 
+size_t ins_size(enum opcode op);
+
+/// Calculates how many instruction are between begin and end
+/// (begin is the lower address).
+size_t range_between(u8* begin, u8* end);
+
+struct loc {
+    u64 begin;
+    u64 end;
+};
+
 struct bc_chunk {
     u8* data;
     size_t len;
     size_t cap;
+
+    struct loc* location;
+    size_t location_len;
+    size_t location_cap;
 };
 
 struct constant_pool {
@@ -74,6 +89,8 @@ void write_byte(struct bc_chunk* c, u8 byte);
 void write_word(struct bc_chunk* c, u16 word);
 
 void write_dword(struct bc_chunk* c, u32 dword);
+
+void write_loc(struct bc_chunk* c, u64 begin, u64 end);
 
 void init_constant_pool(struct constant_pool* cp);
 
