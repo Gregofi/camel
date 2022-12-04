@@ -34,19 +34,13 @@ The language has C-like syntax but supports advanced constructs such as objects,
 Following features will hopefully be implemented:
 - Algebraic data types -> Pattern matching with enums
 - Fully interpolated strings
-- Explicit types
 - Some other way of managing errors without the use of exceptions (use adt?)
 - Closures
 - Dictionaries
 - Sets
-- Error handling
-  - Draft: Use ? For signaling that the value can be some Error value and propagate it probably with `?` like Rust.
 
 Following features are considered
 - Exceptions.
-- Inheritance - I feel like inheritance often makes classes unecessary complex. Use composition instead.
-- Operator overloading - Honestly, this goes either way. It certainly compacts code and sometimes improves
-                         readibility. But coming from scala, it can be abused.
 
 ## Standard library
 
