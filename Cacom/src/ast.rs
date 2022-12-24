@@ -48,6 +48,12 @@ pub enum StmtType {
         body: Expr,
     },
 
+    Class {
+        name: String,
+        members: Vec<String>,
+        statements: Vec<Stmt>,
+    },
+
     Top(Vec<Stmt>),
     While {
         guard: Expr,
@@ -209,6 +215,7 @@ impl Stmt {
                 println!("]");
                 body.dump(prefix + " ");
             }
+            StmtType::Class { name, members, statements } => todo!(),
             StmtType::Top(vals) => {
                 for stmt in vals {
                     stmt.dump(String::from(""));

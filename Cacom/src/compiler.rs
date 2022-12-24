@@ -439,6 +439,7 @@ impl Compiler {
             StmtType::While { guard, body } => todo!(),
             StmtType::Return(_) => todo!(),
             StmtType::Expression(expr) => self.compile_expr(expr, code, true)?,
+            StmtType::Class { name, members, statements } => todo!(),
         };
         Ok(())
     }

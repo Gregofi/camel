@@ -47,6 +47,7 @@ match {
     "def" => DEF,
     "," => COMMA,
     "return" => RETURN,
+    "class" => CLASS,
 
     "val" => VAL,
     "var" => VAR,
@@ -72,6 +73,7 @@ TopLevelExpression: Stmt = {
     // FIXME: This permits 'return' in top level
     Statement => <>,
     FunDecl => <>,
+    ClassDecl => <>,
 }
 
 // Those are 'top' level expression in block,
@@ -86,6 +88,13 @@ Statement: Stmt = {
     Return => <>,
     VarDecl => <>,
     Assignment => <>,
+}
+
+ClassDecl: Stmt = {
+    <l: @L> CLASS <name: Identifier> LPAREN <members: Parameters> RPAREN ASSIGN CURLYBOPEN <statements: Statements> CURLYBCLOSE <r: @R> =>  Stmt {
+        node: StmtType::Class { name, members, statements },
+        location: Location(l, r),
+    }
 }
 
 Assignment: Stmt = {
@@ -216,7 +225,7 @@ Block: Expr = {
     }
 }
 
-Statements = SeparatedLeastOne<Statement, SEMICOLON>;
+Statements = Separated<Statement, SEMICOLON>;
 
 FunDecl: Stmt = {
     <l: @L> DEF <name: Identifier> LPAREN <parameters: Parameters> RPAREN ASSIGN <body: Expr> <r: @R> => Stmt {
