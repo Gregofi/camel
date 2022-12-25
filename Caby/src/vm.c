@@ -5,6 +5,7 @@
 #include "common.h"
 #include "hashtable.h"
 #include "object.h"
+#include "class.h"
 #include "dissasembler.h"
 #include "native.h"
 
@@ -194,6 +195,16 @@ enum interpret_result interpret_print(vm_t* vm) {
                         case OBJECT_STRING:
                             fputs(as_string(v.object)->data, stdout);
                             break;
+                        case OBJECT_CLASS: {
+                            u32 name_idx = as_class(v.object)->name;
+                            const char* name = as_string(vm->const_pool.data[name_idx])->data;
+                            printf("<class object '%s' at %p", name, &obj->object);
+                            break;
+                        }
+                        case OBJECT_INSTANCE: {
+                            printf("<class instance at %p>", &v.object);
+                            break;
+                        }
                         default:
                             runtime_error(vm, "Can't print this type");
                             return INTERPRET_ERROR;
@@ -203,7 +214,7 @@ enum interpret_result interpret_print(vm_t* vm) {
                 default:
                     UNREACHABLE();
             }
-        } else if (*c == '\\' &&c[1] != '\0') { // Escape sequence
+        } else if (*c == '\\' && c[1] != '\0') { // Escape sequence
             c += 1;
             if (*c == 'n') {
                 puts("");

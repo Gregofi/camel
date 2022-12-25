@@ -1,5 +1,6 @@
 #include "object.h"
 #include "bytecode.h"
+#include "class.h"
 #include "vm.h"
 
 #include <assert.h>
@@ -29,7 +30,7 @@ static u32 hashString(const char* key, int length) {
   return hash;
 }
 
-static void init_object(vm_t* vm, struct object* obj, enum object_type type) {
+void init_object(vm_t* vm, struct object* obj, enum object_type type) {
     obj->type = type;
     obj->next = vm->objects;
     vm->objects = obj;
@@ -121,6 +122,16 @@ void free_object(struct object* obj) {
         }
         case OBJECT_NATIVE: {
             break;
+        }
+        case OBJECT_CLASS: {
+            struct object_class* c = as_class(obj);
+            free_table(&c->methods);
+            break;
+        }
+        case OBJECT_INSTANCE: {
+            struct object_instance* i = as_instance(obj);
+            free_table(&i->members);
+            
         }
         default:
             assert(false && "Unknown object type");

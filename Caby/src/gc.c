@@ -1,4 +1,5 @@
 #include "gc.h"
+#include "class.h"
 #include "bytecode.h"
 #include "common.h"
 #include "vm.h"
@@ -85,6 +86,14 @@ static void close_obj(vm_t* vm, struct object* obj) {
         case OBJECT_STRING:
         case OBJECT_NATIVE:
             break;
+        case OBJECT_CLASS: {
+            struct object_class* c = as_class(obj);
+            mark_table(&vm->gc, &c->methods);
+        }
+        case OBJECT_INSTANCE: {
+            struct object_instance* c = as_instance(obj);
+            mark_table(&vm->gc, &c->members);
+        }
     }
 }
 

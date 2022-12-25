@@ -31,6 +31,8 @@ struct object {
     u8 gc_data;
 };
 
+void init_object(vm_t* vm, struct object* obj, enum object_type type);
+
 struct object_string {
     struct object object;
     /// Length of the string WITHOUT zero terminator.
