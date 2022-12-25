@@ -16,6 +16,8 @@ enum object_type {
     OBJECT_STRING,
     OBJECT_FUNCTION,
     OBJECT_NATIVE,
+    OBJECT_CLASS,
+    OBJECT_INSTANCE,
 };
 
 /**
