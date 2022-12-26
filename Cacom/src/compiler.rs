@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::fmt;
 
+use lalrpop_util::state_machine;
+
 use crate::ast::{Expr, ExprType, Opcode, Stmt, StmtType};
 use crate::bytecode::{Bytecode, BytecodeType, Code, ConstantPoolIndex, LocalIndex};
 use crate::objects::{ConstantPool, Object};
@@ -23,6 +25,10 @@ struct Environment {
 enum Location {
     Global,
     Local(Environment),
+    Class {
+        env: Environment,
+        members: HashMap<String, Local>,
+    }
 }
 
 impl Environment {
@@ -120,6 +126,9 @@ impl Compiler {
             Location::Local(env) => {
                 env.enter_scope();
             }
+            Location::Class { env, members } => {
+                env.enter_scope();
+            }
         };
     }
 
@@ -133,6 +142,11 @@ impl Compiler {
                 if env.envs.is_empty() {
                     self.location = Location::Global;
                 }
+                self.local_count -= var_cnt;
+            }
+            Location::Class { env, members } => {
+                let var_cnt: u16 = env.leave_scope().try_into().unwrap();
+                // We can't creep into global environment here
                 self.local_count -= var_cnt;
             }
         };
@@ -216,17 +230,30 @@ impl Compiler {
             }
             ExprType::List { size, values } => todo!(),
             ExprType::AccessVariable { name } => {
-                // TODO: Repeated code!
-                if let Location::Local(env) = &mut self.location {
-                    if let Some(v) = env.fetch_local(name) {
-                        self.add_instruction(code, BytecodeType::GetLocal(v.idx), expr.location);
-                    } else {
+                // TODO: Lots of repeated code!
+                match &mut self.location {
+                    Location::Global => {
                         let idx = self.constant_pool.add(Object::from(name.clone()));
                         self.add_instruction(code, BytecodeType::GetGlobal(idx), expr.location);
                     }
-                } else {
-                    let idx = self.constant_pool.add(Object::from(name.clone()));
-                    self.add_instruction(code, BytecodeType::GetGlobal(idx), expr.location);
+                    Location::Local(env) => {
+                        if let Some(v) = env.fetch_local(name) {
+                            self.add_instruction(code, BytecodeType::GetLocal(v.idx), expr.location);
+                        } else {
+                            let idx = self.constant_pool.add(Object::from(name.clone()));
+                            self.add_instruction(code, BytecodeType::GetGlobal(idx), expr.location);
+                        }
+                    }
+                    Location::Class { env, members } => {
+                        if let Some(v) = env.fetch_local(name) {
+                            self.add_instruction(code, BytecodeType::GetLocal(v.idx), expr.location)
+                        } else if let Some(v) = members.get(name) {
+                            todo!()
+                        } else {
+                            let idx = self.constant_pool.add(Object::from(name.clone()));
+                            self.add_instruction(code, BytecodeType::GetGlobal(idx), expr.location);
+                        }
+                    }
                 }
             }
             ExprType::AccessList { list, index } => todo!(),
@@ -358,6 +385,7 @@ impl Compiler {
                         );
                         self.add_locals(1);
                     }
+                    Location::Class { env, members } => todo!(),
                 }
             }
             StmtType::AssignVariable { name, value } => {
@@ -431,6 +459,7 @@ impl Compiler {
                     Location::Local(env) => {
                         todo!("Nested functions are not yet implemented");
                     }
+                    Location::Class { env, members } => todo!(),
                 };
 
                 self.restore_locals(locals_backup);
@@ -439,7 +468,28 @@ impl Compiler {
             StmtType::While { guard, body } => todo!(),
             StmtType::Return(_) => todo!(),
             StmtType::Expression(expr) => self.compile_expr(expr, code, true)?,
-            StmtType::Class { name, members, statements } => todo!(),
+            StmtType::Class { name, statements } => {
+                let mut constructor = Code::new();
+                let mut members: HashMap<String, Local> = HashMap::new();
+                let mut members_cnt = 0;
+                for stmt in statements {
+                    match &stmt.node {
+                        StmtType::Class { name, statements } => todo!("Nested classes are not yet supported"),
+                        StmtType::Function { name, parameters, body } => todo!(),
+                        StmtType::Variable { name, mutable, value } => {
+                            self.compile_expr(value, &mut constructor, false)?;
+                            if members.contains_key(name) {
+                                Err("Member variable is already declared")
+                            } else {
+                                members.insert(name.clone(), Local { idx: members_cnt, mutable: *mutable });
+                                members_cnt += 1;
+                                Ok(())
+                            }
+                        },
+                        _ => self.compile_stmt(stmt, code)
+                    }?;
+                }
+            }
         };
         Ok(())
     }

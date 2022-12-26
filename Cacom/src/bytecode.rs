@@ -36,6 +36,9 @@ pub enum BytecodeType {
     GetGlobal(ConstantPoolIndex),
     SetGlobal(ConstantPoolIndex),
 
+    GetMember(LocalIndex),
+    SetMember(LocalIndex),
+
     CallFunc { arg_cnt: u8 },
     Ret,
 
@@ -112,6 +115,8 @@ impl fmt::Display for Bytecode {
             BytecodeType::PushNone => write!(f, "Push none"),
             BytecodeType::GetLocal(v) => write!(f, "Get local: {}", v),
             BytecodeType::SetLocal(v) => write!(f, "Set local: {}", v),
+            BytecodeType::GetMember(v) => write!(f, "Get member: {}", v),
+            BytecodeType::SetMember(v) => write!(f, "Set member: {}", v),
             BytecodeType::DeclValGlobal { name } => write!(f, "decl val global: {}", name),
             BytecodeType::DeclVarGlobal { name } => write!(f, "decl var global: {}", name),
             BytecodeType::GetGlobal(v) => write!(f, "Get global: {}", v),
@@ -255,6 +260,8 @@ impl Bytecode {
             BytecodeType::Drop => 0x11,
             BytecodeType::Dropn(_) => 0x25,
             BytecodeType::Dup => 0x12,
+            BytecodeType::GetMember(_) => todo!(),
+            BytecodeType::SetMember(_) => todo!(),
         }
     }
 
@@ -320,6 +327,8 @@ impl Bytecode {
             BytecodeType::Drop => 0,
             BytecodeType::Dropn(_) => 1,
             BytecodeType::Dup => 0,
+            BytecodeType::GetMember(_) => todo!(),
+            BytecodeType::SetMember(_) => todo!(),
         }
     }
 }
@@ -381,6 +390,8 @@ impl Serializable for Bytecode {
             BytecodeType::DeclVarGlobal { name } => f.write_all(&name.to_le_bytes())?,
             BytecodeType::GetGlobal(idx) => f.write_all(&idx.to_le_bytes())?,
             BytecodeType::SetGlobal(idx) => f.write_all(&idx.to_le_bytes())?,
+            BytecodeType::GetMember(_) => todo!(),
+            BytecodeType::SetMember(_) => todo!(),
         };
         self.location.serialize(f)
     }

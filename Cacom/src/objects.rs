@@ -6,6 +6,13 @@ use std::io::prelude::*;
 use crate::bytecode::{Code, ConstantPoolIndex, LocalIndex};
 use crate::serializable::Serializable;
 
+pub struct Function {
+    name: ConstantPoolIndex,
+    parameters_cnt: u8,
+    locals_cnt: LocalIndex,
+    body: Code,
+}
+
 pub enum Object {
     String(String),
     Function {
@@ -14,6 +21,10 @@ pub enum Object {
         locals_cnt: LocalIndex,
         body: Code,
     },
+    Class {
+        name: ConstantPoolIndex,
+        methods: Vec<Function>,
+    }
 }
 
 pub struct ConstantPool {
@@ -72,6 +83,7 @@ impl Object {
         match self {
             Object::String(_) => 0x01,
             Object::Function { .. } => 0x00,
+            Object::Class { name, methods } => todo!(),
         }
     }
 }
@@ -93,6 +105,7 @@ impl fmt::Display for Object {
                 )?;
                 writeln!(f, "{}", body)
             }
+            Object::Class { name, methods } => todo!(),
         }
     }
 }
@@ -123,6 +136,7 @@ impl Serializable for Object {
                 f.write_all(&locals_cnt.to_le_bytes())?;
                 body.serialize(f)
             }
+            Object::Class { name, methods } => todo!()
         }
     }
 }

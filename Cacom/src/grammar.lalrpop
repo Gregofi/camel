@@ -72,7 +72,6 @@ TopLevelExpressions: Vec<Stmt> = SeparatedLeastOne<TopLevelExpression, SEMICOLON
 TopLevelExpression: Stmt = {
     // FIXME: This permits 'return' in top level
     Statement => <>,
-    FunDecl => <>,
     ClassDecl => <>,
 }
 
@@ -88,11 +87,12 @@ Statement: Stmt = {
     Return => <>,
     VarDecl => <>,
     Assignment => <>,
+    FunDecl => <>,
 }
 
 ClassDecl: Stmt = {
-    <l: @L> CLASS <name: Identifier> LPAREN <members: Parameters> RPAREN ASSIGN CURLYBOPEN <statements: Statements> CURLYBCLOSE <r: @R> =>  Stmt {
-        node: StmtType::Class { name, members, statements },
+    <l: @L> CLASS <name: Identifier> CURLYBOPEN <statements: Statements> CURLYBCLOSE <r: @R> =>  Stmt {
+        node: StmtType::Class { name, statements },
         location: Location(l, r),
     }
 }
