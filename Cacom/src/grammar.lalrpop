@@ -91,7 +91,7 @@ Statement: Stmt = {
 }
 
 ClassDecl: Stmt = {
-    <l: @L> CLASS <name: Identifier> CURLYBOPEN <statements: Statements> CURLYBCLOSE <r: @R> =>  Stmt {
+    <l: @L> CLASS <name: Identifier> LPAREN <cons_args: Arguments> RPAREN CURLYBOPEN <statements: Statements> CURLYBCLOSE <r: @R> =>  Stmt {
         node: StmtType::Class { name, statements },
         location: Location(l, r),
     }

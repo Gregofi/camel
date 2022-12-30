@@ -25,10 +25,7 @@ struct Environment {
 enum Location {
     Global,
     Local(Environment),
-    Class {
-        env: Environment,
-        members: HashMap<String, Local>,
-    }
+    Class(Environment),
 }
 
 impl Environment {
@@ -126,7 +123,7 @@ impl Compiler {
             Location::Local(env) => {
                 env.enter_scope();
             }
-            Location::Class { env, members } => {
+            Location::Class(env) => {
                 env.enter_scope();
             }
         };
@@ -144,7 +141,7 @@ impl Compiler {
                 }
                 self.local_count -= var_cnt;
             }
-            Location::Class { env, members } => {
+            Location::Class(env) => {
                 let var_cnt: u16 = env.leave_scope().try_into().unwrap();
                 // We can't creep into global environment here
                 self.local_count -= var_cnt;
@@ -230,25 +227,15 @@ impl Compiler {
             }
             ExprType::List { size, values } => todo!(),
             ExprType::AccessVariable { name } => {
-                // TODO: Lots of repeated code!
+                // TODO: some repeated code
                 match &mut self.location {
                     Location::Global => {
                         let idx = self.constant_pool.add(Object::from(name.clone()));
                         self.add_instruction(code, BytecodeType::GetGlobal(idx), expr.location);
                     }
-                    Location::Local(env) => {
+                    Location::Local(env) | Location::Class(env) => {
                         if let Some(v) = env.fetch_local(name) {
                             self.add_instruction(code, BytecodeType::GetLocal(v.idx), expr.location);
-                        } else {
-                            let idx = self.constant_pool.add(Object::from(name.clone()));
-                            self.add_instruction(code, BytecodeType::GetGlobal(idx), expr.location);
-                        }
-                    }
-                    Location::Class { env, members } => {
-                        if let Some(v) = env.fetch_local(name) {
-                            self.add_instruction(code, BytecodeType::GetLocal(v.idx), expr.location)
-                        } else if let Some(v) = members.get(name) {
-                            todo!()
                         } else {
                             let idx = self.constant_pool.add(Object::from(name.clone()));
                             self.add_instruction(code, BytecodeType::GetGlobal(idx), expr.location);
@@ -385,7 +372,7 @@ impl Compiler {
                         );
                         self.add_locals(1);
                     }
-                    Location::Class { env, members } => todo!(),
+                    Location::Class(env) => todo!(),
                 }
             }
             StmtType::AssignVariable { name, value } => {
@@ -413,37 +400,8 @@ impl Compiler {
                 body,
             } => {
                 let locals_backup = self.reset_locals();
-
                 let new_fun_name_idx = self.constant_pool.add(Object::from(name.clone()));
-
-                // For global function this behaves as expected,
-                // The function just acts as another scope.
-                // for nested it allows for closures (althrough
-                // the indexes won't match).
-                self.enter_scope();
-                let mut new_code = Code::new();
-                for (idx, par) in parameters.iter().enumerate() {
-                    // Since we just added scope it will always be local
-                    if let Location::Local(env) = &mut self.location {
-                        env.add_local(par.clone(), self.local_count, false)?;
-                        self.add_instruction(
-                            &mut new_code,
-                            BytecodeType::SetLocal(idx.try_into().unwrap()),
-                            ast.location,
-                        );
-                        self.add_locals(1);
-                    }
-                }
-                self.compile_fun(&mut new_code, body)?;
-                self.leave_scope();
-
-                let fun = Object::Function {
-                    name: new_fun_name_idx,
-                    parameters_cnt: parameters.len().try_into().unwrap(),
-                    locals_cnt: self.local_max,
-                    body: new_code,
-                };
-
+                let fun = self.compile_fun(new_fun_name_idx, parameters, body)?;
                 let fun_idx = self.constant_pool.add(fun);
                 self.add_instruction(code, BytecodeType::PushLiteral(fun_idx), ast.location);
                 match &mut self.location {
@@ -459,7 +417,7 @@ impl Compiler {
                     Location::Local(env) => {
                         todo!("Nested functions are not yet implemented");
                     }
-                    Location::Class { env, members } => todo!(),
+                    Location::Class(env) => todo!(),
                 };
 
                 self.restore_locals(locals_backup);
@@ -475,7 +433,9 @@ impl Compiler {
                 for stmt in statements {
                     match &stmt.node {
                         StmtType::Class { name, statements } => todo!("Nested classes are not yet supported"),
-                        StmtType::Function { name, parameters, body } => todo!(),
+                        StmtType::Function { name, parameters, body } => {
+                            Ok(())
+                        }
                         StmtType::Variable { name, mutable, value } => {
                             self.compile_expr(value, &mut constructor, false)?;
                             if members.contains_key(name) {
@@ -494,16 +454,41 @@ impl Compiler {
         Ok(())
     }
 
-    fn compile_fun(&mut self, code: &mut Code, ast: &Expr) -> Result<(), &'static str> {
-        self.compile_expr(ast, code, false)?;
+    fn compile_fun(&mut self, name: ConstantPoolIndex, parameters: &Vec<String>, body: &Expr) -> Result<Object, &'static str> {
+        // For global function this behaves as expected,
+        // The function just acts as another scope.
+        // for nested it allows for closures (althrough
+        // the indexes won't match).
+        self.enter_scope();
+        let mut code = Code::new();
+        for (idx, par) in parameters.iter().enumerate() {
+            // Since we just added scope it will always be local
+            if let Location::Local(env) = &mut self.location {
+                env.add_local(par.clone(), self.local_count, false)?;
+                self.add_instruction(
+                    &mut code,
+                    BytecodeType::SetLocal(idx.try_into().unwrap()),
+                    body.location,
+                );
+                self.add_locals(1);
+            }
+        }
+        self.compile_expr(body, &mut code, false)?;
         if code.code.is_empty() {
-            self.add_instruction(code, BytecodeType::PushNone, ast.location);
+            self.add_instruction(&mut code, BytecodeType::PushNone, body.location);
         }
         // Return last statement if return is omitted
         if !matches!(code.code.last().unwrap().instr, BytecodeType::Ret) {
-            self.add_instruction(code, BytecodeType::Ret, ast.location);
+            self.add_instruction(&mut code, BytecodeType::Ret, body.location);
         }
-        Ok(())
+        self.leave_scope();
+
+        Ok(Object::Function {
+            name: name,
+            parameters_cnt: parameters.len().try_into().unwrap(),
+            locals_cnt: self.local_max,
+            body: code,
+        })
     }
 }
 

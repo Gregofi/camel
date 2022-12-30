@@ -113,10 +113,10 @@ mod parser_tests {
 
     #[test]
     fn class_decl() {
-        assert!(TopLevelParser::new().parse("class foo { var x = 1; };").is_ok());
-        assert!(TopLevelParser::new().parse("class foo { var x = 1; };").is_ok());
-        assert!(TopLevelParser::new().parse("class foo {};").is_ok());
-        assert!(TopLevelParser::new().parse("class foo {
+        assert!(TopLevelParser::new().parse("class foo() { var x = 1; };").is_ok());
+        assert!(TopLevelParser::new().parse("class foo() { var x = 1; };").is_ok());
+        assert!(TopLevelParser::new().parse("class foo() {};").is_ok());
+        assert!(TopLevelParser::new().parse("class foo() {
             def foo() = 1;
         };").is_ok());
     }

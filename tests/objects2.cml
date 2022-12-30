@@ -1,0 +1,11 @@
+
+class foo() {
+    var x = 0;
+    val y = 3;
+};
+
+f = foo();
+f.x = 5;
+println("{}\n", f.x); // 5
+f.x = 4;
+println("{} {}\n", f.x, f.y); // 4 3
