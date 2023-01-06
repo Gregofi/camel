@@ -36,6 +36,8 @@ pub enum BytecodeType {
     GetGlobal(ConstantPoolIndex),
     SetGlobal(ConstantPoolIndex),
 
+    DeclValMember { name: ConstantPoolIndex },
+    DeclVarMember { name: ConstantPoolIndex },
     GetMember(LocalIndex),
     SetMember(LocalIndex),
 
@@ -154,6 +156,8 @@ impl fmt::Display for Bytecode {
             BytecodeType::Dropn(cnt) => write!(f, "Dropn: {}", cnt),
             BytecodeType::Dup => write!(f, "Dup"),
             BytecodeType::Neq => write!(f, "Neq"),
+            BytecodeType::DeclValMember { name } => write!(f, "DeclValMember: {}", name),
+            BytecodeType::DeclVarMember { name } => write!(f, "DeclVarMember: {}", name),
         }
     }
 }
@@ -262,6 +266,8 @@ impl Bytecode {
             BytecodeType::Dup => 0x12,
             BytecodeType::GetMember(_) => todo!(),
             BytecodeType::SetMember(_) => todo!(),
+            BytecodeType::DeclValMember { name } => todo!(),
+            BytecodeType::DeclVarMember { name } => todo!(),
         }
     }
 
@@ -329,6 +335,8 @@ impl Bytecode {
             BytecodeType::Dup => 0,
             BytecodeType::GetMember(_) => todo!(),
             BytecodeType::SetMember(_) => todo!(),
+            BytecodeType::DeclValMember { name } => todo!(),
+            BytecodeType::DeclVarMember { name } => todo!(),
         }
     }
 }
@@ -392,6 +400,8 @@ impl Serializable for Bytecode {
             BytecodeType::SetGlobal(idx) => f.write_all(&idx.to_le_bytes())?,
             BytecodeType::GetMember(_) => todo!(),
             BytecodeType::SetMember(_) => todo!(),
+            BytecodeType::DeclValMember { name } => todo!(),
+            BytecodeType::DeclVarMember { name } => todo!(),
         };
         self.location.serialize(f)
     }

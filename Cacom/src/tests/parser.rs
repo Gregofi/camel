@@ -113,11 +113,29 @@ mod parser_tests {
 
     #[test]
     fn class_decl() {
-        assert!(TopLevelParser::new().parse("class foo() { var x = 1; };").is_ok());
-        assert!(TopLevelParser::new().parse("class foo() { var x = 1; };").is_ok());
+        assert!(TopLevelParser::new()
+            .parse("class foo() { var x = 1; };")
+            .is_ok());
+        assert!(TopLevelParser::new()
+            .parse("class foo() { var x = 1; };")
+            .is_ok());
         assert!(TopLevelParser::new().parse("class foo() {};").is_ok());
-        assert!(TopLevelParser::new().parse("class foo() {
+        assert!(TopLevelParser::new()
+            .parse(
+                "class foo() {
             def foo() = 1;
-        };").is_ok());
+        };"
+            )
+            .is_ok());
+    }
+
+    #[test]
+    fn member_access() {
+        assert!(TopLevelParser::new().parse("x.y").is_ok());
+        assert!(TopLevelParser::new().parse("\"Hello\".y").is_ok());
+        assert!(TopLevelParser::new().parse("x.y + 2 * 3").is_ok());
+        assert!(TopLevelParser::new().parse("(x.y + 2) * 3").is_ok());
+        assert!(TopLevelParser::new().parse("(x.y).z").is_ok());
+        assert!(TopLevelParser::new().parse("x.y.z").is_ok());
     }
 }

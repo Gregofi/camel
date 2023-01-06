@@ -50,6 +50,7 @@ pub enum StmtType {
 
     Class {
         name: String,
+        cons_args: Vec<String>,
         statements: Vec<Stmt>,
     },
 
@@ -61,6 +62,11 @@ pub enum StmtType {
 
     Return(Expr),
     Expression(Expr),
+    MemberStore {
+        left: Expr,
+        right: String,
+        val: Expr,
+    },
 }
 
 pub type Stmt = Located<StmtType>;
@@ -111,6 +117,10 @@ pub enum ExprType {
     Operator {
         op: Opcode,
         arguments: Vec<Expr>,
+    },
+    MemberRead {
+        left: Box<Expr>,
+        right: String,
     },
 }
 
@@ -183,6 +193,11 @@ impl Expr {
                 }
                 expr.dump(prefix);
             }
+            ExprType::MemberRead { left, right } => {
+                println!("Read: ");
+                left.dump(prefix + " ");
+                println!("{}", right);
+            }
         }
     }
 }
@@ -214,7 +229,11 @@ impl Stmt {
                 println!("]");
                 body.dump(prefix + " ");
             }
-            StmtType::Class { name, statements } => todo!(),
+            StmtType::Class {
+                name,
+                cons_args,
+                statements,
+            } => todo!(),
             StmtType::Top(vals) => {
                 for stmt in vals {
                     stmt.dump(String::from(""));
@@ -230,6 +249,12 @@ impl Stmt {
                 expr.dump(prefix + " ");
             }
             StmtType::Expression(expr) => expr.dump(prefix),
+            StmtType::MemberStore { left, right, val } => {
+                println!("Store: ");
+                left.dump(prefix.clone() + " ");
+                println!("{}", right);
+                val.dump(prefix + " ");
+            }
         }
     }
 }

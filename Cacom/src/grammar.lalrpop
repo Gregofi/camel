@@ -46,6 +46,7 @@ match {
     "false" => FALSE,
     "def" => DEF,
     "," => COMMA,
+    "." => DOT,
     "return" => RETURN,
     "class" => CLASS,
 
@@ -91,8 +92,8 @@ Statement: Stmt = {
 }
 
 ClassDecl: Stmt = {
-    <l: @L> CLASS <name: Identifier> LPAREN <cons_args: Arguments> RPAREN CURLYBOPEN <statements: Statements> CURLYBCLOSE <r: @R> =>  Stmt {
-        node: StmtType::Class { name, statements },
+    <l: @L> CLASS <name: Identifier> LPAREN <cons_args: Parameters> RPAREN CURLYBOPEN <statements: Statements> CURLYBCLOSE <r: @R> =>  Stmt {
+        node: StmtType::Class { name, cons_args, statements },
         location: Location(l, r),
     }
 }
@@ -149,7 +150,9 @@ ExprOp: Opcode = {
     MINUS => Opcode::Sub,
 }
 
-Factor = LeftAssoc<TermOp, Term>;
+Factor: Expr = {
+    <LeftAssoc<TermOp, Term>> => <>,
+}
 
 TermOp: Opcode = {
     MULTIPLY => Opcode::Mul,
@@ -157,7 +160,13 @@ TermOp: Opcode = {
     MODULO => Opcode::Mod,
 }
 
-Term = Unary<UnaryOp, Primary>;
+Term: Expr = {
+    <Unary<UnaryOp, Primary>> => <>,
+    <l: @L> <p: Term> DOT <i: Identifier> <r: @R> => Expr {
+        node: ExprType::MemberRead { left: Box::new(p), right: i }, 
+        location: Location(l, r)
+    },
+}
 
 UnaryOp: Opcode = {
     MINUS => Opcode::Negate,
@@ -185,7 +194,7 @@ Primary: Expr = {
     <l: @L> <name: Identifier> <r: @R> => Expr {
         node: ExprType::AccessVariable{name},
         location: Location(l, r)
-    }
+    },
 }
 
 Call: Expr = {
@@ -196,6 +205,16 @@ Call: Expr = {
         }
     }
     // TODO: Method calls over objects, lists, strings and so on.
+}
+
+MemberRead: Expr = {
+    <l: @L> <expr: Expr> DOT <id: Identifier> <r: @R> => Expr {
+        node: ExprType::MemberRead {
+            left: Box::new(expr),
+            right: id,
+        },
+        location: Location(l, r),
+    }
 }
 
 Arguments = Separated<Expr, COMMA>;

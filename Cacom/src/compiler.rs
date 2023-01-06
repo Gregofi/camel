@@ -5,7 +5,7 @@ use lalrpop_util::state_machine;
 
 use crate::ast::{Expr, ExprType, Opcode, Stmt, StmtType};
 use crate::bytecode::{Bytecode, BytecodeType, Code, ConstantPoolIndex, LocalIndex};
-use crate::objects::{ConstantPool, Object};
+use crate::objects::{ConstantPool, Function, Object};
 use crate::utils::Location as CodeLocation;
 use crate::utils::{AtomicInt, LabelGenerator};
 
@@ -235,7 +235,11 @@ impl Compiler {
                     }
                     Location::Local(env) | Location::Class(env) => {
                         if let Some(v) = env.fetch_local(name) {
-                            self.add_instruction(code, BytecodeType::GetLocal(v.idx), expr.location);
+                            self.add_instruction(
+                                code,
+                                BytecodeType::GetLocal(v.idx),
+                                expr.location,
+                            );
                         } else {
                             let idx = self.constant_pool.add(Object::from(name.clone()));
                             self.add_instruction(code, BytecodeType::GetGlobal(idx), expr.location);
@@ -304,6 +308,7 @@ impl Compiler {
                 }
                 self.add_instruction(code, (*op).into(), expr.location);
             }
+            ExprType::MemberRead { left, right } => todo!(),
         }
         code.add_cond(
             Bytecode {
@@ -402,7 +407,7 @@ impl Compiler {
                 let locals_backup = self.reset_locals();
                 let new_fun_name_idx = self.constant_pool.add(Object::from(name.clone()));
                 let fun = self.compile_fun(new_fun_name_idx, parameters, body)?;
-                let fun_idx = self.constant_pool.add(fun);
+                let fun_idx = self.constant_pool.add(Object::Function(fun));
                 self.add_instruction(code, BytecodeType::PushLiteral(fun_idx), ast.location);
                 match &mut self.location {
                     Location::Global => {
@@ -426,35 +431,76 @@ impl Compiler {
             StmtType::While { guard, body } => todo!(),
             StmtType::Return(_) => todo!(),
             StmtType::Expression(expr) => self.compile_expr(expr, code, true)?,
-            StmtType::Class { name, statements } => {
+            StmtType::Class {
+                name,
+                cons_args,
+                statements,
+            } => {
                 let mut constructor = Code::new();
-                let mut members: HashMap<String, Local> = HashMap::new();
-                let mut members_cnt = 0;
+                let mut methods: Vec<Function> = vec![];
+                let name_idx = self.constant_pool.add(Object::from(name.clone()));
                 for stmt in statements {
                     match &stmt.node {
-                        StmtType::Class { name, statements } => todo!("Nested classes are not yet supported"),
-                        StmtType::Function { name, parameters, body } => {
+                        StmtType::Class {
+                            name,
+                            cons_args,
+                            statements,
+                        } => todo!("Nested classes are not yet supported"),
+                        StmtType::Function {
+                            name,
+                            parameters,
+                            body,
+                        } => {
+                            let name = self.constant_pool.add(Object::from(name.clone()));
+                            let method = self.compile_fun(name, parameters, body)?;
+                            methods.push(method);
                             Ok(())
                         }
-                        StmtType::Variable { name, mutable, value } => {
+                        StmtType::Variable {
+                            name,
+                            mutable,
+                            value,
+                        } => {
                             self.compile_expr(value, &mut constructor, false)?;
-                            if members.contains_key(name) {
-                                Err("Member variable is already declared")
+                            let idx = self.constant_pool.add(Object::from(name.clone()));
+                            let ins = if *mutable {
+                                BytecodeType::DeclVarMember { name: idx }
                             } else {
-                                members.insert(name.clone(), Local { idx: members_cnt, mutable: *mutable });
-                                members_cnt += 1;
-                                Ok(())
-                            }
-                        },
-                        _ => self.compile_stmt(stmt, code)
+                                BytecodeType::DeclValMember { name: idx }
+                            };
+                            self.add_instruction(&mut constructor, ins, stmt.location);
+                            Ok(())
+                        }
+                        _ => self.compile_stmt(stmt, &mut constructor),
                     }?;
                 }
+                let cons_name_idx = self.constant_pool.add(Object::from("#".to_owned() + &name));
+                let cons_fun = Function {
+                    name: cons_name_idx,
+                    parameters_cnt: cons_args
+                        .len()
+                        .try_into()
+                        .expect("Constructor may have at most 256 arguments"),
+                    locals_cnt: 0,
+                    body: constructor,
+                };
+                self.constant_pool.add(Object::Class {
+                    name: name_idx,
+                    methods: vec![],
+                    constructor: cons_fun,
+                });
             }
+            StmtType::MemberStore { left, right, val } => todo!(),
         };
         Ok(())
     }
 
-    fn compile_fun(&mut self, name: ConstantPoolIndex, parameters: &Vec<String>, body: &Expr) -> Result<Object, &'static str> {
+    fn compile_fun(
+        &mut self,
+        name: ConstantPoolIndex,
+        parameters: &Vec<String>,
+        body: &Expr,
+    ) -> Result<Function, &'static str> {
         // For global function this behaves as expected,
         // The function just acts as another scope.
         // for nested it allows for closures (althrough
@@ -483,7 +529,7 @@ impl Compiler {
         }
         self.leave_scope();
 
-        Ok(Object::Function {
+        Ok(Function {
             name: name,
             parameters_cnt: parameters.len().try_into().unwrap(),
             locals_cnt: self.local_max,
@@ -579,31 +625,31 @@ pub fn compile(ast: &Stmt) -> Result<(ConstantPool, ConstantPoolIndex), &'static
         _ => unreachable!(),
     }
 
-    let main_fun = Object::Function {
+    let main_fun = Object::Function(Function {
         name: idx,
         parameters_cnt: 0,
         locals_cnt: compiler.local_max,
         body: code,
-    };
+    });
     let main_fun_idx = compiler.constant_pool.add(main_fun);
     compiler.constant_pool.data = compiler
         .constant_pool
         .data
         .into_iter()
         .map(|f| match f {
-            Object::Function {
+            Object::Function(Function {
                 body,
                 name,
                 parameters_cnt,
                 locals_cnt,
-            } => Object::Function {
+            }) => Object::Function(Function {
                 body: Code {
                     code: jump_pass(body.code),
                 },
                 name,
                 parameters_cnt,
                 locals_cnt,
-            },
+            }),
             _ => f,
         })
         .collect();

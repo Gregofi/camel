@@ -6,24 +6,32 @@ use std::io::prelude::*;
 use crate::bytecode::{Code, ConstantPoolIndex, LocalIndex};
 use crate::serializable::Serializable;
 
+// TODO: Replace Object::Function internals with this guy
 pub struct Function {
-    name: ConstantPoolIndex,
-    parameters_cnt: u8,
-    locals_cnt: LocalIndex,
-    body: Code,
+    pub name: ConstantPoolIndex,
+    pub parameters_cnt: u8,
+    pub locals_cnt: LocalIndex,
+    pub body: Code,
 }
 
 pub enum Object {
     String(String),
-    Function {
-        name: ConstantPoolIndex,
-        parameters_cnt: u8,
-        locals_cnt: LocalIndex,
-        body: Code,
-    },
+    Function(Function),
     Class {
         name: ConstantPoolIndex,
         methods: Vec<Function>,
+        constructor: Function,
+    },
+}
+
+impl fmt::Display for Function {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(
+            f,
+            "Function: {}, parameters: {}, locals: {}",
+            self.name, self.parameters_cnt, self.locals_cnt
+        )?;
+        writeln!(f, "{}", self.body)
     }
 }
 
@@ -83,7 +91,11 @@ impl Object {
         match self {
             Object::String(_) => 0x01,
             Object::Function { .. } => 0x00,
-            Object::Class { name, methods } => todo!(),
+            Object::Class {
+                name,
+                methods,
+                constructor,
+            } => todo!(),
         }
     }
 }
@@ -92,12 +104,12 @@ impl fmt::Display for Object {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Object::String(str) => write!(f, "String: {}", str),
-            Object::Function {
+            Object::Function(Function {
                 name,
                 parameters_cnt,
                 locals_cnt,
                 body,
-            } => {
+            }) => {
                 writeln!(
                     f,
                     "Function: {}, parameters: {}, locals: {}",
@@ -105,7 +117,22 @@ impl fmt::Display for Object {
                 )?;
                 writeln!(f, "{}", body)
             }
-            Object::Class { name, methods } => todo!(),
+            Object::Class {
+                name,
+                methods,
+                constructor,
+            } => {
+                writeln!(f, "Class: {}", name)?;
+                writeln!(f, "=== Contructor ===")?;
+                writeln!(f, "{}", constructor)?;
+                if methods.len() != 0 {
+                    writeln!(f, "=== Methods ===")?;
+                    for method in methods {
+                        writeln!(f, "{}", method)?;
+                    }
+                }
+                Ok(())
+            }
         }
     }
 }
@@ -125,18 +152,22 @@ impl Serializable for Object {
                 f.write_all(&len.to_le_bytes())?;
                 f.write_all(v.as_bytes())
             }
-            Object::Function {
+            Object::Function(Function {
                 name,
                 parameters_cnt,
                 locals_cnt,
                 body,
-            } => {
+            }) => {
                 f.write_all(&name.to_le_bytes())?;
                 f.write_all(&parameters_cnt.to_le_bytes())?;
                 f.write_all(&locals_cnt.to_le_bytes())?;
                 body.serialize(f)
             }
-            Object::Class { name, methods } => todo!()
+            Object::Class {
+                name,
+                methods,
+                constructor,
+            } => todo!(),
         }
     }
 }
