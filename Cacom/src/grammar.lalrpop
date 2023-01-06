@@ -102,7 +102,11 @@ Assignment: Stmt = {
     <l: @L> <name: Identifier> ASSIGN <value: Expr> <r: @R> => Stmt {
         node: StmtType::AssignVariable { name, value },
         location: Location(l, r),
-    }
+    },
+    <l: @L> <left: Term> DOT <right: Identifier> ASSIGN <val: Expr> <r: @R> => Stmt {
+        node: StmtType::MemberStore { left, right, val },
+        location: Location(l, r),
+    },
 }
 
 VarDecl: Stmt = {

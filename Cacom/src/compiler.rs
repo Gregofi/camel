@@ -308,7 +308,11 @@ impl Compiler {
                 }
                 self.add_instruction(code, (*op).into(), expr.location);
             }
-            ExprType::MemberRead { left, right } => todo!(),
+            ExprType::MemberRead { left, right } => {
+                self.compile_expr(left, code, false)?;
+                let member_idx = self.constant_pool.add(Object::from(right.clone()));
+                self.add_instruction(code, BytecodeType::GetMember(member_idx), expr.location);
+            }
         }
         code.add_cond(
             Bytecode {
@@ -490,7 +494,12 @@ impl Compiler {
                     constructor: cons_fun,
                 });
             }
-            StmtType::MemberStore { left, right, val } => todo!(),
+            StmtType::MemberStore { left, right, val } => {
+                self.compile_expr(left, code, false)?;
+                self.compile_expr(val, code, false)?;
+                let member_idx = self.constant_pool.add(Object::from(right.clone()));
+                self.add_instruction(code, BytecodeType::SetMember(member_idx), ast.location);
+            }
         };
         Ok(())
     }
