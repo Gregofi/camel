@@ -104,6 +104,12 @@ Pops value of the stack and assigns it to the variable.
 Defines a new mutable global variable. The cp index points to a string which is the variable name.
 Pops value of the stack and assigns it to the variable.
 
+- def_var_member 0x30 | 4B index to constant pool
+- def_val_member 0x31 | 4B index to constant pool
+- get_member 0x32 | 4B index to constant pool
+- set_member 0x33 | 4B index to constant pool
+- dispatch_method 0x34 | 4B index to constant pool | 1B number of arguments
+Pops object off the stack and corresponding number of arguments. Calls method on popped object with name at cp index with given arguments. 
 #### Arithmetic operations
 - iadd 0x30
 - isub 0x31
