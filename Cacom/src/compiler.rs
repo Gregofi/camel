@@ -295,7 +295,9 @@ impl Compiler {
                 _ => {
                     self.compile_stmt(stmt, code)?;
                     if it.peek().is_none() {
-                        self.add_instruction(code, BytecodeType::PushNone, stmt.location);
+                        // TODO: Caused two consequentive push none when last value in block was statement.
+                        // Left for the time being in case it triggers error.
+                        // self.add_instruction(code, BytecodeType::PushNone, stmt.location);
                     }
                 }
             }
@@ -395,28 +397,23 @@ impl Compiler {
             StmtType::Expression(expr) => self.compile_expr(expr, code, true)?,
             StmtType::Class {
                 name,
-                cons_args,
                 statements,
             } => {
                 let name_idx = self.constant_pool.add(Object::from(name.clone()));
 
                 let mut constructor = Code::new();
+                constructor.add(Bytecode { instr: BytecodeType::NewObject(name_idx), location: CodeLocation(0, 0)});
+                constructor.add(Bytecode { instr: BytecodeType::SetLocal(0), location: CodeLocation(0, 0)});
+                constructor.add(Bytecode { instr: BytecodeType::GetLocal(0), location: CodeLocation(0, 0)});
+                constructor.add(Bytecode { instr: BytecodeType::Ret, location: CodeLocation(0, 0)});
 
-                self.enter_scope();
-                self.compile_parameters(&mut constructor, cons_args, ast.location)?;
-                // There is no self yet, we have to create it and put it into local scope
-                if let Location::Local(e) = &mut self.location {
-                    e.add_local("self".to_owned(), self.local_count, true)?;
-                    self.add_locals(1);
-                }
-                
                 let mut methods: Vec<Function> = vec![];
                 
+                // TODO: This should be handled at the grammar level
                 for stmt in statements {
                     match &stmt.node {
                         StmtType::Class {
                             name,
-                            cons_args,
                             statements,
                         } => todo!("Nested classes are not yet supported"),
                         StmtType::Function {
@@ -427,42 +424,22 @@ impl Compiler {
                             let name = self.constant_pool.add(Object::from(name.clone()));
                             let method = self.compile_fun(name, parameters, body)?;
                             methods.push(method);
-                            Ok(())
                         }
-                        StmtType::Variable {
-                            name,
-                            mutable,
-                            value,
-                        } => {
-                            self.compile_expr(value, &mut constructor, false)?;
-                            let idx = self.constant_pool.add(Object::from(name.clone()));
-                            let ins = if *mutable {
-                                BytecodeType::DeclVarMember { name: idx }
-                            } else {
-                                BytecodeType::DeclValMember { name: idx }
-                            };
-                            self.add_instruction(&mut constructor, ins, stmt.location);
-                            Ok(())
-                        }
-                        _ => self.compile_stmt(stmt, &mut constructor),
-                    }?;
+                        _ => panic!("Class can only contain method or member definitions."),
+                    };
                 }
                 let cons_name_idx = self.constant_pool.add(Object::from("#".to_owned() + &name));
                 let cons_fun = Function {
                     name: cons_name_idx,
-                    parameters_cnt: cons_args
-                        .len()
-                        .try_into()
-                        .expect("Constructor may have at most 256 arguments"),
+                    parameters_cnt: 0,
                     locals_cnt: 0,
                     body: constructor,
                 };
                 self.constant_pool.add(Object::Class {
                     name: name_idx,
-                    methods: vec![],
+                    methods: methods,
                     constructor: cons_fun,
                 });
-                self.leave_scope();
             }
             StmtType::MemberStore { left, right, val } => {
                 self.compile_expr(left, code, false)?;

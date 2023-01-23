@@ -50,7 +50,6 @@ pub enum StmtType {
 
     Class {
         name: String,
-        cons_args: Vec<String>,
         statements: Vec<Stmt>,
     },
 
@@ -231,7 +230,6 @@ impl Stmt {
             }
             StmtType::Class {
                 name,
-                cons_args,
                 statements,
             } => todo!(),
             StmtType::Top(vals) => {

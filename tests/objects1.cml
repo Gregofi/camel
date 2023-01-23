@@ -1,6 +1,10 @@
 
-class foo(x) {
-    var y = self.x;
+class foo {
+    def get_x(self) = self.x;
+    def set_x(self) = {
+        self.x = 5;
+    }
 };
 
-f = foo(4);
+f = foo();
+print("{}", f.x);

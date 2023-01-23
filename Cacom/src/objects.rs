@@ -120,8 +120,7 @@ impl fmt::Display for Object {
             Object::Class {
                 name,
                 methods,
-                constructor,
-            } => {
+                constructor} => {
                 writeln!(f, "Class: {}", name)?;
                 writeln!(f, "=== Contructor ===")?;
                 writeln!(f, "{}", constructor)?;
