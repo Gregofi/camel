@@ -48,6 +48,7 @@ impl Environment {
         size
     }
 
+    // TODO: Is it really necessary to receive the index when its stored in self?
     pub fn add_local(
         &mut self,
         v: String,
@@ -314,6 +315,7 @@ impl Compiler {
                 match &mut self.location {
                     Location::Global => {
                         let name_idx = self.constant_pool.add(Object::from(name.clone()));
+                        // TODO: Repeated code!
                         if *mutable {
                             self.add_instruction(
                                 code,
@@ -382,7 +384,7 @@ impl Compiler {
                     Location::Local(env) => {
                         todo!("Nested functions are not yet implemented");
                     }
-                    Location::Class(env) => todo!(),
+                    Location::Class(env) => unreachable!(),
                 };
 
                 self.restore_locals(locals_backup);
@@ -396,9 +398,20 @@ impl Compiler {
                 cons_args,
                 statements,
             } => {
-                let mut constructor = Code::new();
-                let mut methods: Vec<Function> = vec![];
                 let name_idx = self.constant_pool.add(Object::from(name.clone()));
+
+                let mut constructor = Code::new();
+
+                self.enter_scope();
+                self.compile_parameters(&mut constructor, cons_args, ast.location)?;
+                // There is no self yet, we have to create it and put it into local scope
+                if let Location::Local(e) = &mut self.location {
+                    e.add_local("self".to_owned(), self.local_count, true)?;
+                    self.add_locals(1);
+                }
+                
+                let mut methods: Vec<Function> = vec![];
+                
                 for stmt in statements {
                     match &stmt.node {
                         StmtType::Class {
@@ -449,6 +462,7 @@ impl Compiler {
                     methods: vec![],
                     constructor: cons_fun,
                 });
+                self.leave_scope();
             }
             StmtType::MemberStore { left, right, val } => {
                 self.compile_expr(left, code, false)?;

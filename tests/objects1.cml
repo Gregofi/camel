@@ -1,8 +1,6 @@
 
 class foo(x) {
-    var y = self.x * 2;
-    def multiply(self, a) = a * self.x + self.y;
+    var y = self.x;
 };
 
-f = foo(4)
-print("{}\n", f.multiply(3)); // 20
+f = foo(4);

@@ -40,6 +40,7 @@ pub enum BytecodeType {
     DeclVarMember { name: ConstantPoolIndex },
     GetMember(ConstantPoolIndex),
     SetMember(ConstantPoolIndex),
+    NewObject(),
 
     CallFunc { arg_cnt: u8 },
     Ret,
