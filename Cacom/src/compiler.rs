@@ -460,6 +460,22 @@ impl Compiler {
         Ok(())
     }
 
+    fn compile_parameters(&mut self, code: &mut Code, parameters: &Vec<String>, location: CodeLocation) -> Result<(), &'static str>{
+        for (idx, par) in parameters.iter().enumerate() {
+            // Since we just added scope it will always be local
+            if let Location::Local(env) = &mut self.location {
+                env.add_local(par.clone(), self.local_count, false)?;
+                self.add_instruction(
+                    code,
+                    BytecodeType::SetLocal(idx.try_into().unwrap()),
+                    location,
+                );
+                self.add_locals(1);
+            }
+        }
+        Ok(())
+    }
+
     fn compile_fun(
         &mut self,
         name: ConstantPoolIndex,
@@ -472,18 +488,7 @@ impl Compiler {
         // the indexes won't match).
         self.enter_scope();
         let mut code = Code::new();
-        for (idx, par) in parameters.iter().enumerate() {
-            // Since we just added scope it will always be local
-            if let Location::Local(env) = &mut self.location {
-                env.add_local(par.clone(), self.local_count, false)?;
-                self.add_instruction(
-                    &mut code,
-                    BytecodeType::SetLocal(idx.try_into().unwrap()),
-                    body.location,
-                );
-                self.add_locals(1);
-            }
-        }
+        self.compile_parameters(&mut code, parameters, body.location)?;
         self.compile_expr(body, &mut code, false)?;
         if code.code.is_empty() {
             self.add_instruction(&mut code, BytecodeType::PushNone, body.location);
