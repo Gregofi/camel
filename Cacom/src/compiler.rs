@@ -150,50 +150,6 @@ impl Compiler {
     }
 
     fn add_instruction(&mut self, code: &mut Code, instr: BytecodeType, location: CodeLocation) {
-        // match &ins {
-        //     Bytecode::PushShort(_)
-        //     | Bytecode::PushInt(_)
-        //     | Bytecode::PushLong(_)
-        //     | Bytecode::PushBool(_)
-        //     | Bytecode::PushLiteral(_)
-        //     | Bytecode::PushNone
-        //     | Bytecode::GetGlobal(_)
-        //     | Bytecode::Dup => self.stack_offset += 1,
-        //     Bytecode::GetLocal(_)
-        //     | Bytecode::SetLocal(_)
-        //     | Bytecode::Label(_)
-        //     | Bytecode::JmpLabel(_)
-        //     | Bytecode::JmpShort(_)
-        //     | Bytecode::Jmp(_)
-        //     | Bytecode::DeclValGlobal {..}
-        //     | Bytecode::DeclVarGlobal {..}
-        //     | Bytecode::JmpLong(_) => (),
-        //     Bytecode::CallFunc { index, arg_cnt } => todo!(),
-        //     Bytecode::SetGlobal(_)
-        //     | Bytecode::Ret
-        //     | Bytecode::BranchLabel(_)
-        //     | Bytecode::BranchLabelFalse(_)
-        //     | Bytecode::BranchShort(_)
-        //     | Bytecode::Branch(_)
-        //     | Bytecode::BranchLong(_)
-        //     | Bytecode::BranchShortFalse(_)
-        //     | Bytecode::BranchFalse(_)
-        //     | Bytecode::BranchLongFalse(_)
-        //     | Bytecode::Drop => self.stack_offset -= 1,
-        //     Bytecode::Iadd
-        //     | Bytecode::Isub
-        //     | Bytecode::Imul
-        //     | Bytecode::Idiv
-        //     | Bytecode::Iand
-        //     | Bytecode::Ior
-        //     | Bytecode::Iless
-        //     | Bytecode::Ilesseq
-        //     | Bytecode::Igreater
-        //     | Bytecode::Igreatereq
-        //     | Bytecode::Ieq => self.stack_offset -= 2,
-        //     Bytecode::Print { arg_cnt } => self.stack_offset -= *arg_cnt as u16,
-        //     Bytecode::Dropn(cnt) => self.stack_offset -= *cnt as u16,
-        // };
         code.add(Bytecode { instr, location });
     }
 
