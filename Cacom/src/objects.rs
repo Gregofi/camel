@@ -142,6 +142,15 @@ impl From<String> for Object {
     }
 }
 
+impl Serializable for Function {
+    fn serialize(&self, f: &mut File) -> io::Result<()> {
+        f.write_all(&self.name.to_le_bytes())?;
+        f.write_all(&self.parameters_cnt.to_le_bytes())?;
+        f.write_all(&self.locals_cnt.to_le_bytes())?;
+        self.body.serialize(f)
+    }    
+}
+
 impl Serializable for Object {
     fn serialize(&self, f: &mut File) -> io::Result<()> {
         f.write_all(&self.byte_encode().to_le_bytes())?;
@@ -151,22 +160,22 @@ impl Serializable for Object {
                 f.write_all(&len.to_le_bytes())?;
                 f.write_all(v.as_bytes())
             }
-            Object::Function(Function {
-                name,
-                parameters_cnt,
-                locals_cnt,
-                body,
-            }) => {
-                f.write_all(&name.to_le_bytes())?;
-                f.write_all(&parameters_cnt.to_le_bytes())?;
-                f.write_all(&locals_cnt.to_le_bytes())?;
-                body.serialize(f)
+            Object::Function(fun) => {
+                fun.serialize(f)
             }
             Object::Class {
                 name,
                 methods,
                 constructor,
-            } => todo!(),
+            } => {
+                f.write_all(&name.to_le_bytes())?;
+                constructor.serialize(f)?;
+                f.write_all(&methods.len().to_le_bytes())?;
+                for method in methods {
+                    method.serialize(f)?;
+                }
+                Ok(())
+            }
         }
     }
 }

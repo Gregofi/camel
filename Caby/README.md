@@ -24,12 +24,13 @@ The string is NOT zero terminated.
      | code length (in instructions) - 4b | (code - ???b | location begin - 8b | location end - 8b) ... |
 ```
 The code is an array of instruction opcodes (one byte) and its location in the source file (4 bytes).
-- Class, method and member variable
-- Enum
-- TBD...
+- Class
+```
+0x02 | name - 4 byte index to constant pool | Function (contructor)  | methods count - 2 bytes | Function* ...
+```
+Functions correspond to the Function object above. Constructor is always present.
 
 Size of constant pool is 2^32 (so it can be indexed by 32bit int).
-
 ### Entry point
 
 Constant pool index (4 bytes) at which the global function body is located.
@@ -104,11 +105,11 @@ Pops value of the stack and assigns it to the variable.
 Defines a new mutable global variable. The cp index points to a string which is the variable name.
 Pops value of the stack and assigns it to the variable.
 
-- def_var_member 0x30 | 4B index to constant pool
-- def_val_member 0x31 | 4B index to constant pool
-- get_member 0x32 | 4B index to constant pool
-- set_member 0x33 | 4B index to constant pool
-- dispatch_method 0x34 | 4B index to constant pool | 1B number of arguments
+- new_object 0x30 | 4B index to constant pool
+- get_member 0x31 | 4B index to constant pool
+- set_member 0x32 | 4B index to constant pool
+- dispatch_method 0x33 | 4B index to constant pool | 1B number of arguments
+
 Pops object off the stack and corresponding number of arguments. Calls method on popped object with name at cp index with given arguments. 
 #### Arithmetic operations
 - iadd 0x30

@@ -263,9 +263,9 @@ impl Bytecode {
             BytecodeType::Drop => 0x11,
             BytecodeType::Dropn(_) => 0x25,
             BytecodeType::Dup => 0x12,
-            BytecodeType::GetMember(_) => todo!(),
-            BytecodeType::SetMember(_) => todo!(),
-            BytecodeType::NewObject(_) => todo!(),
+            BytecodeType::NewObject(_) => 0x30,
+            BytecodeType::GetMember(_) => 0x31,
+            BytecodeType::SetMember(_) => 0x32,
         }
     }
 
@@ -395,9 +395,9 @@ impl Serializable for Bytecode {
             BytecodeType::DeclVarGlobal { name } => f.write_all(&name.to_le_bytes())?,
             BytecodeType::GetGlobal(idx) => f.write_all(&idx.to_le_bytes())?,
             BytecodeType::SetGlobal(idx) => f.write_all(&idx.to_le_bytes())?,
-            BytecodeType::GetMember(_) => todo!(),
-            BytecodeType::SetMember(_) => todo!(),
-            BytecodeType::NewObject(_) => todo!(),
+            BytecodeType::GetMember(idx) => f.write_all(&idx.to_le_bytes())?,
+            BytecodeType::SetMember(idx) => f.write_all(&idx.to_le_bytes())?,
+            BytecodeType::NewObject(idx) => f.write_all(&idx.to_le_bytes())?,
         };
         self.location.serialize(f)
     }
