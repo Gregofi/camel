@@ -1,6 +1,8 @@
 #include "serializer.h"
 #include "bytecode.h"
 #include "common.h"
+#include "class.h"
+#include "object.h"
 #include "vm.h"
 
 #define GEN_READ_NBYTES_LE(type, n) \
@@ -105,8 +107,22 @@ struct object* serialize_object(FILE* f, vm_t* vm) {
             struct object_string* obj_str = new_string_move(vm, str, len);
             return (struct object*)obj_str;
         }
+        case TAG_OBJECT: {
+            struct object_class* class = new_class(...);
+            u32 name = read_4bytes_le(f);
+            struct object_function* cons = as_function_s(serialize_object(f, vm));
+            if (!cons) {
+                fprintf(stderr, "Serialized constructor is not function.");
+                return NULL;
+            }
+
+            u16 methods_len = read_2bytes_le(f);
+            for (size_t i = 0; i < methods_len; ++ i) {
+                
+            }
+        }
         default:
-            fprintf(f, "Unknown tag in serialize: 0x%x", tag);
+            fprintf(stderr, "Unknown tag in serialize: 0x%x", tag);
             return NULL;
     }
 }

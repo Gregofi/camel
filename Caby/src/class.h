@@ -1,5 +1,8 @@
 #pragma once
 
+/// Has to be in its own file, since it needs
+/// to have access to function and table.
+
 #include "object.h"
 #include "hashtable.h"
 
