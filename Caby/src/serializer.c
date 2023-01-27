@@ -13,10 +13,10 @@ type read_##n##bytes_le(FILE* f) {\
     return data;\
 }
 
-GEN_READ_NBYTES_LE(u8, 1);
-GEN_READ_NBYTES_LE(u16, 2);
-GEN_READ_NBYTES_LE(u32, 4);
-GEN_READ_NBYTES_LE(u64, 8);
+GEN_READ_NBYTES_LE(u8, 1)
+GEN_READ_NBYTES_LE(u16, 2)
+GEN_READ_NBYTES_LE(u32, 4)
+GEN_READ_NBYTES_LE(u64, 8)
 
 void serialize_instruction(FILE* f, struct bc_chunk* c) {
     u8 ins = fgetc(f);
