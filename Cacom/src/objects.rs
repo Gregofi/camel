@@ -14,6 +14,8 @@ pub struct Function {
     pub body: Code,
 }
 
+const CLASS_TAG: u8 = 0x02;
+
 pub enum Object {
     String(String),
     Function(Function),
@@ -91,11 +93,7 @@ impl Object {
         match self {
             Object::String(_) => 0x01,
             Object::Function { .. } => 0x00,
-            Object::Class {
-                name,
-                methods,
-                constructor,
-            } => todo!(),
+            Object::Class { .. } => CLASS_TAG,
         }
     }
 }
@@ -169,11 +167,14 @@ impl Serializable for Object {
                 constructor,
             } => {
                 f.write_all(&name.to_le_bytes())?;
-                constructor.serialize(f)?;
                 f.write_all(&methods.len().to_le_bytes())?;
                 for method in methods {
                     method.serialize(f)?;
                 }
+
+                // Serialize constructor separately as normal function
+                f.write_all(&CLASS_TAG.to_le_bytes())?;
+                constructor.serialize(f)?;
                 Ok(())
             }
         }

@@ -2,6 +2,7 @@
 #include "bytecode.h"
 #include "common.h"
 #include "class.h"
+#include "hashtable.h"
 #include "object.h"
 #include "vm.h"
 
@@ -80,22 +81,27 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
     write_loc(c, begin , end);
 }
 
+/// Serializes function, does not read the object tag (use serialize_object instead).
+struct object_function* serialize_function(FILE* f, vm_t* vm) {
+    u32 name = read_4bytes_le(f);
+    u8 parameters = fgetc(f);
+    u16 locals_cnt = read_2bytes_le(f);
+    u32 body_len = read_4bytes_le(f);
+    struct bc_chunk bc;
+    init_bc_chunk(&bc);
+    for (u32 i = 0; i < body_len; ++i) {
+        serialize_instruction(f, &bc);
+    }
+    return new_function(vm, parameters, locals_cnt, bc, name);
+}
+
 struct object* serialize_object(FILE* f, vm_t* vm) {
     u8 tag;
     fread(&tag, 1, 1, f);
 
     switch (tag) {
         case TAG_FUNCTION: {
-            u32 name = read_4bytes_le(f);
-            u8 parameters = fgetc(f);
-            u16 locals_cnt = read_2bytes_le(f);
-            u32 body_len = read_4bytes_le(f);
-            struct bc_chunk bc;
-            init_bc_chunk(&bc);
-            for (u32 i = 0; i < body_len; ++i) {
-                serialize_instruction(f, &bc);
-            }
-            return (struct object*)new_function(vm, parameters, locals_cnt, bc, name);
+            return (struct object*)serialize_function(f, vm);
         }
         case TAG_STRING: {
             u32 len = read_4bytes_le(f);
@@ -108,18 +114,16 @@ struct object* serialize_object(FILE* f, vm_t* vm) {
             return (struct object*)obj_str;
         }
         case TAG_OBJECT: {
-            struct object_class* class = new_class(...);
             u32 name = read_4bytes_le(f);
-            struct object_function* cons = as_function_s(serialize_object(f, vm));
-            if (!cons) {
-                fprintf(stderr, "Serialized constructor is not function.");
-                return NULL;
-            }
 
             u16 methods_len = read_2bytes_le(f);
+            struct table methods;
+            init_table(&methods);
             for (size_t i = 0; i < methods_len; ++ i) {
-                
+                struct object_function* fun = serialize_function(f, vm);
+                table_set(&methods, NEW_OBJECT(vm->const_pool.data[fun->name]), NEW_OBJECT((struct object*)fun));
             }
+            return (struct object*)new_class(vm, name, methods);
         }
         default:
             fprintf(stderr, "Unknown tag in serialize: 0x%x", tag);

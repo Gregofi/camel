@@ -26,9 +26,12 @@ The string is NOT zero terminated.
 The code is an array of instruction opcodes (one byte) and its location in the source file (4 bytes).
 - Class
 ```
-0x02 | name - 4 byte index to constant pool | Function (contructor)  | methods count - 2 bytes | Function* ...
+0x02 | name - 4 byte index to constant pool | methods count - 2 bytes | Function* ...
 ```
-Functions correspond to the Function object above. Constructor is always present.
+Functions correspond to the Function object above.
+Contructor is not included in the Class object. It should
+instead be serialized as normal function with the same
+name as the class (not necessarily same index to cp).
 
 Size of constant pool is 2^32 (so it can be indexed by 32bit int).
 ### Entry point
