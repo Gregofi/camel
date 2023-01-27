@@ -50,6 +50,11 @@ enum opcode {
     OP_EQ = 0x3B,
     OP_INEG = 0x3C,
     OP_NEQ = 0x3D,
+
+    OP_NEW_OBJECT = 0x60,
+    OP_GET_MEMBER = 0x61,
+    OP_SET_MEMBER = 0x62,
+    OP_DISPATCH_METHOD= 0x63,
 };
 
 size_t ins_size(enum opcode op);

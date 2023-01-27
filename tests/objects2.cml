@@ -1,7 +1,5 @@
 
-class foo() {
-    var x = 0;
-    val y = 3;
+class foo {
 };
 
 f = foo();

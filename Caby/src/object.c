@@ -131,7 +131,7 @@ void free_object(struct object* obj) {
         case OBJECT_INSTANCE: {
             struct object_instance* i = as_instance(obj);
             free_table(&i->members);
-            
+            break;
         }
         default:
             assert(false && "Unknown object type");

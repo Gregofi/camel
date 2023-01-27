@@ -263,9 +263,9 @@ impl Bytecode {
             BytecodeType::Drop => 0x11,
             BytecodeType::Dropn(_) => 0x25,
             BytecodeType::Dup => 0x12,
-            BytecodeType::NewObject(_) => 0x30,
-            BytecodeType::GetMember(_) => 0x31,
-            BytecodeType::SetMember(_) => 0x32,
+            BytecodeType::NewObject(_) => 0x60,
+            BytecodeType::GetMember(_) => 0x61,
+            BytecodeType::SetMember(_) => 0x62,
         }
     }
 
