@@ -70,10 +70,15 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
         case OP_GET_GLOBAL:
         case OP_VAL_GLOBAL:
         case OP_VAR_GLOBAL:
+        case OP_GET_MEMBER:
+        case OP_SET_MEMBER:
+        case OP_NEW_OBJECT:
             write_dword(c, read_4bytes_le(f));
             break;
+        case OP_DISPATCH_METHOD:
+            NOT_IMPLEMENTED();
         default:
-            fprintf(stderr, "Unknown instruction opcode in deserialize: 0x%x", ins);
+            fprintf(stderr, "Unknown instruction opcode in deserialize: 0x%x\n", ins);
             exit(-3);
     }
     u64 begin = read_8bytes_le(f);
@@ -126,7 +131,7 @@ struct object* serialize_object(FILE* f, vm_t* vm) {
             return (struct object*)new_class(vm, name, methods);
         }
         default:
-            fprintf(stderr, "Unknown tag in serialize: 0x%x", tag);
+            fprintf(stderr, "Unknown tag in serialize: 0x%x\n", tag);
             return NULL;
     }
 }
