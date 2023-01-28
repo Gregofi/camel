@@ -285,6 +285,7 @@ impl Bytecode {
         if let BytecodeType::Label(_) = self.instr {
             return 0;
         }
+        // TODO: Remove hardcoded size and calculate them from the variant, should be easy.
         1 + match &self.instr {
             BytecodeType::PushShort(_) => 2,
             BytecodeType::PushInt(_) => 4,

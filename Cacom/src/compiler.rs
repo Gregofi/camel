@@ -306,6 +306,25 @@ impl Compiler {
         Ok(())
     }
 
+    fn emit_function_def(&mut self, name: ConstantPoolIndex, fun: ConstantPoolIndex, location: CodeLocation, code: &mut Code) {
+        self.add_instruction(code, BytecodeType::PushLiteral(fun), location);
+        match &mut self.location {
+            Location::Global => {
+                self.add_instruction(
+                    code,
+                    BytecodeType::DeclValGlobal {
+                        name: name,
+                    },
+                    location,
+                );
+            }
+            Location::Local(env) => {
+                todo!("Nested functions are not yet implemented");
+            }
+            Location::Class(env) => unreachable!(),
+        };
+    }
+
     fn compile_stmt(&mut self, ast: &Stmt, code: &mut Code) -> Result<(), &'static str> {
         match &ast.node {
             StmtType::Variable {
@@ -372,22 +391,7 @@ impl Compiler {
                 let new_fun_name_idx = self.constant_pool.add(Object::from(name.clone()));
                 let fun = self.compile_fun(new_fun_name_idx, parameters, body)?;
                 let fun_idx = self.constant_pool.add(Object::Function(fun));
-                self.add_instruction(code, BytecodeType::PushLiteral(fun_idx), ast.location);
-                match &mut self.location {
-                    Location::Global => {
-                        self.add_instruction(
-                            code,
-                            BytecodeType::DeclValGlobal {
-                                name: new_fun_name_idx,
-                            },
-                            ast.location,
-                        );
-                    }
-                    Location::Local(env) => {
-                        todo!("Nested functions are not yet implemented");
-                    }
-                    Location::Class(env) => unreachable!(),
-                };
+                self.emit_function_def(new_fun_name_idx, fun_idx, ast.location, code);
 
                 self.restore_locals(locals_backup);
             }
@@ -408,7 +412,7 @@ impl Compiler {
                 constructor.add(Bytecode { instr: BytecodeType::Ret, location: CodeLocation(0, 0)});
 
                 let mut methods: Vec<Function> = vec![];
-                
+
                 // TODO: This should be handled at the grammar level
                 for stmt in statements {
                     match &stmt.node {
@@ -428,9 +432,8 @@ impl Compiler {
                         _ => panic!("Class can only contain method or member definitions."),
                     };
                 }
-                let cons_name_idx = self.constant_pool.add(Object::from("#".to_owned() + &name));
                 let cons_fun = Function {
-                    name: cons_name_idx,
+                    name: name_idx,
                     parameters_cnt: 0,
                     locals_cnt: 0,
                     body: constructor,
@@ -438,8 +441,10 @@ impl Compiler {
                 self.constant_pool.add(Object::Class {
                     name: name_idx,
                     methods: methods,
-                    constructor: cons_fun,
                 });
+                let fun_idx = self.constant_pool.add(Object::Function(cons_fun));
+                self.emit_function_def(name_idx, fun_idx, ast.location, code);
+
             }
             StmtType::MemberStore { left, right, val } => {
                 self.compile_expr(left, code, false)?;

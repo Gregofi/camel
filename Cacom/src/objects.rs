@@ -14,6 +14,8 @@ pub struct Function {
     pub body: Code,
 }
 
+const FUNCTION_TAG: u8 = 0x00;
+const STRING_TAG: u8 = 0x01;
 const CLASS_TAG: u8 = 0x02;
 
 pub enum Object {
@@ -22,7 +24,6 @@ pub enum Object {
     Class {
         name: ConstantPoolIndex,
         methods: Vec<Function>,
-        constructor: Function,
     },
 }
 
@@ -91,8 +92,8 @@ impl Serializable for ConstantPool {
 impl Object {
     fn byte_encode(&self) -> u8 {
         match self {
-            Object::String(_) => 0x01,
-            Object::Function { .. } => 0x00,
+            Object::String(_) => STRING_TAG,
+            Object::Function { .. } => FUNCTION_TAG,
             Object::Class { .. } => CLASS_TAG,
         }
     }
@@ -117,11 +118,9 @@ impl fmt::Display for Object {
             }
             Object::Class {
                 name,
-                methods,
-                constructor} => {
+                methods, 
+            } => {
                 writeln!(f, "Class: {}", name)?;
-                writeln!(f, "=== Contructor ===")?;
-                writeln!(f, "{}", constructor)?;
                 if methods.len() != 0 {
                     writeln!(f, "=== Methods ===")?;
                     for method in methods {
@@ -146,7 +145,7 @@ impl Serializable for Function {
         f.write_all(&self.parameters_cnt.to_le_bytes())?;
         f.write_all(&self.locals_cnt.to_le_bytes())?;
         self.body.serialize(f)
-    }    
+    }
 }
 
 impl Serializable for Object {
@@ -164,17 +163,12 @@ impl Serializable for Object {
             Object::Class {
                 name,
                 methods,
-                constructor,
             } => {
                 f.write_all(&name.to_le_bytes())?;
-                f.write_all(&methods.len().to_le_bytes())?;
+                f.write_all(&(u16::try_from(methods.len()).unwrap()).to_le_bytes())?;
                 for method in methods {
                     method.serialize(f)?;
                 }
-
-                // Serialize constructor separately as normal function
-                f.write_all(&CLASS_TAG.to_le_bytes())?;
-                constructor.serialize(f)?;
                 Ok(())
             }
         }

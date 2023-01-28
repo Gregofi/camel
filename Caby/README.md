@@ -23,7 +23,7 @@ The string is NOT zero terminated.
 0x00 | name - 4 bytes index to constant pool | parameters count - 1 byte | number of locals slots - 2b
      | code length (in instructions) - 4b | (code - ???b | location begin - 8b | location end - 8b) ... |
 ```
-The code is an array of instruction opcodes (one byte) and its location in the source file (4 bytes).
+The code is an array of instruction opcodes (one byte) and its location in the source file (4 bytes). Functions themselves are invisible to the VM even when in constant pool. To call them you need to define them in main. Push them onto stack and then use SetVal instruction.
 - Class
 ```
 0x02 | name - 4 byte index to constant pool | methods count - 2 bytes | Function* ...
