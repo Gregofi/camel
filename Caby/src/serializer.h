@@ -10,7 +10,7 @@
 enum object_tag {
     TAG_FUNCTION = 0x00,
     TAG_STRING = 0x01,
-    TAG_OBJECT = 0x02,
+    TAG_CLASS = 0x02,
 };
 
 u32 read_4bytes_be(FILE* f);

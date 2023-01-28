@@ -118,10 +118,11 @@ struct object* serialize_object(FILE* f, vm_t* vm) {
             struct object_string* obj_str = new_string_move(vm, str, len);
             return (struct object*)obj_str;
         }
-        case TAG_OBJECT: {
+        case TAG_CLASS: {
             u32 name = read_4bytes_le(f);
 
             u16 methods_len = read_2bytes_le(f);
+            fprintf(f, "LEN: %u", methods_len);
             struct table methods;
             init_table(&methods);
             for (size_t i = 0; i < methods_len; ++ i) {
