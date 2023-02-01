@@ -116,10 +116,7 @@ impl fmt::Display for Object {
                 )?;
                 writeln!(f, "{}", body)
             }
-            Object::Class {
-                name,
-                methods, 
-            } => {
+            Object::Class { name, methods } => {
                 writeln!(f, "Class: {}", name)?;
                 if methods.len() != 0 {
                     writeln!(f, "=== Methods ===")?;
@@ -157,13 +154,8 @@ impl Serializable for Object {
                 f.write_all(&len.to_le_bytes())?;
                 f.write_all(v.as_bytes())
             }
-            Object::Function(fun) => {
-                fun.serialize(f)
-            }
-            Object::Class {
-                name,
-                methods,
-            } => {
+            Object::Function(fun) => fun.serialize(f),
+            Object::Class { name, methods } => {
                 f.write_all(&name.to_le_bytes())?;
                 f.write_all(&(u16::try_from(methods.len()).unwrap()).to_le_bytes())?;
                 for method in methods {

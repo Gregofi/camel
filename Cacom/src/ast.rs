@@ -228,10 +228,7 @@ impl Stmt {
                 println!("]");
                 body.dump(prefix + " ");
             }
-            StmtType::Class {
-                name,
-                statements,
-            } => todo!(),
+            StmtType::Class { name, statements } => todo!(),
             StmtType::Top(vals) => {
                 for stmt in vals {
                     stmt.dump(String::from(""));

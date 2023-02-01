@@ -306,17 +306,17 @@ impl Compiler {
         Ok(())
     }
 
-    fn emit_function_def(&mut self, name: ConstantPoolIndex, fun: ConstantPoolIndex, location: CodeLocation, code: &mut Code) {
+    fn emit_function_def(
+        &mut self,
+        name: ConstantPoolIndex,
+        fun: ConstantPoolIndex,
+        location: CodeLocation,
+        code: &mut Code,
+    ) {
         self.add_instruction(code, BytecodeType::PushLiteral(fun), location);
         match &mut self.location {
             Location::Global => {
-                self.add_instruction(
-                    code,
-                    BytecodeType::DeclValGlobal {
-                        name: name,
-                    },
-                    location,
-                );
+                self.add_instruction(code, BytecodeType::DeclValGlobal { name: name }, location);
             }
             Location::Local(env) => {
                 todo!("Nested functions are not yet implemented");
@@ -399,10 +399,7 @@ impl Compiler {
             StmtType::While { guard, body } => todo!(),
             StmtType::Return(_) => todo!(),
             StmtType::Expression(expr) => self.compile_expr(expr, code, true)?,
-            StmtType::Class {
-                name,
-                statements,
-            } => {
+            StmtType::Class { name, statements } => {
                 let name_idx = self.constant_pool.add(Object::from(name.clone()));
 
                 let mut methods: Vec<Function> = vec![];
@@ -410,10 +407,9 @@ impl Compiler {
                 // TODO: This should be handled at the grammar level
                 for stmt in statements {
                     match &stmt.node {
-                        StmtType::Class {
-                            name,
-                            statements,
-                        } => todo!("Nested classes are not yet supported"),
+                        StmtType::Class { name, statements } => {
+                            todo!("Nested classes are not yet supported")
+                        }
                         StmtType::Function {
                             name,
                             parameters,
@@ -433,10 +429,22 @@ impl Compiler {
 
                 // Generate default constructor
                 let mut constructor = Code::new();
-                constructor.add(Bytecode { instr: BytecodeType::NewObject(class_idx), location: CodeLocation(0, 0)});
-                constructor.add(Bytecode { instr: BytecodeType::SetLocal(0), location: CodeLocation(0, 0)});
-                constructor.add(Bytecode { instr: BytecodeType::GetLocal(0), location: CodeLocation(0, 0)});
-                constructor.add(Bytecode { instr: BytecodeType::Ret, location: CodeLocation(0, 0)});
+                constructor.add(Bytecode {
+                    instr: BytecodeType::NewObject(class_idx),
+                    location: CodeLocation(0, 0),
+                });
+                constructor.add(Bytecode {
+                    instr: BytecodeType::SetLocal(0),
+                    location: CodeLocation(0, 0),
+                });
+                constructor.add(Bytecode {
+                    instr: BytecodeType::GetLocal(0),
+                    location: CodeLocation(0, 0),
+                });
+                constructor.add(Bytecode {
+                    instr: BytecodeType::Ret,
+                    location: CodeLocation(0, 0),
+                });
 
                 let cons_fun = Function {
                     name: name_idx,
@@ -446,7 +454,6 @@ impl Compiler {
                 };
                 let fun_idx = self.constant_pool.add(Object::Function(cons_fun));
                 self.emit_function_def(name_idx, fun_idx, ast.location, code);
-
             }
             StmtType::MemberStore { left, right, val } => {
                 self.compile_expr(val, code, false)?;
@@ -458,7 +465,12 @@ impl Compiler {
         Ok(())
     }
 
-    fn compile_parameters(&mut self, code: &mut Code, parameters: &Vec<String>, location: CodeLocation) -> Result<(), &'static str>{
+    fn compile_parameters(
+        &mut self,
+        code: &mut Code,
+        parameters: &Vec<String>,
+        location: CodeLocation,
+    ) -> Result<(), &'static str> {
         for (idx, par) in parameters.iter().enumerate() {
             // Since we just added scope it will always be local
             if let Location::Local(env) = &mut self.location {
