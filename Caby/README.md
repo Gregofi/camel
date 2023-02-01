@@ -116,7 +116,7 @@ runtime error occurs.
 - set_member 0x62 | 4B index to constant pool
 Pops class instance and value from the stack and sets its member (string in cp) to that value.
 - dispatch_method 0x63 | 4B index to constant pool | 1B number of arguments
-Calls a method on object on top of the stack.
+Pops object of the top of the stack and calls method on it.
 
 Pops object off the stack and corresponding number of arguments. Calls method on popped object with name at cp index with given arguments. 
 #### Arithmetic operations

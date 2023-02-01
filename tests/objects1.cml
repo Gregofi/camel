@@ -7,4 +7,5 @@ class foo {
 };
 
 f = foo();
-print("{}", f.x);
+f.set_x();
+print("{}", f.get_x());

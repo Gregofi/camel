@@ -536,6 +536,9 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
 
             break;
         }
+        case OP_DISPATCH_METHOD: {
+            u32 name = READ_4BYTES_BE(vm->ip);
+        }
         default:
             runtime_error(vm, "Unknown instruction 0x%x! Skipping...", ins);
     }
