@@ -50,9 +50,8 @@ impl ConstantPool {
                 Object::String(searchee) => searchee == str,
                 _ => false,
             });
-            match pos {
-                Some(val) => return val.try_into().unwrap(),
-                None => (),
+            if let Some(val) = pos {
+                return val.try_into().unwrap();
             }
         }
 
@@ -118,7 +117,7 @@ impl fmt::Display for Object {
             }
             Object::Class { name, methods } => {
                 writeln!(f, "Class: {}", name)?;
-                if methods.len() != 0 {
+                if !methods.is_empty() {
                     writeln!(f, "=== Methods ===")?;
                     for method in methods {
                         writeln!(f, "{}", method)?;

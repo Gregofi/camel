@@ -316,7 +316,7 @@ impl Compiler {
         self.add_instruction(code, BytecodeType::PushLiteral(fun), location);
         match &mut self.location {
             Location::Global => {
-                self.add_instruction(code, BytecodeType::DeclValGlobal { name: name }, location);
+                self.add_instruction(code, BytecodeType::DeclValGlobal { name }, location);
             }
             Location::Local(env) => {
                 todo!("Nested functions are not yet implemented");
@@ -424,7 +424,7 @@ impl Compiler {
                 }
                 let class_idx = self.constant_pool.add(Object::Class {
                     name: name_idx,
-                    methods: methods,
+                    methods,
                 });
 
                 // Generate default constructor
@@ -468,7 +468,7 @@ impl Compiler {
     fn compile_parameters(
         &mut self,
         code: &mut Code,
-        parameters: &Vec<String>,
+        parameters: &[String],
         location: CodeLocation,
     ) -> Result<(), &'static str> {
         for (idx, par) in parameters.iter().enumerate() {
@@ -510,7 +510,7 @@ impl Compiler {
         self.leave_scope();
 
         Ok(Function {
-            name: name,
+            name,
             parameters_cnt: parameters.len().try_into().unwrap(),
             locals_cnt: self.local_max,
             body: code,
