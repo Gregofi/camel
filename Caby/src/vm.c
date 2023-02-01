@@ -538,6 +538,30 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
         }
         case OP_DISPATCH_METHOD: {
             u32 name = READ_4BYTES_BE(vm->ip);
+            vm->ip += 4;
+            u8 arity = READ_IP() + 1;
+            
+            // TODO: Implement instance dispatching for other types
+            // TODO: Properly check for wrong types
+            // Leave the object on the stack because it is
+            // also an argument for the method
+            struct value target = peek(vm, 1);
+            if (target.type == VAL_OBJECT) {
+                struct object* obj = target.object;
+                if (obj->type == OBJECT_INSTANCE) {
+                    struct object_instance* instance = as_instance(obj);
+                    struct value method;
+                    table_get(&instance->klass->methods, NEW_OBJECT(vm->const_pool.data[name]), &method);
+                    struct object_function* f = as_function(method.object);
+                    if (arity != f->arity) {
+                        runtime_error(vm, "Got '%d' arguments, expected '%d'", arity, f->arity);
+                        return INTERPRET_ERROR;
+                    }
+                    push_frame(vm, f);
+                }
+            }
+            
+            break;
         }
         default:
             runtime_error(vm, "Unknown instruction 0x%x! Skipping...", ins);

@@ -170,6 +170,10 @@ Term: Expr = {
         node: ExprType::MemberRead { left: Box::new(p), right: i }, 
         location: Location(l, r)
     },
+    <l: @L> <p: Term> DOT <name: Identifier> LPAREN <arguments: Arguments> RPAREN <r: @R> => Expr {
+        node: ExprType::MethodCall { left: Box::new(p), name, arguments }, 
+        location: Location(l, r)
+    },
 }
 
 UnaryOp: Opcode = {
@@ -209,16 +213,6 @@ Call: Expr = {
         }
     }
     // TODO: Method calls over objects, lists, strings and so on.
-}
-
-MemberRead: Expr = {
-    <l: @L> <expr: Expr> DOT <id: Identifier> <r: @R> => Expr {
-        node: ExprType::MemberRead {
-            left: Box::new(expr),
-            right: id,
-        },
-        location: Location(l, r),
-    }
 }
 
 Arguments = Separated<Expr, COMMA>;

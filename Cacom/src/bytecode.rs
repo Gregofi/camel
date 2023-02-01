@@ -30,8 +30,12 @@ pub enum BytecodeType {
     GetLocal(LocalIndex),
     SetLocal(LocalIndex),
 
-    DeclValGlobal { name: ConstantPoolIndex },
-    DeclVarGlobal { name: ConstantPoolIndex },
+    DeclValGlobal {
+        name: ConstantPoolIndex,
+    },
+    DeclVarGlobal {
+        name: ConstantPoolIndex,
+    },
 
     GetGlobal(ConstantPoolIndex),
     SetGlobal(ConstantPoolIndex),
@@ -41,7 +45,13 @@ pub enum BytecodeType {
 
     NewObject(ConstantPoolIndex),
 
-    CallFunc { arg_cnt: u8 },
+    CallFunc {
+        arg_cnt: u8,
+    },
+    DispatchMethod {
+        name: ConstantPoolIndex,
+        arg_cnt: u8,
+    },
     Ret,
 
     Label(String),
@@ -65,7 +75,9 @@ pub enum BytecodeType {
     BranchFalse(u32),
     BranchLongFalse(u64),
 
-    Print { arg_cnt: u8 },
+    Print {
+        arg_cnt: u8,
+    },
 
     Iadd,
     Isub,
@@ -157,6 +169,9 @@ impl fmt::Display for Bytecode {
             BytecodeType::Dup => write!(f, "Dup"),
             BytecodeType::Neq => write!(f, "Neq"),
             BytecodeType::NewObject(idx) => write!(f, "NewObject: {}", idx),
+            BytecodeType::DispatchMethod { name, arg_cnt } => {
+                write!(f, "DispatchMethod: {} {}", name, arg_cnt)
+            }
         }
     }
 }
@@ -266,6 +281,7 @@ impl Bytecode {
             BytecodeType::NewObject(_) => 0x60,
             BytecodeType::GetMember(_) => 0x61,
             BytecodeType::SetMember(_) => 0x62,
+            BytecodeType::DispatchMethod { .. } => 0x63,
         }
     }
 
@@ -335,6 +351,7 @@ impl Bytecode {
             BytecodeType::GetMember(_) => 4,
             BytecodeType::SetMember(_) => 4,
             BytecodeType::NewObject(_) => 4,
+            BytecodeType::DispatchMethod { .. } => 5,
         }
     }
 }
@@ -399,6 +416,10 @@ impl Serializable for Bytecode {
             BytecodeType::GetMember(idx) => f.write_all(&idx.to_le_bytes())?,
             BytecodeType::SetMember(idx) => f.write_all(&idx.to_le_bytes())?,
             BytecodeType::NewObject(idx) => f.write_all(&idx.to_le_bytes())?,
+            BytecodeType::DispatchMethod { name, arg_cnt } => {
+                f.write_all(&name.to_le_bytes())?;
+                f.write_all(&arg_cnt.to_le_bytes())?;
+            }
         };
         self.location.serialize(f)
     }

@@ -141,4 +141,11 @@ mod parser_tests {
         assert!(TopLevelParser::new().parse("(x.y).z = 1").is_ok());
         assert!(TopLevelParser::new().parse("x.y.z = 3").is_ok());
     }
+
+    #[test]
+    fn method_call() {
+        assert!(TopLevelParser::new().parse("x.foo();").is_ok());
+        assert!(TopLevelParser::new().parse("1.foo();").is_ok());
+        assert!(TopLevelParser::new().parse("\"Hello\".foo();").is_ok());
+    }
 }

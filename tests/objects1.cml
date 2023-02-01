@@ -1,11 +1,13 @@
 
 class foo {
     def get_x(self) = self.x;
-    def set_x(self) = {
-        self.x = 5;
+    def set_x(self, v) = {
+        self.x = v;
     }
 };
 
-f = foo();
-f.set_x();
-print("{}", f.get_x());
+val f = foo();
+f.set_x(5);
+print("{}\n", f.get_x());
+f.set_x(10);
+print("{}\n", f.get_x());

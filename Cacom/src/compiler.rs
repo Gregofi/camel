@@ -231,6 +231,26 @@ impl Compiler {
                     );
                 }
             }
+            ExprType::MethodCall {
+                left,
+                name,
+                arguments,
+            } => {
+                for arg in arguments.iter().rev() {
+                    self.compile_expr(arg, code, false)?;
+                }
+
+                self.compile_expr(left, code, false)?;
+                let cp_idx = self.constant_pool.add(Object::from(name.clone()));
+                self.add_instruction(
+                    code,
+                    BytecodeType::DispatchMethod {
+                        name: cp_idx,
+                        arg_cnt: arguments.len().try_into().unwrap(),
+                    },
+                    expr.location,
+                )
+            }
             ExprType::Conditional {
                 guard,
                 then_branch,
@@ -612,6 +632,7 @@ pub fn compile(ast: &Stmt) -> Result<(ConstantPool, ConstantPoolIndex), &'static
         body: code,
     });
     let main_fun_idx = compiler.constant_pool.add(main_fun);
+    // TODO: Consider rewritting this into some prettier form
     compiler.constant_pool.data = compiler
         .constant_pool
         .data
@@ -630,6 +651,20 @@ pub fn compile(ast: &Stmt) -> Result<(ConstantPool, ConstantPoolIndex), &'static
                 parameters_cnt,
                 locals_cnt,
             }),
+            Object::Class { name, methods } => Object::Class {
+                name,
+                methods: methods
+                    .into_iter()
+                    .map(|f| Function {
+                        name: f.name,
+                        parameters_cnt: f.parameters_cnt,
+                        locals_cnt: f.locals_cnt,
+                        body: Code {
+                            code: jump_pass(f.body.code),
+                        },
+                    })
+                    .collect(),
+            },
             _ => f,
         })
         .collect();

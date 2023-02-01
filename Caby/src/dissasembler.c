@@ -138,6 +138,9 @@ size_t dissasemble_instruction(FILE* f, u8* ins) {
         case OP_SET_MEMBER:
             fprintf(f, "SET_MEMBER %d", READ_4BYTES_BE(ins + 1));
             return 5;
+        case OP_DISPATCH_METHOD:
+            fprintf(f, "DISPATCH_METHOD %d %d", READ_4BYTES_BE(ins + 1), *(ins + 5));
+            return 6;
         default:
             fprintf(f, "UNKNOWN_INSTRUCTION 0x%x", *ins);
             return 1;
@@ -181,7 +184,8 @@ void dissasemble_object(FILE* f, struct object* obj) {
         }
         case OBJECT_CLASS: {
             struct object_class* class = as_class(obj);
-            fprintf(f, "CLASS name: %u\n", class->name);
+            fprintf(f, "CLASS name: %u, methods: %lu\n", class->name, class->methods.count);
+
             break;
         }
         case OBJECT_INSTANCE: {

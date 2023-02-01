@@ -121,6 +121,11 @@ pub enum ExprType {
         left: Box<Expr>,
         right: String,
     },
+    MethodCall {
+        left: Box<Expr>,
+        name: String,
+        arguments: Vec<Expr>,
+    },
 }
 
 pub type Expr = Located<ExprType>;
@@ -196,6 +201,18 @@ impl Expr {
                 println!("Read: ");
                 left.dump(prefix + " ");
                 println!("{}", right);
+            }
+            ExprType::MethodCall {
+                left,
+                name,
+                arguments,
+            } => {
+                println!("Method call:");
+                left.dump(prefix.clone() + " ");
+                println!("name: {}", name);
+                for arg in arguments {
+                    arg.dump(prefix.clone() + " ");
+                }
             }
         }
     }

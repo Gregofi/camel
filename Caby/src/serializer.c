@@ -76,7 +76,9 @@ void serialize_instruction(FILE* f, struct bc_chunk* c) {
             write_dword(c, read_4bytes_le(f));
             break;
         case OP_DISPATCH_METHOD:
-            NOT_IMPLEMENTED();
+            write_dword(c, read_4bytes_le(f));
+            write_byte(c, fgetc(f));
+            break;
         default:
             fprintf(stderr, "Unknown instruction opcode in deserialize: 0x%x\n", ins);
             exit(-3);
@@ -122,7 +124,6 @@ struct object* serialize_object(FILE* f, vm_t* vm) {
             u32 name = read_4bytes_le(f);
 
             u16 methods_len = read_2bytes_le(f);
-            fprintf(f, "LEN: %u", methods_len);
             struct table methods;
             init_table(&methods);
             for (size_t i = 0; i < methods_len; ++ i) {
