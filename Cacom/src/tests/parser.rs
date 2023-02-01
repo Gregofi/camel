@@ -113,9 +113,7 @@ mod parser_tests {
 
     #[test]
     fn class_decl() {
-        assert!(TopLevelParser::new()
-            .parse("class foo { };")
-            .is_ok());
+        assert!(TopLevelParser::new().parse("class foo { };").is_ok());
         assert!(TopLevelParser::new()
             .parse(
                 "class foo {
