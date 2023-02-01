@@ -109,8 +109,12 @@ Defines a new mutable global variable. The cp index points to a string which is 
 Pops value of the stack and assigns it to the variable.
 
 - new_object 0x60 | 4B index to constant pool
+Creates a new instance of class in the constant pool (Not name, but the class itself!).
 - get_member 0x61 | 4B index to constant pool
+Pops class instance from the stack and pushes value of its member (string in cp). If such member doesn't exists then
+runtime error occurs. 
 - set_member 0x62 | 4B index to constant pool
+Pops class instance and value from the stack and sets its member (string in cp) to that value.
 - dispatch_method 0x63 | 4B index to constant pool | 1B number of arguments
 Calls a method on object on top of the stack.
 

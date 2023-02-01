@@ -405,12 +405,6 @@ impl Compiler {
             } => {
                 let name_idx = self.constant_pool.add(Object::from(name.clone()));
 
-                let mut constructor = Code::new();
-                constructor.add(Bytecode { instr: BytecodeType::NewObject(name_idx), location: CodeLocation(0, 0)});
-                constructor.add(Bytecode { instr: BytecodeType::SetLocal(0), location: CodeLocation(0, 0)});
-                constructor.add(Bytecode { instr: BytecodeType::GetLocal(0), location: CodeLocation(0, 0)});
-                constructor.add(Bytecode { instr: BytecodeType::Ret, location: CodeLocation(0, 0)});
-
                 let mut methods: Vec<Function> = vec![];
 
                 // TODO: This should be handled at the grammar level
@@ -432,23 +426,31 @@ impl Compiler {
                         _ => panic!("Class can only contain method or member definitions."),
                     };
                 }
+                let class_idx = self.constant_pool.add(Object::Class {
+                    name: name_idx,
+                    methods: methods,
+                });
+
+                // Generate default constructor
+                let mut constructor = Code::new();
+                constructor.add(Bytecode { instr: BytecodeType::NewObject(class_idx), location: CodeLocation(0, 0)});
+                constructor.add(Bytecode { instr: BytecodeType::SetLocal(0), location: CodeLocation(0, 0)});
+                constructor.add(Bytecode { instr: BytecodeType::GetLocal(0), location: CodeLocation(0, 0)});
+                constructor.add(Bytecode { instr: BytecodeType::Ret, location: CodeLocation(0, 0)});
+
                 let cons_fun = Function {
                     name: name_idx,
                     parameters_cnt: 0,
                     locals_cnt: 0,
                     body: constructor,
                 };
-                self.constant_pool.add(Object::Class {
-                    name: name_idx,
-                    methods: methods,
-                });
                 let fun_idx = self.constant_pool.add(Object::Function(cons_fun));
                 self.emit_function_def(name_idx, fun_idx, ast.location, code);
 
             }
             StmtType::MemberStore { left, right, val } => {
-                self.compile_expr(left, code, false)?;
                 self.compile_expr(val, code, false)?;
+                self.compile_expr(left, code, false)?;
                 let member_idx = self.constant_pool.add(Object::from(right.clone()));
                 self.add_instruction(code, BytecodeType::SetMember(member_idx), ast.location);
             }

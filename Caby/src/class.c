@@ -21,10 +21,10 @@ struct object_class* as_class_s(struct object* object) {
     return NULL;
 }
 
-struct object_instance* new_instance(vm_t* vm, struct object_class* klass, struct table members) {
+struct object_instance* new_instance(vm_t* vm, struct object_class* klass) {
     struct object_instance* instance = vmalloc(vm, sizeof(*instance));
     instance->klass = klass;
-    instance->members = members;
+    init_table(&instance->members);
     init_object(vm, &instance->object, OBJECT_INSTANCE);
     return instance;
 }

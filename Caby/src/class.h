@@ -26,7 +26,7 @@ struct object_class* as_class(struct object* object);
 struct object_class* as_class_s(struct object* object);
 
 /// Returns new class instance, takes ownership of 'name', but not 'klass'.
-struct object_instance* new_instance(vm_t* vm, struct object_class* klass, struct table members);
+struct object_instance* new_instance(vm_t* vm, struct object_class* klass);
 
 struct object_instance* as_instance(struct object* object);
 
