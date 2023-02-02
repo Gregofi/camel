@@ -6,14 +6,36 @@ use std::io::prelude::*;
 use crate::bytecode::{Code, ConstantPoolIndex, LocalIndex};
 use crate::serializable::Serializable;
 
+// TODO: Replace Object::Function internals with this guy
+pub struct Function {
+    pub name: ConstantPoolIndex,
+    pub parameters_cnt: u8,
+    pub locals_cnt: LocalIndex,
+    pub body: Code,
+}
+
+const FUNCTION_TAG: u8 = 0x00;
+const STRING_TAG: u8 = 0x01;
+const CLASS_TAG: u8 = 0x02;
+
 pub enum Object {
     String(String),
-    Function {
+    Function(Function),
+    Class {
         name: ConstantPoolIndex,
-        parameters_cnt: u8,
-        locals_cnt: LocalIndex,
-        body: Code,
+        methods: Vec<Function>,
     },
+}
+
+impl fmt::Display for Function {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(
+            f,
+            "Function: {}, parameters: {}, locals: {}",
+            self.name, self.parameters_cnt, self.locals_cnt
+        )?;
+        writeln!(f, "{}", self.body)
+    }
 }
 
 pub struct ConstantPool {
@@ -28,9 +50,8 @@ impl ConstantPool {
                 Object::String(searchee) => searchee == str,
                 _ => false,
             });
-            match pos {
-                Some(val) => return val.try_into().unwrap(),
-                None => (),
+            if let Some(val) = pos {
+                return val.try_into().unwrap();
             }
         }
 
@@ -70,8 +91,9 @@ impl Serializable for ConstantPool {
 impl Object {
     fn byte_encode(&self) -> u8 {
         match self {
-            Object::String(_) => 0x01,
-            Object::Function { .. } => 0x00,
+            Object::String(_) => STRING_TAG,
+            Object::Function { .. } => FUNCTION_TAG,
+            Object::Class { .. } => CLASS_TAG,
         }
     }
 }
@@ -80,18 +102,28 @@ impl fmt::Display for Object {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Object::String(str) => write!(f, "String: {}", str),
-            Object::Function {
+            Object::Function(Function {
                 name,
                 parameters_cnt,
                 locals_cnt,
                 body,
-            } => {
+            }) => {
                 writeln!(
                     f,
                     "Function: {}, parameters: {}, locals: {}",
                     name, parameters_cnt, locals_cnt
                 )?;
                 writeln!(f, "{}", body)
+            }
+            Object::Class { name, methods } => {
+                writeln!(f, "Class: {}", name)?;
+                if !methods.is_empty() {
+                    writeln!(f, "=== Methods ===")?;
+                    for method in methods {
+                        writeln!(f, "{}", method)?;
+                    }
+                }
+                Ok(())
             }
         }
     }
@@ -100,6 +132,15 @@ impl fmt::Display for Object {
 impl From<String> for Object {
     fn from(v: String) -> Self {
         Object::String(v)
+    }
+}
+
+impl Serializable for Function {
+    fn serialize(&self, f: &mut File) -> io::Result<()> {
+        f.write_all(&self.name.to_le_bytes())?;
+        f.write_all(&self.parameters_cnt.to_le_bytes())?;
+        f.write_all(&self.locals_cnt.to_le_bytes())?;
+        self.body.serialize(f)
     }
 }
 
@@ -112,16 +153,14 @@ impl Serializable for Object {
                 f.write_all(&len.to_le_bytes())?;
                 f.write_all(v.as_bytes())
             }
-            Object::Function {
-                name,
-                parameters_cnt,
-                locals_cnt,
-                body,
-            } => {
+            Object::Function(fun) => fun.serialize(f),
+            Object::Class { name, methods } => {
                 f.write_all(&name.to_le_bytes())?;
-                f.write_all(&parameters_cnt.to_le_bytes())?;
-                f.write_all(&locals_cnt.to_le_bytes())?;
-                body.serialize(f)
+                f.write_all(&(u16::try_from(methods.len()).unwrap()).to_le_bytes())?;
+                for method in methods {
+                    method.serialize(f)?;
+                }
+                Ok(())
             }
         }
     }

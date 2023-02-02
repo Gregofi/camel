@@ -46,7 +46,9 @@ match {
     "false" => FALSE,
     "def" => DEF,
     "," => COMMA,
+    "." => DOT,
     "return" => RETURN,
+    "class" => CLASS,
 
     "val" => VAL,
     "var" => VAR,
@@ -71,7 +73,7 @@ TopLevelExpressions: Vec<Stmt> = SeparatedLeastOne<TopLevelExpression, SEMICOLON
 TopLevelExpression: Stmt = {
     // FIXME: This permits 'return' in top level
     Statement => <>,
-    FunDecl => <>,
+    ClassDecl => <>,
 }
 
 // Those are 'top' level expression in block,
@@ -86,13 +88,25 @@ Statement: Stmt = {
     Return => <>,
     VarDecl => <>,
     Assignment => <>,
+    FunDecl => <>,
+}
+
+ClassDecl: Stmt = {
+    <l: @L> CLASS <name: Identifier> CURLYBOPEN <statements: Statements> CURLYBCLOSE <r: @R> =>  Stmt {
+        node: StmtType::Class { name, statements },
+        location: Location(l, r),
+    }
 }
 
 Assignment: Stmt = {
     <l: @L> <name: Identifier> ASSIGN <value: Expr> <r: @R> => Stmt {
         node: StmtType::AssignVariable { name, value },
         location: Location(l, r),
-    }
+    },
+    <l: @L> <left: Term> DOT <right: Identifier> ASSIGN <val: Expr> <r: @R> => Stmt {
+        node: StmtType::MemberStore { left, right, val },
+        location: Location(l, r),
+    },
 }
 
 VarDecl: Stmt = {
@@ -140,7 +154,9 @@ ExprOp: Opcode = {
     MINUS => Opcode::Sub,
 }
 
-Factor = LeftAssoc<TermOp, Term>;
+Factor: Expr = {
+    <LeftAssoc<TermOp, Term>> => <>,
+}
 
 TermOp: Opcode = {
     MULTIPLY => Opcode::Mul,
@@ -148,7 +164,17 @@ TermOp: Opcode = {
     MODULO => Opcode::Mod,
 }
 
-Term = Unary<UnaryOp, Primary>;
+Term: Expr = {
+    <Unary<UnaryOp, Primary>> => <>,
+    <l: @L> <p: Term> DOT <i: Identifier> <r: @R> => Expr {
+        node: ExprType::MemberRead { left: Box::new(p), right: i }, 
+        location: Location(l, r)
+    },
+    <l: @L> <p: Term> DOT <name: Identifier> LPAREN <arguments: Arguments> RPAREN <r: @R> => Expr {
+        node: ExprType::MethodCall { left: Box::new(p), name, arguments }, 
+        location: Location(l, r)
+    },
+}
 
 UnaryOp: Opcode = {
     MINUS => Opcode::Negate,
@@ -176,7 +202,7 @@ Primary: Expr = {
     <l: @L> <name: Identifier> <r: @R> => Expr {
         node: ExprType::AccessVariable{name},
         location: Location(l, r)
-    }
+    },
 }
 
 Call: Expr = {
@@ -216,7 +242,7 @@ Block: Expr = {
     }
 }
 
-Statements = SeparatedLeastOne<Statement, SEMICOLON>;
+Statements = Separated<Statement, SEMICOLON>;
 
 FunDecl: Stmt = {
     <l: @L> DEF <name: Identifier> LPAREN <parameters: Parameters> RPAREN ASSIGN <body: Expr> <r: @R> => Stmt {

@@ -16,6 +16,8 @@ enum object_type {
     OBJECT_STRING,
     OBJECT_FUNCTION,
     OBJECT_NATIVE,
+    OBJECT_CLASS,
+    OBJECT_INSTANCE,
 };
 
 /**
@@ -28,6 +30,8 @@ struct object {
     /// Internal data used for GC (ie. marked, generation and so on...)
     u8 gc_data;
 };
+
+void init_object(vm_t* vm, struct object* obj, enum object_type type);
 
 struct object_string {
     struct object object;

@@ -1,5 +1,6 @@
 #include "dissasembler.h"
 #include "bytecode.h"
+#include "class.h"
 #include "common.h"
 #include "object.h"
 
@@ -128,6 +129,18 @@ size_t dissasemble_instruction(FILE* f, u8* ins) {
         case OP_PUSH_LITERAL:
             fprintf(f, "PUSH_LITERAL %d", READ_4BYTES_BE(ins + 1));
             return 5;
+        case OP_NEW_OBJECT:
+            fprintf(f, "NEW_OBJECT %d", READ_4BYTES_BE(ins + 1));
+            return 5;
+        case OP_GET_MEMBER:
+            fprintf(f, "GET_MEMBER %d", READ_4BYTES_BE(ins + 1));
+            return 5;
+        case OP_SET_MEMBER:
+            fprintf(f, "SET_MEMBER %d", READ_4BYTES_BE(ins + 1));
+            return 5;
+        case OP_DISPATCH_METHOD:
+            fprintf(f, "DISPATCH_METHOD %d %d", READ_4BYTES_BE(ins + 1), *(ins + 5));
+            return 6;
         default:
             fprintf(f, "UNKNOWN_INSTRUCTION 0x%x", *ins);
             return 1;
@@ -169,7 +182,19 @@ void dissasemble_object(FILE* f, struct object* obj) {
             fprintf(f, "<native function>");
             break;
         }
-      break;
+        case OBJECT_CLASS: {
+            struct object_class* class = as_class(obj);
+            fprintf(f, "CLASS name: %u, methods: %lu\n", class->name, class->methods.count);
+
+            break;
+        }
+        case OBJECT_INSTANCE: {
+            struct object_instance* instance = as_instance(obj);
+            fprintf(f, "INSTANCE of class %u\n", instance->klass->name);
+            break;
+        }
+        default:
+            UNREACHABLE();
     }
 }
 

@@ -28,7 +28,8 @@ char* readline(FILE *f, size_t* linesize, bool* eof) {
 void print_error(const char* filename, struct loc location, const char* format, va_list args) {
     FILE* f = fopen(filename, "r");
     if (!f) {
-        fprintf(stderr, "Unable to open source.\n");
+        fprintf(stderr, "The program encountered an error. Cannot display location: Unable to open source.\n");
+        vfprintf(stderr, format, args);
         exit(-1);
     }
     size_t line = 0;

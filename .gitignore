@@ -7,3 +7,4 @@ obj
 a.out
 tests/out
 compile_commands.json
+.metals

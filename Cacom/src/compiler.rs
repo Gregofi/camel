@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 use std::fmt;
 
+use lalrpop_util::state_machine;
+
 use crate::ast::{Expr, ExprType, Opcode, Stmt, StmtType};
 use crate::bytecode::{Bytecode, BytecodeType, Code, ConstantPoolIndex, LocalIndex};
-use crate::objects::{ConstantPool, Object};
+use crate::objects::{ConstantPool, Function, Object};
 use crate::utils::Location as CodeLocation;
 use crate::utils::{AtomicInt, LabelGenerator};
 
@@ -23,6 +25,7 @@ struct Environment {
 enum Location {
     Global,
     Local(Environment),
+    Class(Environment),
 }
 
 impl Environment {
@@ -45,6 +48,7 @@ impl Environment {
         size
     }
 
+    // TODO: Is it really necessary to receive the index when its stored in self?
     pub fn add_local(
         &mut self,
         v: String,
@@ -120,6 +124,9 @@ impl Compiler {
             Location::Local(env) => {
                 env.enter_scope();
             }
+            Location::Class(env) => {
+                env.enter_scope();
+            }
         };
     }
 
@@ -135,54 +142,15 @@ impl Compiler {
                 }
                 self.local_count -= var_cnt;
             }
+            Location::Class(env) => {
+                let var_cnt: u16 = env.leave_scope().try_into().unwrap();
+                // We can't creep into global environment here
+                self.local_count -= var_cnt;
+            }
         };
     }
 
     fn add_instruction(&mut self, code: &mut Code, instr: BytecodeType, location: CodeLocation) {
-        // match &ins {
-        //     Bytecode::PushShort(_)
-        //     | Bytecode::PushInt(_)
-        //     | Bytecode::PushLong(_)
-        //     | Bytecode::PushBool(_)
-        //     | Bytecode::PushLiteral(_)
-        //     | Bytecode::PushNone
-        //     | Bytecode::GetGlobal(_)
-        //     | Bytecode::Dup => self.stack_offset += 1,
-        //     Bytecode::GetLocal(_)
-        //     | Bytecode::SetLocal(_)
-        //     | Bytecode::Label(_)
-        //     | Bytecode::JmpLabel(_)
-        //     | Bytecode::JmpShort(_)
-        //     | Bytecode::Jmp(_)
-        //     | Bytecode::DeclValGlobal {..}
-        //     | Bytecode::DeclVarGlobal {..}
-        //     | Bytecode::JmpLong(_) => (),
-        //     Bytecode::CallFunc { index, arg_cnt } => todo!(),
-        //     Bytecode::SetGlobal(_)
-        //     | Bytecode::Ret
-        //     | Bytecode::BranchLabel(_)
-        //     | Bytecode::BranchLabelFalse(_)
-        //     | Bytecode::BranchShort(_)
-        //     | Bytecode::Branch(_)
-        //     | Bytecode::BranchLong(_)
-        //     | Bytecode::BranchShortFalse(_)
-        //     | Bytecode::BranchFalse(_)
-        //     | Bytecode::BranchLongFalse(_)
-        //     | Bytecode::Drop => self.stack_offset -= 1,
-        //     Bytecode::Iadd
-        //     | Bytecode::Isub
-        //     | Bytecode::Imul
-        //     | Bytecode::Idiv
-        //     | Bytecode::Iand
-        //     | Bytecode::Ior
-        //     | Bytecode::Iless
-        //     | Bytecode::Ilesseq
-        //     | Bytecode::Igreater
-        //     | Bytecode::Igreatereq
-        //     | Bytecode::Ieq => self.stack_offset -= 2,
-        //     Bytecode::Print { arg_cnt } => self.stack_offset -= *arg_cnt as u16,
-        //     Bytecode::Dropn(cnt) => self.stack_offset -= *cnt as u16,
-        // };
         code.add(Bytecode { instr, location });
     }
 
@@ -216,17 +184,24 @@ impl Compiler {
             }
             ExprType::List { size, values } => todo!(),
             ExprType::AccessVariable { name } => {
-                // TODO: Repeated code!
-                if let Location::Local(env) = &mut self.location {
-                    if let Some(v) = env.fetch_local(name) {
-                        self.add_instruction(code, BytecodeType::GetLocal(v.idx), expr.location);
-                    } else {
+                // TODO: some repeated code
+                match &mut self.location {
+                    Location::Global => {
                         let idx = self.constant_pool.add(Object::from(name.clone()));
                         self.add_instruction(code, BytecodeType::GetGlobal(idx), expr.location);
                     }
-                } else {
-                    let idx = self.constant_pool.add(Object::from(name.clone()));
-                    self.add_instruction(code, BytecodeType::GetGlobal(idx), expr.location);
+                    Location::Local(env) | Location::Class(env) => {
+                        if let Some(v) = env.fetch_local(name) {
+                            self.add_instruction(
+                                code,
+                                BytecodeType::GetLocal(v.idx),
+                                expr.location,
+                            );
+                        } else {
+                            let idx = self.constant_pool.add(Object::from(name.clone()));
+                            self.add_instruction(code, BytecodeType::GetGlobal(idx), expr.location);
+                        }
+                    }
                 }
             }
             ExprType::AccessList { list, index } => todo!(),
@@ -255,6 +230,26 @@ impl Compiler {
                         expr.location,
                     );
                 }
+            }
+            ExprType::MethodCall {
+                left,
+                name,
+                arguments,
+            } => {
+                for arg in arguments.iter().rev() {
+                    self.compile_expr(arg, code, false)?;
+                }
+
+                self.compile_expr(left, code, false)?;
+                let cp_idx = self.constant_pool.add(Object::from(name.clone()));
+                self.add_instruction(
+                    code,
+                    BytecodeType::DispatchMethod {
+                        name: cp_idx,
+                        arg_cnt: arguments.len().try_into().unwrap(),
+                    },
+                    expr.location,
+                )
             }
             ExprType::Conditional {
                 guard,
@@ -290,6 +285,11 @@ impl Compiler {
                 }
                 self.add_instruction(code, (*op).into(), expr.location);
             }
+            ExprType::MemberRead { left, right } => {
+                self.compile_expr(left, code, false)?;
+                let member_idx = self.constant_pool.add(Object::from(right.clone()));
+                self.add_instruction(code, BytecodeType::GetMember(member_idx), expr.location);
+            }
         }
         code.add_cond(
             Bytecode {
@@ -315,13 +315,34 @@ impl Compiler {
                 _ => {
                     self.compile_stmt(stmt, code)?;
                     if it.peek().is_none() {
-                        self.add_instruction(code, BytecodeType::PushNone, stmt.location);
+                        // TODO: Caused two consequentive push none when last value in block was statement.
+                        // Left for the time being in case it triggers error.
+                        // self.add_instruction(code, BytecodeType::PushNone, stmt.location);
                     }
                 }
             }
         }
 
         Ok(())
+    }
+
+    fn emit_function_def(
+        &mut self,
+        name: ConstantPoolIndex,
+        fun: ConstantPoolIndex,
+        location: CodeLocation,
+        code: &mut Code,
+    ) {
+        self.add_instruction(code, BytecodeType::PushLiteral(fun), location);
+        match &mut self.location {
+            Location::Global => {
+                self.add_instruction(code, BytecodeType::DeclValGlobal { name }, location);
+            }
+            Location::Local(env) => {
+                todo!("Nested functions are not yet implemented");
+            }
+            Location::Class(env) => unreachable!(),
+        };
     }
 
     fn compile_stmt(&mut self, ast: &Stmt, code: &mut Code) -> Result<(), &'static str> {
@@ -335,6 +356,7 @@ impl Compiler {
                 match &mut self.location {
                     Location::Global => {
                         let name_idx = self.constant_pool.add(Object::from(name.clone()));
+                        // TODO: Repeated code!
                         if *mutable {
                             self.add_instruction(
                                 code,
@@ -358,6 +380,7 @@ impl Compiler {
                         );
                         self.add_locals(1);
                     }
+                    Location::Class(env) => todo!(),
                 }
             }
             StmtType::AssignVariable { name, value } => {
@@ -385,53 +408,10 @@ impl Compiler {
                 body,
             } => {
                 let locals_backup = self.reset_locals();
-
                 let new_fun_name_idx = self.constant_pool.add(Object::from(name.clone()));
-
-                // For global function this behaves as expected,
-                // The function just acts as another scope.
-                // for nested it allows for closures (althrough
-                // the indexes won't match).
-                self.enter_scope();
-                let mut new_code = Code::new();
-                for (idx, par) in parameters.iter().enumerate() {
-                    // Since we just added scope it will always be local
-                    if let Location::Local(env) = &mut self.location {
-                        env.add_local(par.clone(), self.local_count, false)?;
-                        self.add_instruction(
-                            &mut new_code,
-                            BytecodeType::SetLocal(idx.try_into().unwrap()),
-                            ast.location,
-                        );
-                        self.add_locals(1);
-                    }
-                }
-                self.compile_fun(&mut new_code, body)?;
-                self.leave_scope();
-
-                let fun = Object::Function {
-                    name: new_fun_name_idx,
-                    parameters_cnt: parameters.len().try_into().unwrap(),
-                    locals_cnt: self.local_max,
-                    body: new_code,
-                };
-
-                let fun_idx = self.constant_pool.add(fun);
-                self.add_instruction(code, BytecodeType::PushLiteral(fun_idx), ast.location);
-                match &mut self.location {
-                    Location::Global => {
-                        self.add_instruction(
-                            code,
-                            BytecodeType::DeclValGlobal {
-                                name: new_fun_name_idx,
-                            },
-                            ast.location,
-                        );
-                    }
-                    Location::Local(env) => {
-                        todo!("Nested functions are not yet implemented");
-                    }
-                };
+                let fun = self.compile_fun(new_fun_name_idx, parameters, body)?;
+                let fun_idx = self.constant_pool.add(Object::Function(fun));
+                self.emit_function_def(new_fun_name_idx, fun_idx, ast.location, code);
 
                 self.restore_locals(locals_backup);
             }
@@ -439,20 +419,122 @@ impl Compiler {
             StmtType::While { guard, body } => todo!(),
             StmtType::Return(_) => todo!(),
             StmtType::Expression(expr) => self.compile_expr(expr, code, true)?,
+            StmtType::Class { name, statements } => {
+                let name_idx = self.constant_pool.add(Object::from(name.clone()));
+
+                let mut methods: Vec<Function> = vec![];
+
+                // TODO: This should be handled at the grammar level
+                for stmt in statements {
+                    match &stmt.node {
+                        StmtType::Class { name, statements } => {
+                            todo!("Nested classes are not yet supported")
+                        }
+                        StmtType::Function {
+                            name,
+                            parameters,
+                            body,
+                        } => {
+                            let name = self.constant_pool.add(Object::from(name.clone()));
+                            let method = self.compile_fun(name, parameters, body)?;
+                            methods.push(method);
+                        }
+                        _ => panic!("Class can only contain method or member definitions."),
+                    };
+                }
+                let class_idx = self.constant_pool.add(Object::Class {
+                    name: name_idx,
+                    methods,
+                });
+
+                // Generate default constructor
+                let mut constructor = Code::new();
+                constructor.add(Bytecode {
+                    instr: BytecodeType::NewObject(class_idx),
+                    location: CodeLocation(0, 0),
+                });
+                constructor.add(Bytecode {
+                    instr: BytecodeType::SetLocal(0),
+                    location: CodeLocation(0, 0),
+                });
+                constructor.add(Bytecode {
+                    instr: BytecodeType::GetLocal(0),
+                    location: CodeLocation(0, 0),
+                });
+                constructor.add(Bytecode {
+                    instr: BytecodeType::Ret,
+                    location: CodeLocation(0, 0),
+                });
+
+                let cons_fun = Function {
+                    name: name_idx,
+                    parameters_cnt: 0,
+                    locals_cnt: 0,
+                    body: constructor,
+                };
+                let fun_idx = self.constant_pool.add(Object::Function(cons_fun));
+                self.emit_function_def(name_idx, fun_idx, ast.location, code);
+            }
+            StmtType::MemberStore { left, right, val } => {
+                self.compile_expr(val, code, false)?;
+                self.compile_expr(left, code, false)?;
+                let member_idx = self.constant_pool.add(Object::from(right.clone()));
+                self.add_instruction(code, BytecodeType::SetMember(member_idx), ast.location);
+            }
         };
         Ok(())
     }
 
-    fn compile_fun(&mut self, code: &mut Code, ast: &Expr) -> Result<(), &'static str> {
-        self.compile_expr(ast, code, false)?;
+    fn compile_parameters(
+        &mut self,
+        code: &mut Code,
+        parameters: &[String],
+        location: CodeLocation,
+    ) -> Result<(), &'static str> {
+        for (idx, par) in parameters.iter().enumerate() {
+            // Since we just added scope it will always be local
+            if let Location::Local(env) = &mut self.location {
+                env.add_local(par.clone(), self.local_count, false)?;
+                self.add_instruction(
+                    code,
+                    BytecodeType::SetLocal(idx.try_into().unwrap()),
+                    location,
+                );
+                self.add_locals(1);
+            }
+        }
+        Ok(())
+    }
+
+    fn compile_fun(
+        &mut self,
+        name: ConstantPoolIndex,
+        parameters: &Vec<String>,
+        body: &Expr,
+    ) -> Result<Function, &'static str> {
+        // For global function this behaves as expected,
+        // The function just acts as another scope.
+        // for nested it allows for closures (althrough
+        // the indexes won't match).
+        self.enter_scope();
+        let mut code = Code::new();
+        self.compile_parameters(&mut code, parameters, body.location)?;
+        self.compile_expr(body, &mut code, false)?;
         if code.code.is_empty() {
-            self.add_instruction(code, BytecodeType::PushNone, ast.location);
+            self.add_instruction(&mut code, BytecodeType::PushNone, body.location);
         }
         // Return last statement if return is omitted
         if !matches!(code.code.last().unwrap().instr, BytecodeType::Ret) {
-            self.add_instruction(code, BytecodeType::Ret, ast.location);
+            self.add_instruction(&mut code, BytecodeType::Ret, body.location);
         }
-        Ok(())
+        self.leave_scope();
+
+        Ok(Function {
+            name,
+            parameters_cnt: parameters.len().try_into().unwrap(),
+            locals_cnt: self.local_max,
+            body: code,
+        })
     }
 }
 
@@ -543,30 +625,45 @@ pub fn compile(ast: &Stmt) -> Result<(ConstantPool, ConstantPoolIndex), &'static
         _ => unreachable!(),
     }
 
-    let main_fun = Object::Function {
+    let main_fun = Object::Function(Function {
         name: idx,
         parameters_cnt: 0,
         locals_cnt: compiler.local_max,
         body: code,
-    };
+    });
     let main_fun_idx = compiler.constant_pool.add(main_fun);
+    // TODO: Consider rewritting this into some prettier form
     compiler.constant_pool.data = compiler
         .constant_pool
         .data
         .into_iter()
         .map(|f| match f {
-            Object::Function {
+            Object::Function(Function {
                 body,
                 name,
                 parameters_cnt,
                 locals_cnt,
-            } => Object::Function {
+            }) => Object::Function(Function {
                 body: Code {
                     code: jump_pass(body.code),
                 },
                 name,
                 parameters_cnt,
                 locals_cnt,
+            }),
+            Object::Class { name, methods } => Object::Class {
+                name,
+                methods: methods
+                    .into_iter()
+                    .map(|f| Function {
+                        name: f.name,
+                        parameters_cnt: f.parameters_cnt,
+                        locals_cnt: f.locals_cnt,
+                        body: Code {
+                            code: jump_pass(f.body.code),
+                        },
+                    })
+                    .collect(),
             },
             _ => f,
         })

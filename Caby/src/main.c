@@ -85,6 +85,10 @@ int main(int argc, const char* argv[]) {
             exit = execute(argv + 2);
         }
     }
+    if (exit == 1) {
+        usage();
+    }
+
     done_heap();
     return exit;
 }

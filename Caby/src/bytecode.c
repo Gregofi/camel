@@ -64,12 +64,18 @@ size_t ins_size(enum opcode op) {
         case OP_VAL_GLOBAL:
         case OP_VAR_GLOBAL:
         case OP_PUSH_LITERAL:
+        case OP_NEW_OBJECT:
+        case OP_GET_MEMBER:
+        case OP_SET_MEMBER:
             return 5;
+        case OP_DISPATCH_METHOD:
+            return 6;
         default:
             UNREACHABLE();
     }
 }
 
+/// Number of instructions between begin and end.
 size_t range_between(u8* begin, u8* end) {
     size_t cnt = 0;
     while (begin < end) {
@@ -78,6 +84,8 @@ size_t range_between(u8* begin, u8* end) {
     }
     return cnt;
 }
+
+// TODO: Rename to u8, 16...
 
 void write_byte(struct bc_chunk* c, u8 byte) {
     c->data = handle_capacity(c->data, c->len, &c->cap, sizeof(*c->data));

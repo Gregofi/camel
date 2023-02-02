@@ -23,13 +23,17 @@ The string is NOT zero terminated.
 0x00 | name - 4 bytes index to constant pool | parameters count - 1 byte | number of locals slots - 2b
      | code length (in instructions) - 4b | (code - ???b | location begin - 8b | location end - 8b) ... |
 ```
-The code is an array of instruction opcodes (one byte) and its location in the source file (4 bytes).
-- Class, method and member variable
-- Enum
-- TBD...
+The code is an array of instruction opcodes (one byte) and its location in the source file (4 bytes). Functions themselves are invisible to the VM even when in constant pool. To call them you need to define them in main. Push them onto stack and then use SetVal instruction.
+- Class
+```
+0x02 | name - 4 byte index to constant pool | methods count - 2 bytes | Function* ...
+```
+Functions correspond to the Function object above.
+Contructor is not included in the Class object. It should
+instead be serialized as normal function with the same
+name as the class (not necessarily same index to cp).
 
 Size of constant pool is 2^32 (so it can be indexed by 32bit int).
-
 ### Entry point
 
 Constant pool index (4 bytes) at which the global function body is located.
@@ -104,6 +108,17 @@ Pops value of the stack and assigns it to the variable.
 Defines a new mutable global variable. The cp index points to a string which is the variable name.
 Pops value of the stack and assigns it to the variable.
 
+- new_object 0x60 | 4B index to constant pool
+Creates a new instance of class in the constant pool (Not name, but the class itself!).
+- get_member 0x61 | 4B index to constant pool
+Pops class instance from the stack and pushes value of its member (string in cp). If such member doesn't exists then
+runtime error occurs. 
+- set_member 0x62 | 4B index to constant pool
+Pops class instance and value from the stack and sets its member (string in cp) to that value.
+- dispatch_method 0x63 | 4B index to constant pool | 1B number of arguments
+Pops object of the top of the stack and calls method on it.
+
+Pops object off the stack and corresponding number of arguments. Calls method on popped object with name at cp index with given arguments. 
 #### Arithmetic operations
 - iadd 0x30
 - isub 0x31

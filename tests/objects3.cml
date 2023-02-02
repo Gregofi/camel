@@ -1,0 +1,20 @@
+class Person {
+    def init(self, name, surname, age) = {
+        self.name = name + " " + surname;
+        self.age = age;
+    };
+
+    def getAge(self) = self.age;
+
+    def getName(self) = self.name;
+
+    def older(self, other) = if other.age > self.age { other.name } else { self.name };
+};
+
+val p1 = Person();
+val p2 = Person();
+p1.init("Jan", "Novak", 23);
+p2.init("George",  "Washington", 290);
+
+print("{}\n", p1.getName());
+print("{}\n", p2.older(p1));

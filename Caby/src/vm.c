@@ -5,6 +5,7 @@
 #include "common.h"
 #include "hashtable.h"
 #include "object.h"
+#include "class.h"
 #include "dissasembler.h"
 #include "native.h"
 
@@ -194,6 +195,16 @@ enum interpret_result interpret_print(vm_t* vm) {
                         case OBJECT_STRING:
                             fputs(as_string(v.object)->data, stdout);
                             break;
+                        case OBJECT_CLASS: {
+                            u32 name_idx = as_class(v.object)->name;
+                            const char* name = as_string(vm->const_pool.data[name_idx])->data;
+                            printf("<class object '%s' at %p", name, &obj->object);
+                            break;
+                        }
+                        case OBJECT_INSTANCE: {
+                            printf("<class instance at %p>", &v.object);
+                            break;
+                        }
                         default:
                             runtime_error(vm, "Can't print this type");
                             return INTERPRET_ERROR;
@@ -203,7 +214,7 @@ enum interpret_result interpret_print(vm_t* vm) {
                 default:
                     UNREACHABLE();
             }
-        } else if (*c == '\\' &&c[1] != '\0') { // Escape sequence
+        } else if (*c == '\\' && c[1] != '\0') { // Escape sequence
             c += 1;
             if (*c == 'n') {
                 puts("");
@@ -493,6 +504,63 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
                 runtime_error(vm, "Only functions can be called");
                 return INTERPRET_ERROR;
             }
+            break;
+        }
+        case OP_NEW_OBJECT: {
+            u32 idx = READ_4BYTES_BE(vm->ip);
+            vm->ip += 4;
+            struct object_instance* ins = new_instance(vm,  as_class(vm->const_pool.data[idx]));
+            struct value ins_v = NEW_OBJECT(ins);
+            push(vm, ins_v);
+            break;
+        }
+        case OP_SET_MEMBER:
+        case OP_GET_MEMBER: {
+            u32 name = READ_4BYTES_BE(vm->ip);
+            vm->ip += 4;
+            struct object_instance* instance = as_instance(pop(vm).object);
+            struct object_string* key = as_string(vm->const_pool.data[name]);
+            struct value key_v = NEW_OBJECT(key);
+            struct value val;
+
+            if (ins == OP_GET_MEMBER) {
+                bool exists = table_get(&instance->members, key_v, &val);
+                if (!exists) {
+                    runtime_error(vm, "The object doesn't have member '%s'", key->data);
+                }
+                push(vm, val);
+            } else { // OP_SET_MEMBER
+                struct value v = pop(vm);
+                table_set(&instance->members, key_v, v);
+            }
+
+            break;
+        }
+        case OP_DISPATCH_METHOD: {
+            u32 name = READ_4BYTES_BE(vm->ip);
+            vm->ip += 4;
+            u8 arity = READ_IP() + 1;
+            
+            // TODO: Implement instance dispatching for other types
+            // TODO: Properly check for wrong types
+            // Leave the object on the stack because it is
+            // also an argument for the method
+            struct value target = peek(vm, 1);
+            if (target.type == VAL_OBJECT) {
+                struct object* obj = target.object;
+                if (obj->type == OBJECT_INSTANCE) {
+                    struct object_instance* instance = as_instance(obj);
+                    struct value method;
+                    table_get(&instance->klass->methods, NEW_OBJECT(vm->const_pool.data[name]), &method);
+                    struct object_function* f = as_function(method.object);
+                    if (arity != f->arity) {
+                        runtime_error(vm, "Got '%d' arguments, expected '%d'", arity, f->arity);
+                        return INTERPRET_ERROR;
+                    }
+                    push_frame(vm, f);
+                }
+            }
+            
             break;
         }
         default:
