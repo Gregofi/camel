@@ -23,6 +23,19 @@ void free_gc(struct gc_state* gc) {
     init_gc(gc);
 }
 
+static void mark_val(struct gc_state*, struct value*);
+
+static void mark_table(struct gc_state* gc, struct table* table) {
+    for (size_t i = 0; i < table->capacity; ++i) {
+        struct entry* e = &table->entries[i];
+        mark_val(gc, &e->key);
+        // TODO: Maybe not necessary
+        if (e->key.type != VAL_NONE) {
+            mark_val(gc, &e->val);
+        }
+    }
+}
+
 static void mark_object(struct gc_state* gc, struct object* obj) {
     if (obj == NULL || IS_MARKED(obj->gc_data)) {
         return;
@@ -35,6 +48,11 @@ static void mark_object(struct gc_state* gc, struct object* obj) {
         exit(-11);
     }
     gc->worklist[gc->wl_count++] = obj;
+
+    if (obj->type == OBJECT_INSTANCE) {
+        struct object_instance* instance = as_instance(obj);
+        mark_table(gc, &instance->members);
+    }
 #ifdef __GC_DEBUG__
     GC_LOG("Marking object %p: ", obj);
     dissasemble_object(stderr, obj);
@@ -48,17 +66,6 @@ static void mark_val(struct gc_state* gc, struct value* v) {
     }
 }
 
-static void mark_table(struct gc_state* gc, struct table* table) {
-    for (size_t i = 0; i < table->capacity; ++i) {
-        struct entry* e = &table->entries[i];
-        mark_val(gc, &e->key);
-        // TODO: Maybe not necessary
-        if (e->key.type != VAL_NONE) {
-            mark_val(gc, &e->val);
-        }
-    }
-}
-
 static void mark_roots(vm_t* vm) {
     // constant pool
     for (size_t i = 0; i < vm->const_pool.len; ++i) {
@@ -69,6 +76,7 @@ static void mark_roots(vm_t* vm) {
     for (size_t i = 0; i < vm->stack_len; ++i) {
         mark_val(&vm->gc, &vm->op_stack[i]);
     }
+
     // globals
     mark_table(&vm->gc, &vm->globals);
 
