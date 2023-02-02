@@ -32,9 +32,7 @@ print("Max({}) = {}", lst, max(lst));
 The language has C-like syntax but supports advanced constructs such as objects, lists, strings and so on. It basically aims to be similar to Python with more C-like syntax and stricter scoping rules.
 
 Following features will hopefully be implemented:
-- Algebraic data types -> Pattern matching with enums
 - Fully interpolated strings
-- Some other way of managing errors without the use of exceptions (use adt?)
 - Closures
 - Dictionaries
 - Sets
