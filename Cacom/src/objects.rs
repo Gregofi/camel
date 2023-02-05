@@ -6,7 +6,6 @@ use std::io::prelude::*;
 use crate::bytecode::{Code, ConstantPoolIndex, LocalIndex};
 use crate::serializable::Serializable;
 
-// TODO: Replace Object::Function internals with this guy
 pub struct Function {
     pub name: ConstantPoolIndex,
     pub parameters_cnt: u8,
