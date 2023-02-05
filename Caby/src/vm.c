@@ -256,6 +256,7 @@ static enum interpret_result interpret_fun_call(vm_t* vm) {
         runtime_error(vm, "Only functions can be called");
         return INTERPRET_ERROR;
     }
+    return INTERPRET_CONTINUE;
 }
 
 static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
