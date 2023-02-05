@@ -235,7 +235,7 @@ enum interpret_result interpret_print(vm_t* vm) {
 static enum interpret_result interpret_fun_call(vm_t* vm) {
     struct value v = pop(vm);
     if (v.type == VAL_OBJECT) {
-        u8 arity = READ_IP();
+        u8 arity = READ_1B_IP(vm);
         if (v.object->type == OBJECT_FUNCTION) {
             struct object_function* f = as_function(v.object);
             if (arity != f->arity) {
@@ -273,21 +273,18 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
     case OP_PRINT:
         return interpret_print(vm);
     case OP_PUSH_SHORT: {
-        i16 val = READ_2BYTES_BE(vm->ip);
-        vm->ip += 2;
+        i16 val = READ_2B_IP(vm);
         push(vm, NEW_INT(val));
         break;
     }
     case OP_PUSH_INT: {
-        int val = READ_4BYTES_BE(vm->ip);
-        vm->ip += 4;
+        i32 val = READ_4B_IP(vm);
         push(vm, NEW_INT(val));
         break;
     }
     case OP_PUSH_LITERAL: {
-        u32 idx = READ_4BYTES_BE(vm->ip);
-        vm->ip += 4;
-        struct value vobj = NEW_OBJECT(vm->const_pool.data[idx]);
+        u32 cp_idx = READ_4B_IP(vm);
+        struct value vobj = NEW_OBJECT(vm->const_pool.data[cp_idx]);
         push(vm, vobj);
         break;
     }
@@ -297,7 +294,7 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
         break;
     }
     case OP_PUSH_BOOL: {
-        struct value boolean = NEW_BOOL(READ_IP());
+        struct value boolean = NEW_BOOL(READ_1B_IP(vm));
         push(vm, boolean);
         break;
     }
@@ -436,7 +433,7 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
         pop(vm);
         break;
     case OP_DROPN:
-        vm->stack_len -= *vm->ip++;
+        vm->stack_len -= READ_1B_IP(vm);
         break;
     case OP_JMP:
         vm->ip = &CURRENT_FUNCTION()->bc.data[READ_4BYTES_BE(vm->ip)];
@@ -459,8 +456,7 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
     case OP_VAL_GLOBAL:
     case OP_VAR_GLOBAL: {
         struct value val = pop(vm);
-        u32 name_idx = READ_4BYTES_BE(vm->ip);
-        vm->ip += 4;
+        u32 name_idx = READ_4B_IP(vm);
         struct object_string* name = read_string_cp(&vm->const_pool, name_idx);
         struct value name_obj = NEW_OBJECT(name);
         bool new_v = table_set(&vm->globals, name_obj, val);
@@ -471,8 +467,7 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
         break;
     }
     case OP_GET_GLOBAL: {
-        u32 name_idx = READ_4BYTES_BE(vm->ip);
-        vm->ip += 4;
+        u32 name_idx = READ_4B_IP(vm);
         struct object_string* name = read_string_cp(&vm->const_pool, name_idx);
         struct value name_obj = NEW_OBJECT(name);
         struct value val;
@@ -484,8 +479,7 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
         break;
     }
     case OP_SET_GLOBAL: {
-        u32 name_idx = READ_4BYTES_BE(vm->ip);
-        vm->ip += 4;
+        u32 name_idx = READ_4B_IP(vm);
         struct object_string* name = read_string_cp(&vm->const_pool, name_idx);
         struct value name_obj = NEW_OBJECT(name);
         struct value v = pop(vm);
@@ -496,15 +490,13 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
         break;
     }
     case OP_GET_LOCAL: {
-        u16 slot_idx = READ_2BYTES_BE(vm->ip);
-        vm->ip += 2;
+        u16 slot_idx = READ_2B_IP(vm);
         struct value v = TOP_FRAME().slots[slot_idx];
         push(vm, v);
         break;
     }
     case OP_SET_LOCAL: {
-        u16 frame_idx = READ_2BYTES_BE(vm->ip);
-        vm->ip += 2;
+        u16 frame_idx = READ_2B_IP(vm);
         struct value v = pop(vm);
         TOP_FRAME().slots[frame_idx] = v;
         break;
@@ -514,8 +506,7 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
         break;
     }
     case OP_NEW_OBJECT: {
-        u32 idx = READ_4BYTES_BE(vm->ip);
-        vm->ip += 4;
+        u32 idx = READ_4B_IP(vm);
         struct object_instance* ins = new_instance(vm,  as_class(vm->const_pool.data[idx]));
         struct value ins_v = NEW_OBJECT(ins);
         push(vm, ins_v);
@@ -523,8 +514,7 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
     }
     case OP_SET_MEMBER:
     case OP_GET_MEMBER: {
-        u32 name = READ_4BYTES_BE(vm->ip);
-        vm->ip += 4;
+        u32 name = READ_4B_IP(vm);
         struct object_instance* instance = as_instance(pop(vm).object);
         struct object_string* key = as_string(vm->const_pool.data[name]);
         struct value key_v = NEW_OBJECT(key);
@@ -544,9 +534,8 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
         break;
     }
     case OP_DISPATCH_METHOD: {
-        u32 name = READ_4BYTES_BE(vm->ip);
-        vm->ip += 4;
-        u8 arity = READ_IP() + 1;
+        u32 name = READ_4B_IP(vm);
+        u8 arity = READ_1B_IP(vm) + 1;
         
         // TODO: Implement instance dispatching for other types
         // TODO: Properly check for wrong types
@@ -582,7 +571,7 @@ static int run(vm_t* vm) {
     u8 ins;
     while (true) {
         DUMP_INS(vm->ip);
-        ins = READ_IP();
+        ins = READ_1B_IP(vm);
         enum interpret_result res = interpret_ins(vm, ins);
         DUMP_STACK(vm);
         if (res == INTERPRET_ERROR) {
