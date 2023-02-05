@@ -263,7 +263,7 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
     case OP_RETURN: {
         if (vm->frame_len > 1) {
             pop_frame(vm);
-        // Only the last global frame is remaining
+        // Only the last global frame is remaining - Terminating return
         } else {
             return INTERPRET_RETURN;
         }
