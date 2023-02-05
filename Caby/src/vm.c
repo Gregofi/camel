@@ -73,7 +73,7 @@ void init_vm_state(vm_t* vm) {
 }
 
 void alloc_frames(vm_t* vm) {
-    vm->locals = malloc(sizeof(*vm->locals) * (1 << 16));
+    vm->locals = malloc(sizeof(*vm->locals) * (MAX_LOCALS));
 }
 
 static void push_frame(vm_t* vm, struct object_function* f) {
@@ -139,7 +139,6 @@ static struct object_string* pop_string(vm_t* vm) {
 
 // =========== Interpreting functions ===========
 
-#define READ_IP() (*vm->ip++)
 #define TOP_FRAME() (vm->frames[vm->frame_len - 1])
 #define CURRENT_FUNCTION() (TOP_FRAME().function)
 
@@ -158,7 +157,7 @@ struct value interpret_string_concat(vm_t* vm, struct object* o1, struct object*
 }
 
 enum interpret_result interpret_print(vm_t* vm) {
-    u8 arg_cnt = READ_IP() - 1;
+    u8 arg_cnt = READ_1B_IP(vm) - 1;
 
     struct value v = pop(vm);
     if (v.type != VAL_OBJECT || v.object->type != OBJECT_STRING) {
