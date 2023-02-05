@@ -8,6 +8,17 @@
 
 #define FRAME_DEPTH 128
 #define GC_HEAP_GROW_FACTOR 2
+#define MAX_LOCALS 1 << 16
+
+#define READ_4B_IP(VM) ((VM)->ip += 4, (VM)->ip[-4] << 24 \
+                                     | (VM)->ip[-3] << 16 \
+                                     | (VM)->ip[-2] << 8 \
+                                     | (VM)->ip[-1])
+
+#define READ_2B_IP(VM) ((VM)->ip += 2, (VM)->ip[-2] << 8 \
+                                     | (VM)->ip[-1])
+
+#define READ_1B_IP(VM) (*(VM)->ip++)
 
 enum interpret_result {
     INTERPRET_CONTINUE,

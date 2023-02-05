@@ -34,7 +34,7 @@ size_t get_cap(size_t curr);
 /// Reallocates the array if the capacity is exceeded
 /// New array is returned if reallocation occured, else
 /// old one is returned. Capacity is updated accordingly.
-/// Uses system realloc.
+/// Uses system realloc (ie. memory is not GCed).
 ///
 /// @param cnt - number of objects
 /// @param len - size of one object.

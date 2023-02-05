@@ -74,7 +74,7 @@ static void mark_roots(vm_t* vm) {
     for (size_t i = 0; i < vm->const_pool.len; ++i) {
         mark_object(&vm->gc, vm->const_pool.data[i]);
     }
-    
+
     // stack
     for (size_t i = 0; i < vm->stack_len; ++i) {
         mark_val(&vm->gc, &vm->op_stack[i]);
@@ -118,7 +118,7 @@ static void trace_references(vm_t* vm) {
 
 static void sweep(vm_t* vm) {
     struct object** obj = &vm->objects;
-    while (*obj) {
+    while (*obj != NULL) {
         if (IS_MARKED((*obj)->gc_data)) {
             (*obj)->gc_data = 0;
             obj = &(*obj)->next;

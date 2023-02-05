@@ -17,7 +17,7 @@ pub struct Bytecode {
 }
 
 pub enum BytecodeType {
-    PushShort(i8),
+    PushShort(i16),
     PushInt(i32),
     PushLong(i64),
 
