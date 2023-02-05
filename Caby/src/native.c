@@ -23,7 +23,6 @@ static double val_to_double(struct value v) {
             fprintf(stderr, "Expected int or double in pow function\n");
             exit(1);
     }
-
 }
 
 struct value pow_nat(int arg_cnt, struct value* args) {
