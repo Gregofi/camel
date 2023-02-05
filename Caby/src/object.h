@@ -80,11 +80,14 @@ struct value {
     };
 };
 
-#define NEW_INT(val) (struct value){.type = VAL_INT, .integer = (val)}
-#define NEW_BOOL(val) (struct value){.type = VAL_BOOL, .boolean = (val)}
-#define NEW_DOUBLE(val) (struct value){.type = VAL_DOUBLE, .double_num = (val)}
-#define NEW_OBJECT(val) (struct value){.type = VAL_OBJECT, .object = (struct object*)(val)}
+#define NEW_INT(VAL) (struct value){.type = VAL_INT, .integer = (VAL)}
+#define NEW_BOOL(VAL) (struct value){.type = VAL_BOOL, .boolean = (VAL)}
+#define NEW_DOUBLE(VAL) (struct value){.type = VAL_DOUBLE, .double_num = (VAL)}
+#define NEW_OBJECT(VAL) (struct value){.type = VAL_OBJECT, .object = (struct object*)(VAL)}
 #define NEW_NONE() (struct value){.type = VAL_NONE}
+
+/// To improve clarity of some functions
+#define AS_OBJECT(VAL) NEW_OBJECT(VAL)
 
 /*
  * Following functions serve as constructors, converters and checkers

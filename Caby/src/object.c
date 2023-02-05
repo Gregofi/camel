@@ -185,18 +185,18 @@ u32 value_hash(struct value v) {
     return hash;
 }
 
-#define VALUE_COMPARE(fun_name, operator) \
-bool fun_name(struct value v1, struct value v2) {  \
+#define VALUE_COMPARE(FUN_NAME, OPERATOR) \
+bool FUN_NAME(struct value v1, struct value v2) {  \
     if (v1.type != v2.type) {  \
         return false;  \
     }  \
     switch (v1.type) {  \
         case VAL_INT:  \
-            return v1.integer operator v2.integer;  \
+            return v1.integer OPERATOR v2.integer;  \
         case VAL_BOOL:  \
-            return v1.boolean operator v2.boolean;  \
+            return v1.boolean OPERATOR v2.boolean;  \
         case VAL_DOUBLE:  \
-            return v1.double_num operator v2.double_num;  \
+            return v1.double_num OPERATOR v2.double_num;  \
         case VAL_NONE:  \
             return false;  \
         default:  \
