@@ -232,6 +232,32 @@ enum interpret_result interpret_print(vm_t* vm) {
     return INTERPRET_CONTINUE;
 }
 
+static enum interpret_result interpret_fun_call(vm_t* vm) {
+    struct value v = pop(vm);
+    if (v.type == VAL_OBJECT) {
+        u8 arity = READ_IP();
+        if (v.object->type == OBJECT_FUNCTION) {
+            struct object_function* f = as_function(v.object);
+            if (arity != f->arity) {
+                runtime_error(vm, "Got '%d' arguments, expected '%d'",
+                                arity, f->arity);
+                return INTERPRET_ERROR;
+            }
+            push_frame(vm, f);
+        } else if (v.object->type == OBJECT_NATIVE) {
+            struct object_native* nat = as_native(v.object);
+            DUMP_STACK(vm);
+            struct value* args_offset = vm->op_stack + vm->stack_len - arity;
+            struct value res = nat->function(arity, args_offset);
+            vm->stack_len -= arity;
+            push(vm, res);
+        }
+    } else {
+        runtime_error(vm, "Only functions can be called");
+        return INTERPRET_ERROR;
+    }
+}
+
 static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
     switch (ins) {
     case OP_RETURN: {
@@ -483,27 +509,7 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
         break;
     }
     case OP_CALL_FUNC: {
-        struct value v = pop(vm);
-        if (v.type == VAL_OBJECT) {
-            u8 arity = READ_IP();
-            if (v.object->type == OBJECT_FUNCTION) {
-                struct object_function* f = as_function(v.object);
-                if (arity != f->arity) {
-                    runtime_error(vm, "Got '%d' arguments, expected '%d'", arity, f->arity);
-                    return INTERPRET_ERROR;
-                }
-                push_frame(vm, f);
-            } else if (v.object->type == OBJECT_NATIVE) {
-                struct object_native* nat = as_native(v.object);
-                DUMP_STACK(vm);
-                struct value res = nat->function(arity, vm->op_stack + vm->stack_len - arity);
-                vm->stack_len -= arity;
-                push(vm, res);
-            }
-        } else {
-            runtime_error(vm, "Only functions can be called");
-            return INTERPRET_ERROR;
-        }
+        return interpret_fun_call(vm);
         break;
     }
     case OP_NEW_OBJECT: {
