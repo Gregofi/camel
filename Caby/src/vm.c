@@ -536,7 +536,6 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
     case OP_DISPATCH_METHOD: {
         u32 name = READ_4B_IP(vm);
         u8 arity = READ_1B_IP(vm) + 1;
-        
         // TODO: Implement instance dispatching for other types
         // TODO: Properly check for wrong types
         // Leave the object on the stack because it is
@@ -556,7 +555,6 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
                 push_frame(vm, f);
             }
         }
-        
         break;
     }
     default:
