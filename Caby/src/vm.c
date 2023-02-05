@@ -234,337 +234,337 @@ enum interpret_result interpret_print(vm_t* vm) {
 
 static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
     switch (ins) {
-        case OP_RETURN: {
-            if (vm->frame_len > 1) {
-                pop_frame(vm);
-            // Only the last global frame is remaining
-            } else {
-                return INTERPRET_RETURN;
-            }
-            break;
+    case OP_RETURN: {
+        if (vm->frame_len > 1) {
+            pop_frame(vm);
+        // Only the last global frame is remaining
+        } else {
+            return INTERPRET_RETURN;
         }
-        case OP_PRINT:
-            return interpret_print(vm);
-        case OP_PUSH_SHORT: {
-            i16 val = READ_2BYTES_BE(vm->ip);
-            vm->ip += 2;
-            push(vm, NEW_INT(val));
-            break;
+        break;
+    }
+    case OP_PRINT:
+        return interpret_print(vm);
+    case OP_PUSH_SHORT: {
+        i16 val = READ_2BYTES_BE(vm->ip);
+        vm->ip += 2;
+        push(vm, NEW_INT(val));
+        break;
+    }
+    case OP_PUSH_INT: {
+        int val = READ_4BYTES_BE(vm->ip);
+        vm->ip += 4;
+        push(vm, NEW_INT(val));
+        break;
+    }
+    case OP_PUSH_LITERAL: {
+        u32 idx = READ_4BYTES_BE(vm->ip);
+        vm->ip += 4;
+        struct value vobj = NEW_OBJECT(vm->const_pool.data[idx]);
+        push(vm, vobj);
+        break;
+    }
+    case OP_PUSH_NONE: {
+        struct value none = NEW_NONE();
+        push(vm, none);
+        break;
+    }
+    case OP_PUSH_BOOL: {
+        struct value boolean = NEW_BOOL(READ_IP());
+        push(vm, boolean);
+        break;
+    }
+    case OP_IADD: {
+        struct value v1 = pop(vm);
+        struct value v2 = pop(vm);
+        if (v1.type == VAL_INT && v2.type == VAL_INT) {
+            push(vm, NEW_INT(v1.integer + v2.integer));
+        } else if (v1.type == VAL_DOUBLE && v2.type == VAL_DOUBLE) {
+            push(vm, NEW_DOUBLE(v1.double_num + v2.double_num));
+        } else if (v1.type == VAL_OBJECT && v2.type == VAL_OBJECT
+                && v1.object->type == OBJECT_STRING
+                && v2.object->type == OBJECT_STRING) {
+            push(vm, interpret_string_concat(vm, v1.object, v2.object));
+        } else {
+            runtime_error(vm, "Incopatible types for operator '+'");
+            return INTERPRET_ERROR;
         }
-        case OP_PUSH_INT: {
-            int val = READ_4BYTES_BE(vm->ip);
-            vm->ip += 4;
-            push(vm, NEW_INT(val));
-            break;
+        break;
+    }
+    case OP_ISUB: {
+        struct value v1 = pop(vm);
+        struct value v2 = pop(vm);
+        if (v1.type == VAL_INT && v2.type == VAL_INT) {
+            push(vm, NEW_INT(v1.integer - v2.integer));
+        } else if (v1.type == VAL_DOUBLE && v2.type == VAL_DOUBLE) {
+            push(vm, NEW_DOUBLE(v1.double_num - v2.double_num));
+        } else {
+            runtime_error(vm, "Incopatible types for operator '-'");
+            return INTERPRET_ERROR;
         }
-        case OP_PUSH_LITERAL: {
-            u32 idx = READ_4BYTES_BE(vm->ip);
-            vm->ip += 4;
-            struct value vobj = NEW_OBJECT(vm->const_pool.data[idx]);
-            push(vm, vobj);
-            break;
+        break;
+    }
+    case OP_IMUL: {
+        struct value v1 = pop(vm);
+        struct value v2 = pop(vm);
+        if (v1.type == VAL_INT && v2.type == VAL_INT) {
+            push(vm, NEW_INT(v1.integer * v2.integer));
+        } else if (v1.type == VAL_DOUBLE && v2.type == VAL_DOUBLE) {
+            push(vm, NEW_DOUBLE(v1.double_num * v2.double_num));
+        // TODO: List and string multiplication
+        } else {
+            runtime_error(vm, "Incopatible types for operator '*'");
+            return INTERPRET_ERROR;
         }
-        case OP_PUSH_NONE: {
-            struct value none = NEW_NONE();
-            push(vm, none);
-            break;
-        }
-        case OP_PUSH_BOOL: {
-            struct value boolean = NEW_BOOL(READ_IP());
-            push(vm, boolean);
-            break;
-        }
-        case OP_IADD: {
-            struct value v1 = pop(vm);
-            struct value v2 = pop(vm);
-            if (v1.type == VAL_INT && v2.type == VAL_INT) {
-                push(vm, NEW_INT(v1.integer + v2.integer));
-            } else if (v1.type == VAL_DOUBLE && v2.type == VAL_DOUBLE) {
-                push(vm, NEW_DOUBLE(v1.double_num + v2.double_num));
-            } else if (v1.type == VAL_OBJECT && v2.type == VAL_OBJECT
-                    && v1.object->type == OBJECT_STRING
-                    && v2.object->type == OBJECT_STRING) {
-                push(vm, interpret_string_concat(vm, v1.object, v2.object));
-            } else {
-                runtime_error(vm, "Incopatible types for operator '+'");
+        break;
+    }
+    case OP_IDIV: {
+        struct value v1 = pop(vm);
+        struct value v2 = pop(vm);
+        if (v1.type == VAL_INT && v2.type == VAL_INT) {
+            if (v2.integer == 0) {
+                runtime_error(vm, "Division by zero error");
                 return INTERPRET_ERROR;
             }
-            break;
+            push(vm, NEW_INT(v1.integer / v2.integer));
+        } else if (v1.type == VAL_DOUBLE && v2.type == VAL_DOUBLE) {
+            push(vm, NEW_DOUBLE(v1.double_num / v2.double_num));
+        } else {
+            runtime_error(vm, "Incopatible types for operator '/'");
+            return INTERPRET_ERROR;
         }
-        case OP_ISUB: {
-            struct value v1 = pop(vm);
-            struct value v2 = pop(vm);
-            if (v1.type == VAL_INT && v2.type == VAL_INT) {
-                push(vm, NEW_INT(v1.integer - v2.integer));
-            } else if (v1.type == VAL_DOUBLE && v2.type == VAL_DOUBLE) {
-                push(vm, NEW_DOUBLE(v1.double_num - v2.double_num));
-            } else {
-                runtime_error(vm, "Incopatible types for operator '-'");
+        break;
+    }
+    case OP_IMOD: {
+        struct value v1 = pop(vm);
+        struct value v2 = pop(vm);
+        if (v1.type == VAL_INT && v2.type == VAL_INT) {
+            if (v2.integer == 0) {
+                runtime_error(vm, "Division by zero error");
                 return INTERPRET_ERROR;
             }
-            break;
+            push(vm, NEW_INT(v1.integer % v2.integer));
+        } else {
+            runtime_error(vm, "Incopatible types for operator '\%'");
+            return INTERPRET_ERROR;
         }
-        case OP_IMUL: {
-            struct value v1 = pop(vm);
-            struct value v2 = pop(vm);
-            if (v1.type == VAL_INT && v2.type == VAL_INT) {
-                push(vm, NEW_INT(v1.integer * v2.integer));
-            } else if (v1.type == VAL_DOUBLE && v2.type == VAL_DOUBLE) {
-                push(vm, NEW_DOUBLE(v1.double_num * v2.double_num));
-            // TODO: List and string multiplication
-            } else {
-                runtime_error(vm, "Incopatible types for operator '*'");
-                return INTERPRET_ERROR;
-            }
-            break;
-        }
-        case OP_IDIV: {
-            struct value v1 = pop(vm);
-            struct value v2 = pop(vm);
-            if (v1.type == VAL_INT && v2.type == VAL_INT) {
-                if (v2.integer == 0) {
-                    runtime_error(vm, "Division by zero error");
-                    return INTERPRET_ERROR;
-                }
-                push(vm, NEW_INT(v1.integer / v2.integer));
-            } else if (v1.type == VAL_DOUBLE && v2.type == VAL_DOUBLE) {
-                push(vm, NEW_DOUBLE(v1.double_num / v2.double_num));
-            } else {
-                runtime_error(vm, "Incopatible types for operator '/'");
-                return INTERPRET_ERROR;
-            }
-            break;
-        }
-        case OP_IMOD: {
-            struct value v1 = pop(vm);
-            struct value v2 = pop(vm);
-            if (v1.type == VAL_INT && v2.type == VAL_INT) {
-                if (v2.integer == 0) {
-                    runtime_error(vm, "Division by zero error");
-                    return INTERPRET_ERROR;
-                }
-                push(vm, NEW_INT(v1.integer % v2.integer));
-            } else {
-                runtime_error(vm, "Incopatible types for operator '\%'");
-                return INTERPRET_ERROR;
-            }
-            break;
+        break;
 
+    }
+    case OP_ILESS: {
+        struct value v1 = pop(vm);
+        struct value v2 = pop(vm);
+        bool res = value_less(v1, v2);
+        push(vm, NEW_BOOL(res));
+        break;
+    }
+    case OP_ILESSEQ: {
+        struct value v1 = pop(vm);
+        struct value v2 = pop(vm);
+        bool res = value_lesseq(v1, v2);
+        push(vm, NEW_BOOL(res));
+        break;
+    }
+    case OP_IGREATER: {
+        struct value v1 = pop(vm);
+        struct value v2 = pop(vm);
+        bool res = value_greater(v1, v2);
+        push(vm, NEW_BOOL(res));
+        break;
+    }
+    case OP_IGREATEREQ: {
+        struct value v1 = pop(vm);
+        struct value v2 = pop(vm);
+        bool res = value_greatereq(v1, v2);
+        push(vm, NEW_BOOL(res));
+        break;
+    }
+    case OP_EQ: {
+        struct value v1 = pop(vm);
+        struct value v2 = pop(vm);
+        bool res = value_eq(v1, v2);
+        push(vm, NEW_BOOL(res));
+        break;
+    }
+    case OP_NEQ: {
+        struct value v1 = pop(vm);
+        struct value v2 = pop(vm);
+        bool res = !value_eq(v1, v2);
+        push(vm, NEW_BOOL(res));
+        break;
+    }
+    case OP_INEG: {
+        struct value v = pop(vm);
+        if (v.type == VAL_INT) {
+            push(vm, NEW_INT(-v.integer));
+        } else if (v.type == VAL_DOUBLE) {
+            push(vm, NEW_DOUBLE(-v.integer));
+        } else {
+            runtime_error(vm, "Incopatible type for operator unary '-'");
+            return INTERPRET_ERROR;
         }
-        case OP_ILESS: {
-            struct value v1 = pop(vm);
-            struct value v2 = pop(vm);
-            bool res = value_less(v1, v2);
-            push(vm, NEW_BOOL(res));
-            break;
+        break;
+    }
+    case OP_DROP:
+        pop(vm);
+        break;
+    case OP_DROPN:
+        vm->stack_len -= *vm->ip++;
+        break;
+    case OP_JMP:
+        vm->ip = &CURRENT_FUNCTION()->bc.data[READ_4BYTES_BE(vm->ip)];
+        break;
+    case OP_BRANCH_FALSE:
+    case OP_BRANCH: {
+        struct value val = pop(vm);
+        if (val.type != VAL_BOOL) {
+            runtime_error(vm, "Expected type 'bool' in if condition");
+            return INTERPRET_ERROR;
         }
-        case OP_ILESSEQ: {
-            struct value v1 = pop(vm);
-            struct value v2 = pop(vm);
-            bool res = value_lesseq(v1, v2);
-            push(vm, NEW_BOOL(res));
-            break;
-        }
-        case OP_IGREATER: {
-            struct value v1 = pop(vm);
-            struct value v2 = pop(vm);
-            bool res = value_greater(v1, v2);
-            push(vm, NEW_BOOL(res));
-            break;
-        }
-        case OP_IGREATEREQ: {
-            struct value v1 = pop(vm);
-            struct value v2 = pop(vm);
-            bool res = value_greatereq(v1, v2);
-            push(vm, NEW_BOOL(res));
-            break;
-        }
-        case OP_EQ: {
-            struct value v1 = pop(vm);
-            struct value v2 = pop(vm);
-            bool res = value_eq(v1, v2);
-            push(vm, NEW_BOOL(res));
-            break;
-        }
-        case OP_NEQ: {
-            struct value v1 = pop(vm);
-            struct value v2 = pop(vm);
-            bool res = !value_eq(v1, v2);
-            push(vm, NEW_BOOL(res));
-            break;
-        }
-        case OP_INEG: {
-            struct value v = pop(vm);
-            if (v.type == VAL_INT) {
-                push(vm, NEW_INT(-v.integer));
-            } else if (v.type == VAL_DOUBLE) {
-                push(vm, NEW_DOUBLE(-v.integer));
-            } else {
-                runtime_error(vm, "Incopatible type for operator unary '-'");
-                return INTERPRET_ERROR;
-            }
-            break;
-        }
-        case OP_DROP:
-            pop(vm);
-            break;
-        case OP_DROPN:
-            vm->stack_len -= *vm->ip++;
-            break;
-        case OP_JMP:
-            vm->ip = &CURRENT_FUNCTION()->bc.data[READ_4BYTES_BE(vm->ip)];
-            break;
-        case OP_BRANCH_FALSE:
-        case OP_BRANCH: {
-            struct value val = pop(vm);
-            if (val.type != VAL_BOOL) {
-                runtime_error(vm, "Expected type 'bool' in if condition");
-                return INTERPRET_ERROR;
-            }
-            if ((ins == OP_BRANCH && val.boolean) || (ins == OP_BRANCH_FALSE && !val.boolean)) {
-                u32 dest = READ_4BYTES_BE(vm->ip);
-                vm->ip = &CURRENT_FUNCTION()->bc.data[dest];
-            } else {
-                vm->ip += 4;
-            }
-            break;
-        }
-        case OP_VAL_GLOBAL:
-        case OP_VAR_GLOBAL: {
-            struct value val = pop(vm);
-            u32 name_idx = READ_4BYTES_BE(vm->ip);
+        if ((ins == OP_BRANCH && val.boolean) || (ins == OP_BRANCH_FALSE && !val.boolean)) {
+            u32 dest = READ_4BYTES_BE(vm->ip);
+            vm->ip = &CURRENT_FUNCTION()->bc.data[dest];
+        } else {
             vm->ip += 4;
-            struct object_string* name = read_string_cp(&vm->const_pool, name_idx);
-            struct value name_obj = NEW_OBJECT(name);
-            bool new_v = table_set(&vm->globals, name_obj, val);
-            if (!new_v) {
-                runtime_error(vm, "Error: Variable '%s' is already defined", name->data);
-                return INTERPRET_ERROR;
-            }
-            break;
         }
-        case OP_GET_GLOBAL: {
-            u32 name_idx = READ_4BYTES_BE(vm->ip);
-            vm->ip += 4;
-            struct object_string* name = read_string_cp(&vm->const_pool, name_idx);
-            struct value name_obj = NEW_OBJECT(name);
-            struct value val;
-            if (!table_get(&vm->globals, name_obj, &val)) {
-                runtime_error(vm, "Error: Access to undefined variable '%s'.", name->data);
-                return INTERPRET_ERROR;
+        break;
+    }
+    case OP_VAL_GLOBAL:
+    case OP_VAR_GLOBAL: {
+        struct value val = pop(vm);
+        u32 name_idx = READ_4BYTES_BE(vm->ip);
+        vm->ip += 4;
+        struct object_string* name = read_string_cp(&vm->const_pool, name_idx);
+        struct value name_obj = NEW_OBJECT(name);
+        bool new_v = table_set(&vm->globals, name_obj, val);
+        if (!new_v) {
+            runtime_error(vm, "Error: Variable '%s' is already defined", name->data);
+            return INTERPRET_ERROR;
+        }
+        break;
+    }
+    case OP_GET_GLOBAL: {
+        u32 name_idx = READ_4BYTES_BE(vm->ip);
+        vm->ip += 4;
+        struct object_string* name = read_string_cp(&vm->const_pool, name_idx);
+        struct value name_obj = NEW_OBJECT(name);
+        struct value val;
+        if (!table_get(&vm->globals, name_obj, &val)) {
+            runtime_error(vm, "Error: Access to undefined variable '%s'.", name->data);
+            return INTERPRET_ERROR;
+        }
+        push(vm, val);
+        break;
+    }
+    case OP_SET_GLOBAL: {
+        u32 name_idx = READ_4BYTES_BE(vm->ip);
+        vm->ip += 4;
+        struct object_string* name = read_string_cp(&vm->const_pool, name_idx);
+        struct value name_obj = NEW_OBJECT(name);
+        struct value v = pop(vm);
+        if (table_set(&vm->globals, name_obj, v)) {
+            runtime_error(vm, "Global variable '%s' is not defined!", name->data);
+            return INTERPRET_ERROR;
+        }
+        break;
+    }
+    case OP_GET_LOCAL: {
+        u16 slot_idx = READ_2BYTES_BE(vm->ip);
+        vm->ip += 2;
+        struct value v = TOP_FRAME().slots[slot_idx];
+        push(vm, v);
+        break;
+    }
+    case OP_SET_LOCAL: {
+        u16 frame_idx = READ_2BYTES_BE(vm->ip);
+        vm->ip += 2;
+        struct value v = pop(vm);
+        TOP_FRAME().slots[frame_idx] = v;
+        break;
+    }
+    case OP_CALL_FUNC: {
+        struct value v = pop(vm);
+        if (v.type == VAL_OBJECT) {
+            u8 arity = READ_IP();
+            if (v.object->type == OBJECT_FUNCTION) {
+                struct object_function* f = as_function(v.object);
+                if (arity != f->arity) {
+                    runtime_error(vm, "Got '%d' arguments, expected '%d'", arity, f->arity);
+                    return INTERPRET_ERROR;
+                }
+                push_frame(vm, f);
+            } else if (v.object->type == OBJECT_NATIVE) {
+                struct object_native* nat = as_native(v.object);
+                DUMP_STACK(vm);
+                struct value res = nat->function(arity, vm->op_stack + vm->stack_len - arity);
+                vm->stack_len -= arity;
+                push(vm, res);
+            }
+        } else {
+            runtime_error(vm, "Only functions can be called");
+            return INTERPRET_ERROR;
+        }
+        break;
+    }
+    case OP_NEW_OBJECT: {
+        u32 idx = READ_4BYTES_BE(vm->ip);
+        vm->ip += 4;
+        struct object_instance* ins = new_instance(vm,  as_class(vm->const_pool.data[idx]));
+        struct value ins_v = NEW_OBJECT(ins);
+        push(vm, ins_v);
+        break;
+    }
+    case OP_SET_MEMBER:
+    case OP_GET_MEMBER: {
+        u32 name = READ_4BYTES_BE(vm->ip);
+        vm->ip += 4;
+        struct object_instance* instance = as_instance(pop(vm).object);
+        struct object_string* key = as_string(vm->const_pool.data[name]);
+        struct value key_v = NEW_OBJECT(key);
+        struct value val;
+
+        if (ins == OP_GET_MEMBER) {
+            bool exists = table_get(&instance->members, key_v, &val);
+            if (!exists) {
+                runtime_error(vm, "The object doesn't have member '%s'", key->data);
             }
             push(vm, val);
-            break;
-        }
-        case OP_SET_GLOBAL: {
-            u32 name_idx = READ_4BYTES_BE(vm->ip);
-            vm->ip += 4;
-            struct object_string* name = read_string_cp(&vm->const_pool, name_idx);
-            struct value name_obj = NEW_OBJECT(name);
+        } else { // OP_SET_MEMBER
             struct value v = pop(vm);
-            if (table_set(&vm->globals, name_obj, v)) {
-                runtime_error(vm, "Global variable '%s' is not defined!", name->data);
-                return INTERPRET_ERROR;
-            }
-            break;
+            table_set(&instance->members, key_v, v);
         }
-        case OP_GET_LOCAL: {
-            u16 slot_idx = READ_2BYTES_BE(vm->ip);
-            vm->ip += 2;
-            struct value v = TOP_FRAME().slots[slot_idx];
-            push(vm, v);
-            break;
-        }
-        case OP_SET_LOCAL: {
-            u16 frame_idx = READ_2BYTES_BE(vm->ip);
-            vm->ip += 2;
-            struct value v = pop(vm);
-            TOP_FRAME().slots[frame_idx] = v;
-            break;
-        }
-        case OP_CALL_FUNC: {
-            struct value v = pop(vm);
-            if (v.type == VAL_OBJECT) {
-                u8 arity = READ_IP();
-                if (v.object->type == OBJECT_FUNCTION) {
-                    struct object_function* f = as_function(v.object);
-                    if (arity != f->arity) {
-                        runtime_error(vm, "Got '%d' arguments, expected '%d'", arity, f->arity);
-                        return INTERPRET_ERROR;
-                    }
-                    push_frame(vm, f);
-                } else if (v.object->type == OBJECT_NATIVE) {
-                    struct object_native* nat = as_native(v.object);
-                    DUMP_STACK(vm);
-                    struct value res = nat->function(arity, vm->op_stack + vm->stack_len - arity);
-                    vm->stack_len -= arity;
-                    push(vm, res);
-                }
-            } else {
-                runtime_error(vm, "Only functions can be called");
-                return INTERPRET_ERROR;
-            }
-            break;
-        }
-        case OP_NEW_OBJECT: {
-            u32 idx = READ_4BYTES_BE(vm->ip);
-            vm->ip += 4;
-            struct object_instance* ins = new_instance(vm,  as_class(vm->const_pool.data[idx]));
-            struct value ins_v = NEW_OBJECT(ins);
-            push(vm, ins_v);
-            break;
-        }
-        case OP_SET_MEMBER:
-        case OP_GET_MEMBER: {
-            u32 name = READ_4BYTES_BE(vm->ip);
-            vm->ip += 4;
-            struct object_instance* instance = as_instance(pop(vm).object);
-            struct object_string* key = as_string(vm->const_pool.data[name]);
-            struct value key_v = NEW_OBJECT(key);
-            struct value val;
 
-            if (ins == OP_GET_MEMBER) {
-                bool exists = table_get(&instance->members, key_v, &val);
-                if (!exists) {
-                    runtime_error(vm, "The object doesn't have member '%s'", key->data);
+        break;
+    }
+    case OP_DISPATCH_METHOD: {
+        u32 name = READ_4BYTES_BE(vm->ip);
+        vm->ip += 4;
+        u8 arity = READ_IP() + 1;
+        
+        // TODO: Implement instance dispatching for other types
+        // TODO: Properly check for wrong types
+        // Leave the object on the stack because it is
+        // also an argument for the method
+        struct value target = peek(vm, 1);
+        if (target.type == VAL_OBJECT) {
+            struct object* obj = target.object;
+            if (obj->type == OBJECT_INSTANCE) {
+                struct object_instance* instance = as_instance(obj);
+                struct value method;
+                table_get(&instance->klass->methods, NEW_OBJECT(vm->const_pool.data[name]), &method);
+                struct object_function* f = as_function(method.object);
+                if (arity != f->arity) {
+                    runtime_error(vm, "Got '%d' arguments, expected '%d'", arity, f->arity);
+                    return INTERPRET_ERROR;
                 }
-                push(vm, val);
-            } else { // OP_SET_MEMBER
-                struct value v = pop(vm);
-                table_set(&instance->members, key_v, v);
+                push_frame(vm, f);
             }
-
-            break;
         }
-        case OP_DISPATCH_METHOD: {
-            u32 name = READ_4BYTES_BE(vm->ip);
-            vm->ip += 4;
-            u8 arity = READ_IP() + 1;
-            
-            // TODO: Implement instance dispatching for other types
-            // TODO: Properly check for wrong types
-            // Leave the object on the stack because it is
-            // also an argument for the method
-            struct value target = peek(vm, 1);
-            if (target.type == VAL_OBJECT) {
-                struct object* obj = target.object;
-                if (obj->type == OBJECT_INSTANCE) {
-                    struct object_instance* instance = as_instance(obj);
-                    struct value method;
-                    table_get(&instance->klass->methods, NEW_OBJECT(vm->const_pool.data[name]), &method);
-                    struct object_function* f = as_function(method.object);
-                    if (arity != f->arity) {
-                        runtime_error(vm, "Got '%d' arguments, expected '%d'", arity, f->arity);
-                        return INTERPRET_ERROR;
-                    }
-                    push_frame(vm, f);
-                }
-            }
-            
-            break;
-        }
-        default:
-            runtime_error(vm, "Unknown instruction 0x%x! Skipping...", ins);
+        
+        break;
+    }
+    default:
+        runtime_error(vm, "Unknown instruction 0x%x! Skipping...", ins);
     }
     // Some branches return when successfull (like print),
     // be careful if you add code here.
