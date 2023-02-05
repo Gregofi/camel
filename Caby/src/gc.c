@@ -118,7 +118,7 @@ static void trace_references(vm_t* vm) {
 
 static void sweep(vm_t* vm) {
     struct object** obj = &vm->objects;
-    while (*obj) {
+    while (*obj != NULL) {
         if (IS_MARKED((*obj)->gc_data)) {
             (*obj)->gc_data = 0;
             obj = &(*obj)->next;
