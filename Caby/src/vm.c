@@ -166,7 +166,8 @@ enum interpret_result interpret_print(vm_t* vm) {
     }
     struct object_string* obj = as_string(v.object);
 
-    // TODO: Maybe buffer the output so that if error occurs we don't print it halfway.
+    // TODO: Maybe buffer the output so that if error occurs we don't
+    //       print it halfway.
     for (const char* c = obj->data; *c != '\0'; ++c) {
         if (*c == '{' && c[1] != '\0' && c[1] == '}') {
             if (arg_cnt == 0) {
