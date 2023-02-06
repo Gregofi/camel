@@ -19,13 +19,13 @@ def max(lst) = {
     var max = 0;
     for x in lst {
         if x > max {
-            max = x
+            max = x;
         }
     };
     max
 }
 
-lst = [1, 2, 5, 3, 1];
+val lst = [1, 2, 5, 3, 1];
 print("Max({}) = {}", lst, max(lst));
 ```
 
@@ -40,10 +40,6 @@ Following features will hopefully be implemented:
 Following features are considered
 - Exceptions.
 
-## Standard library
-
-Language itself should also contain standard library. This is however far future. Many of the language specific things will probably be implemented straight in C (such as string operations).
-
 ## Camel Compiler
 
 The language is first compiled into an AST, from which a bytecode is generated. This step does the **Cacom** part of the project, which is an compiler from the Camel source code to bytecode. The compiler is written in Rust.
@@ -57,3 +53,10 @@ When the compilation is done, an interpreting takes place. This is a task for th
 Bytecode can be serialized into byteformat, which is used as common speaking ground for compiler and interpreter. Compiler serializes data into this format, interpreter then deserializes it and interprets it.
 
 The format can be found in `Caby/README.md`.
+
+## Example of usage
+The project is unfortunately split into two parts now. You can use the `scripts/build.sh` script to build both of them.
+Then you can run `Cacom/target/release/cacom compile --input-file=<source-code>` followed by `Caby/build/caby execute a.out`.
+Both programs have help built into them.
+
+You will need cargo, make, cmake and c compiler to build them.
