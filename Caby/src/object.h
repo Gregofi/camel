@@ -88,6 +88,7 @@ struct value {
 
 /// To improve clarity of some functions
 #define AS_OBJECT(VAL) NEW_OBJECT(VAL)
+#define AS_CINT(VAL) ((VAL).integer)
 
 /*
  * Following functions serve as constructors, converters and checkers

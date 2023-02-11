@@ -22,7 +22,7 @@ pub enum Object {
     Function(Function),
     Class {
         name: ConstantPoolIndex,
-        methods: Vec<Function>,
+        methods: Vec<ConstantPoolIndex>,
     },
 }
 
@@ -157,7 +157,7 @@ impl Serializable for Object {
                 f.write_all(&name.to_le_bytes())?;
                 f.write_all(&(u16::try_from(methods.len()).unwrap()).to_le_bytes())?;
                 for method in methods {
-                    method.serialize(f)?;
+                    f.write_all(&method.to_le_bytes())?;
                 }
                 Ok(())
             }

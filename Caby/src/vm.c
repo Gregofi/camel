@@ -545,11 +545,14 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
             struct object* obj = target.object;
             if (obj->type == OBJECT_INSTANCE) {
                 struct object_instance* instance = as_instance(obj);
-                struct value method;
-                table_get(&instance->klass->methods, NEW_OBJECT(vm->const_pool.data[name]), &method);
-                struct object_function* f = as_function(method.object);
+                struct value method_idx;
+                table_get(&instance->klass->methods, 
+                          NEW_OBJECT(vm->const_pool.data[name]), &method_idx);
+                u32 idx = AS_CINT(method_idx);
+                struct object_function* f = as_function(vm->const_pool.data[idx]);
                 if (arity != f->arity) {
-                    runtime_error(vm, "Got '%d' arguments, expected '%d'", arity, f->arity);
+                    runtime_error(vm, "Got '%d' arguments, expected '%d'", 
+                                  arity, f->arity);
                     return INTERPRET_ERROR;
                 }
                 push_frame(vm, f);

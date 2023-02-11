@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "serializer.h"
 #include "bytecode.h"
 #include "common.h"
@@ -127,8 +128,12 @@ struct object* serialize_object(FILE* f, vm_t* vm) {
             struct table methods;
             init_table(&methods);
             for (size_t i = 0; i < methods_len; ++ i) {
-                struct object_function* fun = serialize_function(f, vm);
-                table_set(&methods, NEW_OBJECT(vm->const_pool.data[fun->name]), NEW_OBJECT((struct object*)fun));
+                u32 fun = read_4bytes_le(f);
+                struct object_function* method = as_function_s(vm->const_pool.data[fun]);
+                assert(method != NULL);
+                struct object_string* name = as_string_s(vm->const_pool.data[method->name]);
+                assert(name != NULL);
+                table_set(&methods, NEW_OBJECT(name), NEW_INT(fun));
             }
             return (struct object*)new_class(vm, name, methods);
         }

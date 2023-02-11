@@ -26,12 +26,9 @@ The string is NOT zero terminated.
 The code is an array of instruction opcodes (one byte) and its location in the source file (4 bytes). Functions themselves are invisible to the VM even when in constant pool. To call them you need to define them in main. Push them onto stack and then use SetVal instruction.
 - Class
 ```
-0x02 | name - 4 byte index to constant pool | methods count - 2 bytes | Function* ...
+0x02 | name - 4 byte index to constant pool | methods count - 2 bytes | 4 bytes index to constant pool *
 ```
-Functions correspond to the Function object above.
-Contructor is not included in the Class object. It should
-instead be serialized as normal function with the same
-name as the class (not necessarily same index to cp).
+Methods are stored as normal functions, the class keeps only indexes to them.
 
 Size of constant pool is 2^32 (so it can be indexed by 32bit int).
 ### Entry point

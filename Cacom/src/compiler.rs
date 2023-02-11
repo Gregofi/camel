@@ -422,7 +422,7 @@ impl Compiler {
             StmtType::Class { name, statements } => {
                 let name_idx = self.constant_pool.add(Object::from(name.clone()));
 
-                let mut methods: Vec<Function> = vec![];
+                let mut methods: Vec<ConstantPoolIndex> = vec![];
 
                 // TODO: This should be handled at the grammar level
                 for stmt in statements {
@@ -437,7 +437,8 @@ impl Compiler {
                         } => {
                             let name = self.constant_pool.add(Object::from(name.clone()));
                             let method = self.compile_fun(name, parameters, body)?;
-                            methods.push(method);
+                            let method_idx = self.constant_pool.add(Object::Function(method));
+                            methods.push(method_idx);
                         }
                         _ => panic!("Class can only contain method or member definitions."),
                     };
@@ -651,20 +652,6 @@ pub fn compile(ast: &Stmt) -> Result<(ConstantPool, ConstantPoolIndex), &'static
                 parameters_cnt,
                 locals_cnt,
             }),
-            Object::Class { name, methods } => Object::Class {
-                name,
-                methods: methods
-                    .into_iter()
-                    .map(|f| Function {
-                        name: f.name,
-                        parameters_cnt: f.parameters_cnt,
-                        locals_cnt: f.locals_cnt,
-                        body: Code {
-                            code: jump_pass(f.body.code),
-                        },
-                    })
-                    .collect(),
-            },
             _ => f,
         })
         .collect();
