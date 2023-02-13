@@ -51,7 +51,7 @@ static void mark_object(struct gc_state* gc, struct object* obj) {
 
 #ifdef __GC_DEBUG__
     GC_LOG("Marking object %p: ", obj);
-    dissasemble_object(stderr, obj);
+    dissasemble_object(stderr, obj, true);
     GC_LOG("\n");
 #endif
 }
@@ -117,6 +117,11 @@ static void sweep(vm_t* vm) {
             obj = &(*obj)->next;
         } else {
             struct object* unreached = *obj;
+#ifdef __GC_DEBUG__
+    GC_LOG("Sweeping object %p: ", unreached);
+    dissasemble_object(stderr, unreached, true);
+    GC_LOG("\n");
+#endif
             *obj = (*obj)->next;
             free_object(unreached);
         }
