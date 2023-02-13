@@ -18,6 +18,8 @@ mod parser_tests {
         assert!(TopLevelParser::new().parse("1 - --1").is_ok());
         assert!(TopLevelParser::new().parse("1 % 2").is_ok());
         assert!(TopLevelParser::new().parse("1 % +").is_err());
+        assert!(TopLevelParser::new().parse("none + 2").is_ok());
+        assert!(TopLevelParser::new().parse("true == none").is_ok());
     }
 
     #[test]

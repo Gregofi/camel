@@ -44,6 +44,7 @@ match {
     "]" => LBRACKET,
     "true" => TRUE,
     "false" => FALSE,
+    "none" => NONE,
     "def" => DEF,
     "," => COMMA,
     "." => DOT,
@@ -189,6 +190,10 @@ Primary: Expr = {
     <l: @L> FALSE <r: @R> => Expr {
         node: ExprType::Bool(false),
         location: Location(l, r)
+    },
+    <l: @L> NONE <r: @R> => Expr {
+        node: ExprType::NoneVal,
+        location: Location(l, r),
     },
     <Number> => <>,
     <l: @L> <str: String> <r: @R> => Expr {
