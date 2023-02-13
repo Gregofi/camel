@@ -49,6 +49,7 @@ match {
     "." => DOT,
     "return" => RETURN,
     "class" => CLASS,
+    "elif" => ELIF,
 
     "val" => VAL,
     "var" => VAR,
@@ -253,13 +254,23 @@ FunDecl: Stmt = {
 
 Parameters = Separated<Identifier, COMMA>;
 
-Conditional: Expr = {
-    <l: @L> IF <guard: Expr> <then: Block> <els: (ELSE <Block>)?> <r: @R> => Expr {
+ConditionalWithoutIf: Expr = {
+    <l: @L> <guard: Expr> <then: Block> <els: (ELSE <Block>)?> <r: @R> => Expr {
         node: ExprType::Conditional{guard: Box::new(guard),
                 then_branch: Box::new(then),
                 else_branch: els.map(Box::new)},
         location: Location(l, r),
-    }
+    },
+    <l: @L> <guard: Expr> <then: Block> ELIF <els: ConditionalWithoutIf> <r: @R> => Expr {
+        node: ExprType::Conditional{guard: Box::new(guard),
+                then_branch: Box::new(then),
+                else_branch: Some(Box::new(els))},
+        location: Location(l, r),
+    },
+}
+
+Conditional: Expr = {
+    IF <ConditionalWithoutIf> => <>,
 }
 
 Return: Stmt = {
