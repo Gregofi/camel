@@ -78,7 +78,7 @@ static void mark_roots(vm_t* vm) {
 
     // locals in frames
     for (size_t i = 0; i < vm->frame_len; ++i) {
-        for (size_t j = 0; j < vm->frames->function->locals; ++j) {
+        for (size_t j = 0; j < vm->frames[i].function->locals; ++j) {
             mark_val(&vm->gc, &vm->frames[i].slots[j]);
         }
     }
@@ -90,13 +90,16 @@ static void close_obj(vm_t* vm, struct object* obj) {
         case OBJECT_STRING:
         case OBJECT_NATIVE:
             break;
+        // TODO: Probably not necessary
         case OBJECT_CLASS: {
             struct object_class* c = as_class(obj);
             mark_table(&vm->gc, &c->methods);
+            break;
         }
         case OBJECT_INSTANCE: {
             struct object_instance* c = as_instance(obj);
             mark_table(&vm->gc, &c->members);
+            break;
         }
     }
 }
