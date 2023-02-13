@@ -1,0 +1,77 @@
+// TODO: The code stupidly has to call 'init' every time by hand because
+// constructors are not implemented yet.
+
+def build_tree(v, l, r) = {
+    val b = bst();
+    b.init(v);
+    b.l = l;
+    b.r = r;
+    b
+};
+
+def insert(tree, v) = {
+    if tree == none {
+        val b = bst();
+        b.init(v);
+        b
+    } elif tree.v == v {
+        tree
+    } elif tree.v > v {
+        build_tree(tree.v, insert(tree.l, v), tree.r)
+    } else {
+        build_tree(tree.v, tree.l, insert(tree.r, v))
+    }
+};
+
+def contains(tree, v) = {
+    if tree == none {
+        false
+    } elif tree.v == v {
+        true
+    } elif tree.v < v {
+        contains(tree.r, v) 
+    } else {
+        contains(tree.l, v)
+    }
+};
+
+class bst {
+    def init(self, v) = {
+        self.v = v;
+        self.l = none;
+        self.r = none;
+    };
+};
+
+class set {
+    def init(self) = { self.t = none; };
+
+    def add(self, v) = { self.t = insert(self.t, v); };
+
+    def contains(self, v) = contains(self.t, v);
+};
+
+val s = set();
+s.init();
+s.add(5);
+s.add(6);
+s.add(1);
+print("{}\n", s.contains(5));
+print("{}\n", s.contains(6));
+print("{}\n", s.contains(1));
+
+print("{}\n", s.contains(2));
+print("{}\n", s.contains(3));
+
+s.add(7);
+s.add(8);
+s.add(9);
+print("{}\n", s.contains(1));
+print("{}\n", s.contains(5));
+print("{}\n", s.contains(6));
+print("{}\n", s.contains(7));
+print("{}\n", s.contains(8));
+print("{}\n", s.contains(9));
+print("{}\n", s.contains(2));
+print("{}\n", s.contains(3));
+
