@@ -301,28 +301,17 @@ impl Compiler {
         Ok(())
     }
 
+    /// Will drop every expression generated. The last expression for blocks must be
+    /// compiled separately and should not be included in the passed 'stmts'.
     fn compile_block(&mut self, stmts: &[Stmt], code: &mut Code) -> Result<(), &'static str> {
-        let mut it = stmts.iter().peekable();
-        while let Some(stmt) = it.next() {
-            // Drop everything but the last result
-            // Hovewer if it is statement, do NOT drop it because it does not
-            // produces any value. Hovewer, if it is the last value, the block
-            // returns none.
+        for stmt in stmts {
             match &stmt.node {
-                // Never drop the last value, if it should be dropped then
-                // not here, but the parent of this block will drop it
-                StmtType::Expression(expr) => self.compile_expr(expr, code, it.peek().is_some())?,
+                StmtType::Expression(expr) => self.compile_expr(expr, code, true)?,
                 _ => {
                     self.compile_stmt(stmt, code)?;
-                    if it.peek().is_none() {
-                        // TODO: Caused two consequentive push none when last value in block was statement.
-                        // Left for the time being in case it triggers error.
-                        // self.add_instruction(code, BytecodeType::PushNone, stmt.location);
-                    }
                 }
             }
         }
-
         Ok(())
     }
 

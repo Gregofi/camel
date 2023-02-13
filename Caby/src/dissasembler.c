@@ -147,7 +147,7 @@ size_t dissasemble_instruction(FILE* f, u8* ins) {
     }
 }
 
-void disassemble_value(FILE* f, struct value v) {
+void disassemble_value(FILE* f, struct value v, bool shrt) {
     switch (v.type) {
         case VAL_INT:
             fprintf(f, "INT: %d", v.integer);
@@ -159,7 +159,7 @@ void disassemble_value(FILE* f, struct value v) {
             fprintf(f, "DOUBLE: %f", v.double_num);
             break;
         case VAL_OBJECT:
-            dissasemble_object(f, v.object);
+            dissasemble_object(f, v.object, shrt);
             break;
         case VAL_NONE:
             fprintf(f, "NONE");
@@ -167,15 +167,17 @@ void disassemble_value(FILE* f, struct value v) {
     }
 }
 
-void dissasemble_object(FILE* f, struct object* obj) {
+void dissasemble_object(FILE* f, struct object* obj, bool shrt) {
     switch (obj->type) {
         case OBJECT_STRING:
-            fprintf(f, "STRING \"%s\"\n", as_string(obj)->data);
+            fprintf(f, "STRING \"%s\"", as_string(obj)->data);
             break;
         case OBJECT_FUNCTION: {
             struct object_function* fun = as_function(obj);
-            fprintf(f, "FUNCTION arity: %d name: %u\n", fun->arity, fun->name);
-            dissasemble_chunk(f, &fun->bc, " ");
+            fprintf(f, "FUNCTION arity: %d name: %u", fun->arity, fun->name);
+            if (!shrt) {
+                dissasemble_chunk(f, &fun->bc, " ");
+            }
             break;
         }
         case OBJECT_NATIVE: {
@@ -184,13 +186,12 @@ void dissasemble_object(FILE* f, struct object* obj) {
         }
         case OBJECT_CLASS: {
             struct object_class* class = as_class(obj);
-            fprintf(f, "CLASS name: %u, methods: %lu\n", class->name, class->methods.count);
-
+            fprintf(f, "CLASS name: %u, methods: %lu", class->name, class->methods.count);
             break;
         }
         case OBJECT_INSTANCE: {
             struct object_instance* instance = as_instance(obj);
-            fprintf(f, "INSTANCE of class %u\n", instance->klass->name);
+            fprintf(f, "INSTANCE of class %u", instance->klass->name);
             break;
         }
         default:
@@ -201,6 +202,7 @@ void dissasemble_object(FILE* f, struct object* obj) {
 void disassemble_constant_pool(FILE* f, struct constant_pool* cp) {
     for (size_t i = 0; i < cp->len; ++i) {
         fprintf(f, "%lu ", i);
-        dissasemble_object(f, cp->data[i]);
+        dissasemble_object(f, cp->data[i], false);
+        fprintf(f, "\n=========================================\n");
     }
 }

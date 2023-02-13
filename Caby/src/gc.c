@@ -49,16 +49,9 @@ static void mark_object(struct gc_state* gc, struct object* obj) {
     }
     gc->worklist[gc->wl_count++] = obj;
 
-    if (obj->type == OBJECT_INSTANCE) {
-        struct object_instance* instance = as_instance(obj);
-        mark_table(gc, &instance->members);
-    } else if (obj->type == OBJECT_CLASS) {
-        struct object_class* klass = as_class(obj);
-        mark_table(gc, &klass->methods);
-    }
 #ifdef __GC_DEBUG__
     GC_LOG("Marking object %p: ", obj);
-    dissasemble_object(stderr, obj);
+    dissasemble_object(stderr, obj, true);
     GC_LOG("\n");
 #endif
 }
@@ -85,7 +78,7 @@ static void mark_roots(vm_t* vm) {
 
     // locals in frames
     for (size_t i = 0; i < vm->frame_len; ++i) {
-        for (size_t j = 0; j < vm->frames->function->locals; ++j) {
+        for (size_t j = 0; j < vm->frames[i].function->locals; ++j) {
             mark_val(&vm->gc, &vm->frames[i].slots[j]);
         }
     }
@@ -97,13 +90,16 @@ static void close_obj(vm_t* vm, struct object* obj) {
         case OBJECT_STRING:
         case OBJECT_NATIVE:
             break;
+        // TODO: Probably not necessary
         case OBJECT_CLASS: {
             struct object_class* c = as_class(obj);
             mark_table(&vm->gc, &c->methods);
+            break;
         }
         case OBJECT_INSTANCE: {
             struct object_instance* c = as_instance(obj);
             mark_table(&vm->gc, &c->members);
+            break;
         }
     }
 }
@@ -124,6 +120,11 @@ static void sweep(vm_t* vm) {
             obj = &(*obj)->next;
         } else {
             struct object* unreached = *obj;
+#ifdef __GC_DEBUG__
+    GC_LOG("Sweeping object %p: ", unreached);
+    dissasemble_object(stderr, unreached, true);
+    GC_LOG("\n");
+#endif
             *obj = (*obj)->next;
             free_object(unreached);
         }

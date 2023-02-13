@@ -24,7 +24,10 @@
 static void disassemble_stack(vm_t* vm) {
     for (size_t i = 0; i < vm->stack_len; ++i) {
         fprintf(stderr, "[");
-        disassemble_value(stderr, vm->op_stack[i]);
+        if (vm->op_stack[i].type == VAL_OBJECT) {
+            fprintf(stderr, "<%p>", vm->op_stack[i].object);
+        }
+        disassemble_value(stderr, vm->op_stack[i], true);
         fprintf(stderr, "]");
     }
     fprintf(stderr, "\n");

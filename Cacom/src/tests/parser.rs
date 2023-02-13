@@ -18,6 +18,8 @@ mod parser_tests {
         assert!(TopLevelParser::new().parse("1 - --1").is_ok());
         assert!(TopLevelParser::new().parse("1 % 2").is_ok());
         assert!(TopLevelParser::new().parse("1 % +").is_err());
+        assert!(TopLevelParser::new().parse("none + 2").is_ok());
+        assert!(TopLevelParser::new().parse("true == none").is_ok());
     }
 
     #[test]
@@ -69,6 +71,9 @@ mod parser_tests {
             .is_ok());
         assert!(TopLevelParser::new()
             .parse("def foo(a) = if (1 < 2) {1} else {2}; foo(1);")
+            .is_ok());
+        assert!(TopLevelParser::new()
+            .parse("def foo(a) = if (1 < 2) {1} elif 2 > 3 {2} else {3}; foo(1);")
             .is_ok());
     }
 
