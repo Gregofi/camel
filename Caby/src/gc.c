@@ -49,13 +49,6 @@ static void mark_object(struct gc_state* gc, struct object* obj) {
     }
     gc->worklist[gc->wl_count++] = obj;
 
-    if (obj->type == OBJECT_INSTANCE) {
-        struct object_instance* instance = as_instance(obj);
-        mark_table(gc, &instance->members);
-    } else if (obj->type == OBJECT_CLASS) {
-        struct object_class* klass = as_class(obj);
-        mark_table(gc, &klass->methods);
-    }
 #ifdef __GC_DEBUG__
     GC_LOG("Marking object %p: ", obj);
     dissasemble_object(stderr, obj);
