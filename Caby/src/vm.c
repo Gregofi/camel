@@ -536,9 +536,14 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
 
         break;
     }
+    case OP_DUP: {
+        struct value v = peek(vm, 1);
+        push(vm, v);
+        break;
+    }
     case OP_DISPATCH_METHOD: {
         u32 name = READ_4B_IP(vm);
-        u8 arity = READ_1B_IP(vm) + 1;
+        u8 arity = READ_1B_IP(vm);
         // TODO: Implement instance dispatching for other types
         // TODO: Properly check for wrong types
         // Leave the object on the stack because it is
@@ -551,15 +556,19 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
                 struct value method_idx;
                 table_get(&instance->klass->methods, 
                           NEW_OBJECT(vm->const_pool.data[name]), &method_idx);
+                assert(method_idx.type == VAL_INT);
                 u32 idx = AS_CINT(method_idx);
                 struct object_function* f = as_function(vm->const_pool.data[idx]);
                 if (arity != f->arity) {
-                    runtime_error(vm, "Got '%d' arguments, expected '%d'", 
+                    runtime_error(vm, "Number of arguments: %d, expected %d\n", 
                                   arity, f->arity);
                     return INTERPRET_ERROR;
                 }
                 push_frame(vm, f);
             }
+        } else {
+            runtime_error(vm, "Can't dispatch methods on given type.\n");
+            return INTERPRET_ERROR;
         }
         break;
     }

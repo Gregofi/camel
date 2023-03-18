@@ -246,7 +246,7 @@ impl Compiler {
                     code,
                     BytecodeType::DispatchMethod {
                         name: cp_idx,
-                        arg_cnt: arguments.len().try_into().unwrap(),
+                        arg_cnt: (arguments.len() + 1).try_into().unwrap(),
                     },
                     expr.location,
                 )
@@ -412,6 +412,7 @@ impl Compiler {
                 let name_idx = self.constant_pool.add(Object::from(name.clone()));
 
                 let mut methods: Vec<ConstantPoolIndex> = vec![];
+                let mut constructor_args: Option<u8> = None;
 
                 // TODO: This should be handled at the grammar level
                 for stmt in statements {
@@ -424,46 +425,87 @@ impl Compiler {
                             parameters,
                             body,
                         } => {
-                            let name = self.constant_pool.add(Object::from(name.clone()));
-                            let method = self.compile_fun(name, parameters, body)?;
-                            let method_idx = self.constant_pool.add(Object::Function(method));
-                            methods.push(method_idx);
+                            let name_idx = self.constant_pool.add(Object::from(name.clone()));
+                            if name == "init" {
+                                constructor_args = Some(parameters.len().try_into().unwrap());
+                                if let ExprType::Block(body, ret) = &body.node {
+                                    if let ExprType::NoneVal = ret.node {
+                                        let modified = body.clone();
+                                        let self_returned = Box::new(Expr {
+                                            node: ExprType::AccessVariable {
+                                                name: String::from("self"),
+                                            },
+                                            location: CodeLocation(0, 0),
+                                        });
+                                        let body = Expr {
+                                            node: ExprType::Block(modified, self_returned),
+                                            location: CodeLocation(0, 0),
+                                        };
+                                        let cons = self.compile_fun(name_idx, parameters, &body)?;
+                                        let cons_idx =
+                                            self.constant_pool.add(Object::Function(cons));
+                                        methods.push(cons_idx);
+                                    } else {
+                                        return Err("Constructor must always return none.");
+                                    }
+                                } else {
+                                    return Err("Constructor body must always be a block.");
+                                }
+                            } else {
+                                let method = self.compile_fun(name_idx, parameters, body)?;
+                                let method_idx = self.constant_pool.add(Object::Function(method));
+                                methods.push(method_idx);
+                            }
                         }
                         _ => panic!("Class can only contain method or member definitions."),
                     };
                 }
+                let init_idx = self.constant_pool.add(Object::from(String::from("init")));
                 let class_idx = self.constant_pool.add(Object::Class {
                     name: name_idx,
                     methods,
                 });
 
-                // Generate default constructor
+                // Constructors expect to be handed 'self', but it does not exist and
+                // we cannot insert 'PUSH NEW_OBJ' just before the call to the constructor
+                // since we don't know if it is called.
+                // So constructors are wrapped in one more function, which pushes the object
+                // on the stack, calls constructor and returns the new object.
                 let mut constructor = Code::new();
                 constructor.add(Bytecode {
                     instr: BytecodeType::NewObject(class_idx),
                     location: CodeLocation(0, 0),
                 });
-                constructor.add(Bytecode {
-                    instr: BytecodeType::SetLocal(0),
-                    location: CodeLocation(0, 0),
-                });
-                constructor.add(Bytecode {
-                    instr: BytecodeType::GetLocal(0),
-                    location: CodeLocation(0, 0),
-                });
+                if let Some(cons_args) = constructor_args {
+                    constructor.add(Bytecode {
+                        instr: BytecodeType::DispatchMethod {
+                            name: init_idx,
+                            arg_cnt: cons_args,
+                        },
+                        location: CodeLocation(0, 0),
+                    });
+                }
                 constructor.add(Bytecode {
                     instr: BytecodeType::Ret,
                     location: CodeLocation(0, 0),
                 });
 
+                // Here we cheat a little bit, the arguments are basically "proxied"
+                // through the constructor, since the calling program will push them,
+                // the free constructor function will not touch them and the real
+                // constructor will use them.
+                // The proxy constructor will just push the object onto the stack.
                 let cons_fun = Function {
                     name: name_idx,
-                    parameters_cnt: 0,
+                    // minus one because this free function doesn't expect self.
+                    parameters_cnt: constructor_args.unwrap_or(1) - 1,
                     locals_cnt: 0,
                     body: constructor,
                 };
-                let fun_idx = self.constant_pool.add(Object::Function(cons_fun));
-                self.emit_function_def(name_idx, fun_idx, ast.location, code);
+                let constructor_idx = Some(self.constant_pool.add(Object::Function(cons_fun)));
+
+                // The constructor name is not 'init', rather it's the name of the class
+                self.emit_function_def(name_idx, constructor_idx.unwrap(), ast.location, code);
             }
             StmtType::MemberStore { left, right, val } => {
                 self.compile_expr(val, code, false)?;
