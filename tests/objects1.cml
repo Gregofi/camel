@@ -3,7 +3,8 @@ class foo {
     def get_x(self) = self.x;
     def set_x(self, v) = {
         self.x = v;
-    }
+    };
+    def init(self) = {};
 };
 
 val f = foo();

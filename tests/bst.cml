@@ -2,8 +2,7 @@
 // constructors are not implemented yet.
 
 def build_tree(v, l, r) = {
-    val b = bst();
-    b.init(v);
+    val b = bst(v);
     b.l = l;
     b.r = r;
     b
@@ -11,9 +10,7 @@ def build_tree(v, l, r) = {
 
 def insert(tree, v) = {
     if tree == none {
-        val b = bst();
-        b.init(v);
-        b
+        bst(v)
     } elif tree.v == v {
         tree
     } elif tree.v > v {
@@ -52,7 +49,6 @@ class set {
 };
 
 val s = set();
-s.init();
 s.add(5);
 s.add(6);
 s.add(1);
