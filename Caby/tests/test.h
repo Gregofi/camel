@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #define ASSERT_W(expr)                                                                                      \
 do {                                                                                                        \

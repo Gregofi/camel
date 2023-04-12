@@ -10,6 +10,8 @@ set(CMAKE_C_FLAGS_GC_TEST "-g -fsanitize=address -fsanitize=undefined -D__GC_STR
 set(CMAKE_C_FLAGS_DEBUG "-g -Wall -Wextra -pedantic -D__DEBUG__")
 set(CMAKE_C_FLAGS_RELEASE "-O2")
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 add_executable(caby src/main.c src/dissasembler.c src/bytecode.c
                     src/common.c src/object.c src/memory.c src/vm.c
                     src/serializer.c src/hashtable.c src/native.c
@@ -29,6 +31,8 @@ add_executable(hashmap_test tests/hashmap_test.c src/dissasembler.c src/bytecode
 target_link_libraries(hashmap_test m)
 
 add_executable(blockalloc_test tests/blockalloc_test.c src/memory/block_alloc.c)
+add_executable(lexer_test tests/lexer_test.c src/lexer.c)
 
 add_test(hashmap_test hashmap_test)
 add_test(blockalloc_test blockalloc_test)
+add_test(lexer_test lexer_test)
