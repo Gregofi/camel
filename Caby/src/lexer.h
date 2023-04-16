@@ -41,7 +41,9 @@ struct token {
     enum token_type type;
     const char* start;
     int length;
-    int line;
+
+    int row;
+    int col;
 };
 
 void init_lexer(const char* source);

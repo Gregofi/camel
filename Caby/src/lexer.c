@@ -8,6 +8,7 @@ struct lexer {
     const char* begin;
     const char* curr;
     int line;
+    int col;
 };
 
 struct lexer lexer;
@@ -16,9 +17,11 @@ void init_lexer(const char* source) {
     lexer.begin = source;
     lexer.curr = source;
     lexer.line = 1;
+    lexer.col = 0;
 }
 
 char advance() {
+    lexer.col += 1;
     return *lexer.curr++;
 }
 
@@ -27,6 +30,7 @@ char peek() {
 }
 
 char next() {
+    lexer.col += 1;
     return *++lexer.curr;
 }
 
@@ -69,6 +73,7 @@ void skip_whitespace() {
     while (isspace(c)) {
         if (c == '\n') {
             lexer.line += 1;
+            lexer.col = 0;
         }
         c = next();
     }
