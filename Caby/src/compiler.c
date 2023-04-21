@@ -1,12 +1,13 @@
-#include "compiler.h"
-#include "common.h"
-#include "lexer.h"
-#include "ast.h"
 #include <ctype.h>
 #include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "compiler.h"
+#include "common.h"
+#include "lexer.h"
+#include "ast.h"
 
 struct parser {
     struct token current;
@@ -51,16 +52,68 @@ struct stmt* make_stmt(enum StmtKind kind, size_t size) {
     return s;
 }
 
+#define MAKE_EXPR(KIND, NAME, TYPE) TYPE* NAME = (TYPE*)make_expr(KIND, sizeof(TYPE))
+struct expr* make_expr(enum ExprKind kind, size_t size) {
+    struct expr* e = malloc(sizeof(size));
+    *e = (struct expr){.k = kind,
+                       .l = (struct loc){.row = parser.current.row,
+                                         .col = parser.current.col}};
+    return e;
+}
+
 #define STMT_BASE(ast) (&ast->s)
 
 #define EXPR_BASE(ast) (&ast->e)
 
 #define CURTOK() (parser.current.type)
 
+struct expr* expr();
+struct expr* parse_precedence(enum Precedence p);
+
+struct expr* expr_int() {
+    MAKE_EXPR(EXPR_INTEGER, e, struct expr_int);
+    e->val = strtol(parser.previous.start, NULL, 10);
+    return EXPR_BASE(e); 
+}
+
+struct expr* grouping() {
+    struct expr* e = expr();
+    consume(TOK_RPAREN, "Expected closing ')'");
+    return e;
+}
+
+struct expr* unary() {
+    enum token_type op_type = parser.previous.type;
+
+    struct expr* operand = parse_precedence(PREC_UNARY);
+
+    MAKE_EXPR(EXPR_UNARY, e, struct expr_unary);
+    switch (op_type) {
+    case TOK_MINUS: {
+        e->op = OP_MINUS;
+        e->operand = operand;
+    }
+    default:
+        UNREACHABLE();        
+    }
+}
+
+struct expr* binary(struct expr* left) {
+    MAKE_EXPR(EXPR_BINARY, e, struct expr_binary);
+    while (true) {
+        enum TokenType op_type = parser.previous.type;
+        
+    }
+}
+
+struct expr* parse_precedence(enum Precedence p) {
+    
+}
+
 /// Tries to parse an expression, returns NULL if
 /// the lookahead is not an expression complying.
 struct expr* expr() {
-    
+    return parse_precedence(PREC_ASSIGN);
 }
 
 struct stmt* stmt() {

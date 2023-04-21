@@ -16,6 +16,8 @@ enum StmtKind {
 
 enum ExprKind {
     EXPR_INTEGER,
+    EXPR_UNARY,
+    EXPR_BINARY,
     EXPR_FLOAT,
     EXPR_BOOL,
     EXPR_NONE,
@@ -33,6 +35,29 @@ enum ExprKind {
 enum Operator {
     OP_PLUS,
     OP_TIMES,
+    OP_MINUS,
+};
+
+enum Precedence {
+    PREC_NONE,
+    PREC_ASSIGN,
+    PREC_OR,
+    PREC_AND,
+    PREC_EQ, // != ==
+    PREC_COMPARE, // < > <= >=
+    PREC_TERM, // + -
+    PREC_FACTOR, // * /
+    PREC_UNARY, // ! -
+    PREC_CALL, // . ()
+    PREC_PRIMARY,
+};
+
+typedef struct expr* (*ParseFn)();
+
+struct parse_rule {
+    // ParseFn prefix;
+    // ParseFn infix;
+    // Precedence prec;
 };
 
 struct loc {
@@ -99,6 +124,12 @@ struct expr_if {
     struct expr* true_b; 
     /// Can be NULL! Meaning that the false branch does not exist.
     struct expr* false_b;
+};
+
+struct expr_unary {
+    struct expr e;
+    struct expr* operand;
+    enum Operator op;
 };
 
 struct expr_binary {
