@@ -7,7 +7,7 @@
 struct lexer {
     const char* begin;
     const char* curr;
-    int line;
+    int row;
     int col;
 };
 
@@ -16,11 +16,11 @@ struct lexer lexer;
 void init_lexer(const char* source) {
     lexer.begin = source;
     lexer.curr = source;
-    lexer.line = 1;
+    lexer.row = 1;
     lexer.col = 0;
 }
 
-char advance() {
+static char advance() {
     lexer.col += 1;
     return *lexer.curr++;
 }
@@ -43,7 +43,7 @@ struct token make_token(enum token_type type) {
     tok.type = type;
     tok.start = lexer.begin;
     tok.length = (int)(lexer.curr - lexer.begin);
-    tok.line = lexer.line;
+    tok.row = lexer.row;
     return tok;
 }
 
@@ -53,7 +53,7 @@ struct token make_error(const char* message) {
     tok.type = TOK_ERROR;
     tok.start = message;
     tok.length = strlen(message);
-    tok.line = lexer.line;
+    tok.row = lexer.row;
     return tok;
 }
 
@@ -72,7 +72,7 @@ void skip_whitespace() {
     char c = peek();
     while (isspace(c)) {
         if (c == '\n') {
-            lexer.line += 1;
+            lexer.row += 1;
             lexer.col = 0;
         }
         c = next();
@@ -126,6 +126,7 @@ struct token make_id() {
 }
 
 struct token next_token() {
+    fprintf(stderr, "Call to next token\n");
     skip_whitespace();
     lexer.begin = lexer.curr;
     if (input_end()) {

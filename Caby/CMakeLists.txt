@@ -32,7 +32,9 @@ target_link_libraries(hashmap_test m)
 
 add_executable(blockalloc_test tests/blockalloc_test.c src/memory/block_alloc.c)
 add_executable(lexer_test tests/lexer_test.c src/lexer.c)
+add_executable(compiler_test tests/compiler_test.c src/lexer.c src/ast.c src/compiler.c src/common.c)
 
 add_test(hashmap_test hashmap_test)
 add_test(blockalloc_test blockalloc_test)
 add_test(lexer_test lexer_test)
+add_test(compiler_test compiler_test)

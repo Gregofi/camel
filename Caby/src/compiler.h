@@ -1,4 +1,4 @@
 #pragma once
+#include "ast.h"
 
-
-void compile(const char* source);
+struct stmt* compile(const char* source);

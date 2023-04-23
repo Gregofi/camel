@@ -1,3 +1,6 @@
+#pragma once
+#include "src/common.h"
+#include "src/lexer.h"
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -30,6 +33,7 @@ enum ExprKind {
     EXPR_OP,
     EXPR_CALL,
     EXPR_COMPOUND,
+    EXPR_ID,
 };
 
 enum Operator {
@@ -39,7 +43,8 @@ enum Operator {
 };
 
 enum Precedence {
-    PREC_NONE,
+    PREC_NONE, // Indicates that the current token is not binary op.
+    PREC_BEGIN, // The initial precedence.
     PREC_ASSIGN,
     PREC_OR,
     PREC_AND,
@@ -77,7 +82,7 @@ struct expr {
 
 struct stmt_top {
     struct stmt s;
-    struct stmt* statements;
+    struct stmt** statements;
     size_t len;
 };
 
@@ -88,7 +93,7 @@ struct stmt_expr {
 
 struct stmt_function {
     const char* name;
-    const char** parameters;
+    struct ostring* parameters;
     struct expr* body;
 };
 
@@ -111,11 +116,18 @@ struct expr_bool {
     bool val;
 };
 
+struct expr_call {
+    struct expr e;
+    struct expr* target;
+    struct expr** args;
+    size_t args_len;
+};
+
 struct expr_compound {
     struct expr e;
-    struct stmt* stmts;
-    struct expr* last_expr;
-    size_t len;
+    struct stmt** stmts;
+    size_t stmts_len;
+    struct expr* value;
 };
 
 struct expr_if {
@@ -138,3 +150,13 @@ struct expr_binary {
     enum Operator op;
     struct expr* right;
 };
+
+struct expr_id {
+    struct expr e;
+    struct ostring id;
+};
+
+void dump_stmt(FILE* f, struct stmt* s, int spaces);
+void dump_expr(FILE* f, struct expr* s, int spaces);
+
+const char* op_to_string(enum Operator op);

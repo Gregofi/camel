@@ -1,8 +1,9 @@
 #pragma once
 
 enum token_type {
-    TOK_LPAREN, TOK_RPAREN,
-    TOK_LBRACE, TOK_RBRACE,
+    TOK_LPAREN, TOK_RPAREN, // (
+    TOK_LBRACE, TOK_RBRACE, // {
+    TOK_LBRACKET, RBRACKET, // [
     TOK_COMMA,
     TOK_DOT,
     TOK_MINUS,

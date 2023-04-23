@@ -54,3 +54,24 @@ void* handle_capacity(void* array, size_t cnt, size_t* cap, size_t len);
 #else
 # define fallthrough                    do {} while (0)  /* fallthrough */
 #endif
+
+/// An owned string.
+struct ostring {
+    char* s;
+    size_t len;
+};
+
+/// A constant string.
+struct cstring {
+    const char* s;
+    size_t len;
+};
+
+/// An owned string with a capacity.
+struct ocstring {
+    char* s;
+    size_t len;
+    size_t cap;
+};
+
+void append(struct ocstring* str, const char* appended);
