@@ -11,3 +11,11 @@ void* handle_capacity(void* array, size_t cnt, size_t* cap, size_t len) {
     }
     return array;
 }
+
+struct ostring make_ostring(char* str, size_t len) {
+    return (struct ostring){.s = str, .len = len};
+}
+
+struct cstring make_cstring(const char* str) {
+    return (struct cstring){.s = str, .len = strlen(str)};
+}

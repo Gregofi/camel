@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <stdalign.h>
 #include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
@@ -8,6 +9,7 @@
 #include "common.h"
 #include "lexer.h"
 #include "ast.h"
+#include "memory/arena_alloc.h"
 
 struct parser {
     struct token current;
@@ -15,6 +17,8 @@ struct parser {
 };
 
 struct parser parser;
+/// Holds the memory in which the AST is kept.
+struct ArenaAllocator* ast_heap;
 
 void error_at(const char* message) {
     fprintf(stderr, "Parser error: %s\n", message);
@@ -76,7 +80,7 @@ enum Precedence get_prec() {
 #define MAKE_STMT(KIND, NAME, TYPE) TYPE* NAME = (TYPE*)make_stmt(KIND, sizeof(TYPE))
 struct stmt* make_stmt(enum StmtKind kind, size_t size) {
     fprintf(stderr, "LOG: %lu\n", size);
-    struct stmt* s = malloc(size);
+    struct stmt* s = gmalloc(ast_heap, size, alignof(max_align_t));
     memset(s, 0, size);
     *s = (struct stmt){.k = kind,
                        .l = (struct loc){.row = parser.current.row,
@@ -86,12 +90,23 @@ struct stmt* make_stmt(enum StmtKind kind, size_t size) {
 
 #define MAKE_EXPR(KIND, NAME, TYPE) TYPE* NAME = (TYPE*)make_expr(KIND, sizeof(TYPE))
 struct expr* make_expr(enum ExprKind kind, size_t size) {
-    struct expr* e = malloc(size);
+    struct expr* e = gmalloc(ast_heap, size, alignof(max_align_t));
     memset(e, 0, size);
     *e = (struct expr){.k = kind,
                        .l = (struct loc){.row = parser.current.row,
                                          .col = parser.current.col}};
     return e;
+}
+
+struct ostring extract_string(const struct token* tok) {
+    struct ostring os;
+    os.len = tok->length;
+
+    os.s = gmalloc(ast_heap, os.len + 1, alignof(os.s));
+    strncpy(os.s, tok->start, os.len);
+    os.s[os.len] = 0;
+
+    return os;
 }
 
 #define STMT_BASE(ast) (&ast->s)
@@ -124,12 +139,7 @@ struct expr* expr_number() {
 
 struct expr* expr_identifier() {
     MAKE_EXPR(EXPR_ID, e, struct expr_id);
-    e->id.len = parser.previous.length + 1;
-
-    e->id.s = malloc(e->id.len);
-    strncpy(e->id.s, parser.previous.start, e->id.len);
-    e->id.s[e->id.len - 1] = 0;
-
+    e->id = extract_string(&parser.previous);
     return EXPR_BASE(e);
 }
 
@@ -141,15 +151,15 @@ struct expr* expr_call(struct expr* target) {
     MAKE_EXPR(EXPR_CALL, call, struct expr_call);
     call->target = target;
     size_t cap = 8;
-    call->args = malloc(sizeof(*call->args) * cap);
+    call->args = gmalloc(ast_heap, sizeof(*call->args), alignof(*call->args));
     while (CURTOK() != TOK_RPAREN) {
         struct expr* e = expr();
         if (e == NULL) {
             error_at(parser.current.start);
         }
         call->args[call->args_len++] = e;
-        call->args = handle_capacity(call->args, call->args_len, &cap,
-                                     sizeof(*call->args));
+
+        extend(ast_heap, sizeof(*call->args), alignof(*call->args));
         if (CURTOK() != TOK_COMMA) {
             break;
         }
@@ -189,7 +199,7 @@ struct expr* expr_compound() {
     MAKE_EXPR(EXPR_COMPOUND, e, struct expr_compound);
 
     size_t cap = 8;
-    e->stmts = malloc(sizeof(*e->stmts) * cap);
+    e->stmts = gmalloc(ast_heap, sizeof(*e->stmts), alignof(*e->stmts));
     while (CURTOK() != TOK_RBRACE) {
         struct stmt* s = stmt();
         if (CURTOK() != TOK_SEMICOLON) {
@@ -203,12 +213,12 @@ struct expr* expr_compound() {
             if (CURTOK() != TOK_RBRACE) {
                 error_at("Expected closing brace");
             }
-            free(s);
+        //  free(s); s was allocated by arena allocator, so we can't free.
             break;
         }
         consume(TOK_SEMICOLON, "Expected semicolon to terminate statement"); // Eat the ;
         e->stmts[e->stmts_len++] = s;
-        e->stmts = handle_capacity(e->stmts, e->stmts_len, &cap, sizeof(*e->stmts));
+        extend(ast_heap, sizeof(*e->stmts), alignof(*e->stmts));
     }
     if (e->value == NULL) {
         MAKE_EXPR(EXPR_NONE, none, struct expr_none);
@@ -293,6 +303,7 @@ struct expr* expr_binary(struct expr* left, enum Precedence prec) {
 
         left = EXPR_BASE(merge);
     }
+    UNREACHABLE();
 }
 
 struct expr* expr() {
@@ -302,6 +313,43 @@ struct expr* expr() {
     }
 
     return expr_binary(lhs, PREC_BEGIN);
+}
+
+struct stmt* stmt_fun_def() {
+    MAKE_STMT(STMT_FUNCTION, s, struct stmt_function);
+
+    consume(TOK_ID, "Expected name of the function");
+    s->name = extract_string(&parser.previous);
+
+    consume(TOK_LPAREN, "Expected parameters of the function");
+    size_t cap = 8;
+    s->parameters = gmalloc(ast_heap, sizeof(*s->parameters), alignof(*s->parameters));
+
+    while (CURTOK() != TOK_RPAREN) {
+        if (CURTOK() != TOK_ID) {
+            error_at("Expected name of parameter");
+        }
+
+        // BUG HERE: The extract string also uses gmalloc, so we cannot
+        // use extend.
+        s->parameters[s->param_len++] = extract_string(&parser.current);
+        advance();
+
+        if (CURTOK() == TOK_RPAREN) {
+            break;
+        }
+
+        extend(ast_heap, sizeof(*s->parameters), alignof(*s->parameters));
+
+        consume(TOK_COMMA, "Expected comma to separate parameters");
+    }
+
+    consume(TOK_RPAREN, "Expected right parenthesses to close the parameters");
+    consume(TOK_ASSIGN, "Expected '=' after function parameters");
+
+    s->body = expr();
+
+    return STMT_BASE(s);
 }
 
 struct stmt* stmt() {
@@ -315,7 +363,8 @@ struct stmt* stmt() {
     }
 
     if (CURTOK() == TOK_DEF) {
-        NOT_IMPLEMENTED();
+        advance();
+        return stmt_fun_def();
     } else {
         NOT_IMPLEMENTED();
     }
@@ -325,18 +374,19 @@ struct stmt* top() {
     MAKE_STMT(STMT_TOP, top, struct stmt_top);
 
     size_t cap = 8;
-    top->statements = malloc(cap * sizeof(*top->statements));
+    top->statements = gmalloc(ast_heap, sizeof(*top->statements), alignof(*top->statements));
 
     while (CURTOK() != TOK_EOF) {
         fprintf(stderr, "LOG size: %lu\n", top->len);
         top->statements[top->len++] = stmt();
-        handle_capacity(top->statements, top->len, &cap, sizeof(*top->statements));
+        extend(ast_heap, sizeof(*top->statements), alignof(*top->statements));
     }
 
     return STMT_BASE(top);
 }
 
-struct stmt* compile(const char* source) {
+struct stmt* compile(const char* source, struct ArenaAllocator* heap) {
+    ast_heap = heap;
     init_lexer(source);
     advance();
     struct stmt* result = top();

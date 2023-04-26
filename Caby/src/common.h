@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 typedef uint8_t u8;
 typedef uint16_t u16;
@@ -61,11 +62,15 @@ struct ostring {
     size_t len;
 };
 
+struct ostring make_ostring(char* str, size_t len);
+
 /// A constant string.
 struct cstring {
     const char* s;
     size_t len;
 };
+
+struct cstring make_cstring(const char* str);
 
 /// An owned string with a capacity.
 struct ocstring {
@@ -73,5 +78,3 @@ struct ocstring {
     size_t len;
     size_t cap;
 };
-
-void append(struct ocstring* str, const char* appended);

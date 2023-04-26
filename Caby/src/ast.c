@@ -11,6 +11,8 @@ const char* op_to_string(enum Operator op) {
     }
 }
 
+void dump_expr(FILE* f, struct expr* e, int spaces);
+
 void dump_stmt(FILE* f, struct stmt* s, int spaces) {
     for (int i = 0; i < spaces; ++i) {
         fprintf(f, " ");
@@ -22,8 +24,22 @@ void dump_stmt(FILE* f, struct stmt* s, int spaces) {
         NOT_IMPLEMENTED();
     case STMT_ASSIGN_LIST:
         NOT_IMPLEMENTED();
-    case STMT_FUNCTION:
-        NOT_IMPLEMENTED();
+    case STMT_FUNCTION: 
+    {
+        struct stmt_function* fun = AS(struct stmt_function, s);
+        fprintf(f, "FUNCTION_DEF %s(", fun->name.s);
+        
+        for (size_t i = 0; i < fun->param_len; ++i) {
+            fprintf(f, "%s", fun->parameters[i].s);
+            if (i != fun->param_len - 1) {
+                fprintf(f, ", ");
+            }
+        }
+        fprintf(f, "):\n");
+
+        dump_expr(f, fun->body, spaces + 1);
+        break;
+    }
     case STMT_CLASS:
         NOT_IMPLEMENTED();
     case STMT_TOP: {

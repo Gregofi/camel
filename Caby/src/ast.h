@@ -92,8 +92,10 @@ struct stmt_expr {
 };
 
 struct stmt_function {
-    const char* name;
+    struct stmt s;
+    struct ostring name;
     struct ostring* parameters;
+    size_t param_len;
     struct expr* body;
 };
 
