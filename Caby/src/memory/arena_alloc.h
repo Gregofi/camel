@@ -10,8 +10,9 @@ struct ArenaAllocator {
     size_t taken;
 };
 
-void* gmalloc(struct ArenaAllocator* heap, u64 size, u64 align);
+void* arena_push(struct ArenaAllocator* heap, u64 size, u64 align);
 struct ArenaAllocator arena_init();
-/// Extend the last allocated block.
-void extend(struct ArenaAllocator* heap, u64 size, u64 align);
 void arena_done(struct ArenaAllocator* heap);
+u64 arena_bp(struct ArenaAllocator* heap);
+void arena_restore(struct ArenaAllocator* heap, u64 bp);
+void* arena_move(struct ArenaAllocator* dest, struct ArenaAllocator* from, u64 begin);

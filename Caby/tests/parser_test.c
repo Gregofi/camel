@@ -1,21 +1,21 @@
 #include "test.h"
 #include "src/memory/arena_alloc.h"
-#include "src/compiler.h"
+#include "src/parser.h"
 #include <string.h>
 
 TEST(BasicCompilerTest) {
     struct ArenaAllocator alloc = arena_init();
-    struct stmt* s = compile("", &alloc);
+    struct stmt* s = parse("", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ(s->k, STMT_TOP);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 0);
     
-    s = compile("1", &alloc);
+    s = parse("1", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ(s->k, STMT_TOP);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
 
-    s = compile("1 2 3 4", &alloc);
+    s = parse("1 2 3 4", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ(s->k, STMT_TOP);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 4);
@@ -26,21 +26,21 @@ TEST(BasicCompilerTest) {
 
 TEST(BinaryExpressions) {
     struct ArenaAllocator alloc = arena_init();
-    struct stmt* s = compile("1 + 2", &alloc);
+    struct stmt* s = parse("1 + 2", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
 
-    s = compile("1 + 2 + 3", &alloc);
-    ASSERT_W(s != NULL);
-    ASSERT_EQ(s->k, STMT_TOP);
-    ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
-
-    s = compile("1 + 2 * 3", &alloc);
+    s = parse("1 + 2 + 3", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ(s->k, STMT_TOP);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
 
-    s = compile("1 * 2 + 3", &alloc);
+    s = parse("1 + 2 * 3", &alloc);
+    ASSERT_W(s != NULL);
+    ASSERT_EQ(s->k, STMT_TOP);
+    ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
+
+    s = parse("1 * 2 + 3", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ(s->k, STMT_TOP);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
@@ -51,11 +51,11 @@ TEST(BinaryExpressions) {
 
 TEST(Expressions) {
     struct ArenaAllocator alloc = arena_init();
-    struct stmt* s = compile("(1)", &alloc);
+    struct stmt* s = parse("(1)", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
 
-    s = compile("(1) + 3", &alloc);
+    s = parse("(1) + 3", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
 
@@ -65,27 +65,27 @@ TEST(Expressions) {
 
 TEST(FunctionCall) {
     struct ArenaAllocator alloc = arena_init();
-    struct stmt* s = compile("foo()", &alloc);
+    struct stmt* s = parse("foo()", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
 
-    s = compile("foo(1)", &alloc);
+    s = parse("foo(1)", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
 
-    s = compile("foo(1, 2)", &alloc);
+    s = parse("foo(1, 2)", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
 
-    s = compile("foo(1 + 2 * 3, 4 + 5)", &alloc);
+    s = parse("foo(1 + 2 * 3, 4 + 5)", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
 
-    s = compile("foo(0,1,2,3,4,5,6,7,8,9,10,11)", &alloc);
+    s = parse("foo(0,1,2,3,4,5,6,7,8,9,10,11)", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
 
-    s = compile("3 + foo()", &alloc);
+    s = parse("3 + foo()", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
 
@@ -95,19 +95,19 @@ TEST(FunctionCall) {
 
 TEST(CompoundStatements) {
     struct ArenaAllocator alloc = arena_init();
-    struct stmt* s = compile("{}", &alloc);
+    struct stmt* s = parse("{}", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
 
-    s = compile("{1}", &alloc);
+    s = parse("{1}", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
 
-    s = compile("{1; 2}", &alloc);
+    s = parse("{1; 2}", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
 
-    s = compile("{1;}", &alloc);
+    s = parse("{1;}", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
 
@@ -117,12 +117,12 @@ TEST(CompoundStatements) {
 
 TEST(FunctionDef) {
     struct ArenaAllocator alloc = arena_init();
-    struct stmt* s = compile("def foo() = 1", &alloc);
+    struct stmt* s = parse("def foo() = 1", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
     dump_stmt(stderr, s, 0);
 
-    s = compile("def foo(a, b, c) = a + b", &alloc);
+    s = parse("def foo(a, b, c) = a + b", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
     dump_stmt(stderr, s, 0);

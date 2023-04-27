@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 
-void* gmalloc(struct ArenaAllocator* heap, u64 size, u64 align) {
+void* arena_push(struct ArenaAllocator* heap, u64 size, u64 align) {
     size = (size + (align - 1)) & ~(align - 1);
     // TODO: Returning NULL might seem better but we would
     // have to ask every time if we run out of memory.
@@ -23,10 +23,6 @@ void* gmalloc(struct ArenaAllocator* heap, u64 size, u64 align) {
     return new_block;
 }
 
-void extend(struct ArenaAllocator* heap, u64 size, u64 align) {
-    gmalloc(heap, size, align);
-}
-
 struct ArenaAllocator arena_init() {
     struct ArenaAllocator heap;
     heap.size = GALLOC_INIT_SIZE;
@@ -37,4 +33,20 @@ struct ArenaAllocator arena_init() {
 
 void arena_done(struct ArenaAllocator* heap) {
     free(heap->mempool);
+}
+
+u64 arena_bp(struct ArenaAllocator* heap) {
+    return heap->taken;
+}
+
+void arena_restore(struct ArenaAllocator* heap, u64 bp) {
+    heap->taken = bp;
+}
+
+ void* arena_move(struct ArenaAllocator* dest, struct ArenaAllocator* from, u64 begin) {
+    unsigned char* p = arena_push(dest, from->taken - begin, sizeof(max_align_t));
+    for (size_t i = begin; i < from->taken; ++i) {
+        p[i - begin] = ((unsigned char*)from->mempool)[i];
+    }
+    return p;
 }
