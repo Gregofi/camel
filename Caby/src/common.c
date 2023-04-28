@@ -19,3 +19,11 @@ struct ostring make_ostring(char* str, size_t len) {
 struct cstring make_cstring(const char* str) {
     return (struct cstring){.s = str, .len = strlen(str)};
 }
+
+bool str_eq(const char* s1, const char* s2, size_t s2_size) {
+    if (strlen(s1) != s2_size) {
+        return false;
+    }
+
+    return !strncmp(s1, s2, s2_size);
+}

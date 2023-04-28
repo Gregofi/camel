@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -78,3 +79,9 @@ struct ocstring {
     size_t len;
     size_t cap;
 };
+
+/// Compares s1 and s2, returns true if they are the same.
+/// The s1 is expected to be null terminated string, while
+/// s2 is expected to be of size s2_size and not necessarily
+/// null terminated.
+bool str_eq(const char* s1, const char* s2, size_t s2_size);

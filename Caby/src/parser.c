@@ -21,8 +21,15 @@ struct parser parser;
 struct ArenaAllocator* ast_heap;
 struct ArenaAllocator* tmp_heap;
 
+#define CURTOK() (parser.current.type)
+
+#define PREVTOK() (parser.previous.type)
+
 void error_at(const char* message) {
     fprintf(stderr, "Parser error: %s\n", message);
+    fprintf(stderr, "Current token: %s\n", tok_to_string(CURTOK()));
+    arena_done(ast_heap);
+    arena_done(tmp_heap);
     exit(1);
     // TODO
 }
@@ -80,7 +87,6 @@ enum Precedence get_prec() {
 
 #define MAKE_STMT(KIND, NAME, TYPE) TYPE* NAME = (TYPE*)make_stmt(KIND, sizeof(TYPE))
 struct stmt* make_stmt(enum StmtKind kind, size_t size) {
-    fprintf(stderr, "LOG: %lu\n", size);
     struct stmt* s = arena_push(ast_heap, size, alignof(max_align_t));
     memset(s, 0, size);
     *s = (struct stmt){.k = kind,
@@ -113,8 +119,6 @@ struct ostring extract_string(const struct token* tok) {
 #define STMT_BASE(ast) (&ast->s)
 
 #define EXPR_BASE(ast) (&ast->e)
-
-#define CURTOK() (parser.current.type)
 
 struct expr* expr();
 
@@ -217,7 +221,6 @@ struct expr* expr_compound() {
             if (CURTOK() != TOK_RBRACE) {
                 error_at("Expected closing brace");
             }
-        //  free(s); s was allocated by arena allocator, so we can't free.
             break;
         }
         consume(TOK_SEMICOLON, "Expected semicolon to terminate statement"); // Eat the ;
@@ -248,6 +251,9 @@ struct expr* expr_primary() {
         break;
     case TOK_ID:
         advance();
+        if (CURTOK() == TOK_ASSIGN) {
+            return NULL;
+        }
         res = expr_identifier();
         break;
     case TOK_NONE: {
@@ -289,10 +295,8 @@ struct expr* expr_binary(struct expr* left, enum Precedence prec) {
         enum Precedence tok_prec = get_prec();
 
         if (tok_prec < prec) {
-            fprintf(stderr, "Returning left\n");
             return left;
         }
-        fprintf(stderr, "Lower prec, continuing\n");
 
         MAKE_EXPR(EXPR_BINARY, merge, struct expr_binary);
         merge->left = left;
@@ -338,8 +342,6 @@ struct stmt* stmt_fun_def() {
             error_at("Expected name of parameter");
         }
 
-        // BUG HERE: The extract string also uses arena_push, so we cannot
-        // use extend.
         s->parameters[s->param_len++] = extract_string(&parser.current);
         advance();
 
@@ -362,6 +364,60 @@ struct stmt* stmt_fun_def() {
     return STMT_BASE(s);
 }
 
+struct stmt* stmt_variable() {
+    MAKE_STMT(STMT_VAR, s, struct stmt_variable);
+    s->mutable = parser.previous.type != TOK_VAL;
+    if (CURTOK() != TOK_ID) {
+        error_at("Expected name of the variable");
+    }
+    s->name = extract_string(&parser.current);
+    advance();
+    consume(TOK_ASSIGN, "Expected '='");
+    s->value = expr();
+    return STMT_BASE(s);
+}
+
+struct stmt* stmt_assign_var() {
+    MAKE_STMT(STMT_ASSIGN_VAR, assign, struct stmt_assign_var);
+    assign->name = extract_string(&parser.previous);
+    consume(TOK_ASSIGN, "Expected '='");
+    assign->value = expr();
+    return STMT_BASE(assign);
+}
+
+struct stmt* stmt_class_def() {
+    MAKE_STMT(STMT_CLASS, s, struct stmt_class);
+    consume(TOK_ID, "Expected name of the class");
+    s->name = extract_string(&parser.previous);
+    consume(TOK_LBRACE, "Expected '{'");
+
+    u64 bp = arena_bp(tmp_heap);
+    s->statements = arena_push(tmp_heap, sizeof(*s->statements), alignof(*s->statements)); 
+    while (CURTOK() != TOK_RBRACE) {
+        advance();
+        
+        s->statements[s->stmts_len++] = (struct stmt_function*)stmt_fun_def();
+
+        if (CURTOK() == TOK_RBRACE) {
+            break;
+        }
+        arena_push(tmp_heap, sizeof(*s->statements), alignof(*s->statements)); 
+    }
+    consume(TOK_RBRACE, "Expected closing '}'");
+
+    s->statements = arena_move(ast_heap, tmp_heap, bp);
+    arena_restore(tmp_heap, bp); 
+
+    return STMT_BASE(s);
+}
+
+
+struct stmt* stmt_while() {
+    MAKE_STMT(STMT_WHILE, s, struct stmt_while);
+    NOT_IMPLEMENTED();
+    return STMT_BASE(s);
+}
+
 struct stmt* stmt() {
     // Try to parse the stmt as an expression,
     // return it if it succeeds.
@@ -371,12 +427,25 @@ struct stmt* stmt() {
         expr_stmt->e = e;
         return STMT_BASE(expr_stmt);
     }
+    if (CURTOK() == TOK_ASSIGN && PREVTOK() == TOK_ID) {
+        return stmt_assign_var();
+    }
 
-    if (CURTOK() == TOK_DEF) {
-        advance();
+    advance();
+    if (PREVTOK() == TOK_DEF) {
         return stmt_fun_def();
+    } else if (PREVTOK() == TOK_CLASS) {
+        return stmt_class_def();
+    } else if (PREVTOK() == TOK_WHILE) {
+        return stmt_while();
+    } else if (PREVTOK() == TOK_CLASS) {
+        return stmt_class_def();
+    } else if (PREVTOK() == TOK_VAR || PREVTOK() == TOK_VAL) {
+        return stmt_variable();
     } else {
-        NOT_IMPLEMENTED();
+        fprintf(stderr, "TOK %s\n", tok_to_string(PREVTOK()));
+        error_at("Unexpected token, expected statement");
+        UNREACHABLE();
     }
 }
 
@@ -387,7 +456,6 @@ struct stmt* top() {
     top->statements = arena_push(tmp_heap, sizeof(*top->statements), alignof(*top->statements));
 
     while (CURTOK() != TOK_EOF) {
-        fprintf(stderr, "LOG size: %lu\n", top->len);
         top->statements[top->len++] = stmt();
         arena_push(tmp_heap, sizeof(*top->statements), alignof(*top->statements));
     }

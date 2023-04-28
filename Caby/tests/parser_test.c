@@ -120,9 +120,32 @@ TEST(FunctionDef) {
     struct stmt* s = parse("def foo() = 1", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
-    dump_stmt(stderr, s, 0);
 
     s = parse("def foo(a, b, c) = a + b", &alloc);
+    ASSERT_W(s != NULL);
+    ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
+
+    arena_done(&alloc);
+    return 0;
+}
+
+TEST(VarDecls) {
+    struct ArenaAllocator alloc = arena_init();
+    struct stmt* s = parse("var x = 5 val y = 6 x = 1", &alloc);
+    ASSERT_W(s != NULL);
+    ASSERT_EQ((int)((struct stmt_top*)s)->len, 3);
+
+    arena_done(&alloc);
+    return 0;
+}
+
+TEST(ClassDecl) {
+    struct ArenaAllocator alloc = arena_init();
+    struct stmt* s = parse("class foo { }", &alloc);
+    ASSERT_W(s != NULL);
+    ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
+
+    s = parse("class foo { def bar() = 1 }", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
     dump_stmt(stderr, s, 0);
@@ -138,4 +161,6 @@ int main(void) {
     RUN_TEST(FunctionCall);
     RUN_TEST(CompoundStatements);
     RUN_TEST(FunctionDef);
+    RUN_TEST(VarDecls);
+    RUN_TEST(ClassDecl);
 }

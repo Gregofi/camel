@@ -1,4 +1,5 @@
 #include "lexer.h"
+#include "src/common.h"
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -70,6 +71,7 @@ bool match(char exp) {
 
 void skip_whitespace() {
     char c = peek();
+    // TODO: Skip semicolons for now
     while (isspace(c)) {
         if (c == '\n') {
             lexer.row += 1;
@@ -108,6 +110,8 @@ struct token make_id() {
     int length = lexer.curr - lexer.begin;
     if (!strncmp(lexer.begin, "if", length)) {
         return make_token(TOK_IF);
+    } else if (str_eq("class", lexer.begin, length)) {
+        return make_token(TOK_CLASS);
     } else if (!strncmp(lexer.begin, "def", length)) {
         return make_token(TOK_DEF);
     } else if (!strncmp(lexer.begin, "return", length)) {
@@ -118,6 +122,12 @@ struct token make_id() {
         return make_token(TOK_TRUE);
     } else if (!strncmp(lexer.begin, "false", length)) {
         return make_token(TOK_FALSE);
+    } else if (!strncmp(lexer.begin, "while", length)) {
+        return make_token(TOK_WHILE);
+    } else if (!strncmp(lexer.begin, "val", length)) {
+        return make_token(TOK_VAL);
+    } else if (!strncmp(lexer.begin, "var", length)) {
+        return make_token(TOK_VAR);
     } else if (!strncmp(lexer.begin, "none", length)) {
         return make_token(TOK_NONE);
     } else {
@@ -126,7 +136,6 @@ struct token make_id() {
 }
 
 struct token next_token() {
-    fprintf(stderr, "Call to next token\n");
     skip_whitespace();
     lexer.begin = lexer.curr;
     if (input_end()) {
@@ -184,5 +193,49 @@ struct token next_token() {
         return make_id();
     } else {
         return make_error("Unknown token");
+    }
+}
+
+const char* tok_to_string(enum token_type tk) {
+    switch (tk) {
+    case TOK_LPAREN: return "TOK_LPAREN";
+    case TOK_RPAREN: return "TOK_RPAREN";
+    case TOK_LBRACE: return "TOK_LBRACE";
+    case TOK_RBRACE: return "TOK_RBRACE";
+    case TOK_LBRACKET: return "TOK_LBRACKET";
+    case RBRACKET: return "RBRACKET";
+    case TOK_COMMA: return "TOK_COMMA";
+    case TOK_DOT: return "TOK_DOT";
+    case TOK_MINUS: return "TOK_MINUS";
+    case TOK_PLUS: return "TOK_PLUS";
+    case TOK_STAR: return "TOK_STAR";
+    case TOK_SLASH: return "TOK_SLASH";
+    case TOK_BANG: return "TOK_BANG";
+    case TOK_SEMICOLON: return "TOK_SEMICOLON";
+    case TOK_EQ: return "TOK_EQ";
+    case TOK_NEQ: return "TOK_NEQ";
+    case TOK_LE: return "TOK_LE";
+    case TOK_LEQ: return "TOK_LEQ";
+    case TOK_GE: return "TOK_GE";
+    case TOK_GEQ: return "TOK_GEQ";
+    case TOK_ASSIGN: return "TOK_ASSIGN";
+    case TOK_ID: return "TOK_ID";
+    case TOK_STR: return "TOK_STR";
+    case TOK_INT: return "TOK_INT";
+    case TOK_AND: return "TOK_AND";
+    case TOK_OR: return "TOK_OR";
+    case TOK_TRUE: return "TOK_TRUE";
+    case TOK_FALSE: return "TOK_FALSE";
+    case TOK_NONE: return "TOK_NONE";
+    case TOK_CLASS: return "TOK_CLASS";
+    case TOK_IF: return "TOK_IF";
+    case TOK_ELSE: return "TOK_ELSE";
+    case TOK_DEF: return "TOK_DEF";
+    case TOK_RETURN: return "TOK_RETURN";
+    case TOK_VAR: return "TOK_VAR";
+    case TOK_VAL: return "TOK_VAL";
+    case TOK_EOF: return "TOK_EOF";
+    case TOK_WHILE: return "TOK_WHILE";
+    case TOK_ERROR: return "TOK_ERROR";
     }
 }

@@ -35,6 +35,7 @@ enum token_type {
     TOK_VAR,
     TOK_VAL,
     TOK_EOF,
+    TOK_WHILE,
     TOK_ERROR, // for error recovery.
 };
 
@@ -49,3 +50,4 @@ struct token {
 
 void init_lexer(const char* source);
 struct token next_token();
+const char* tok_to_string(enum token_type tk);

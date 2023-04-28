@@ -26,7 +26,6 @@ enum ExprKind {
     EXPR_NONE,
     EXPR_STRING,
     EXPR_LIST,
-    EXPR_ACCESS_VAR,
     EXPR_ACCESS_LIST,
     EXPR_ACCESS_MEMBER,
     EXPR_IF,
@@ -97,6 +96,51 @@ struct stmt_function {
     struct ostring* parameters;
     size_t param_len;
     struct expr* body;
+};
+
+struct stmt_variable {
+    struct stmt s;
+    struct ostring name;
+    bool mutable;
+    struct expr* value;
+};
+
+struct stmt_assign_var {
+    struct stmt s;
+    struct ostring name;
+    struct expr* value;
+};
+
+struct stmt_assign_list {
+    struct stmt s;
+    struct expr* list;
+    struct expr* index;
+    struct expr* value;
+};
+
+struct stmt_class {
+    struct stmt s;
+    struct ostring name;
+    struct stmt_function** statements;
+    size_t stmts_len;
+};
+
+struct stmt_while {
+    struct stmt s;
+    struct expr* cond;
+    struct expr_compound* body;
+};
+
+struct stmt_return {
+    struct stmt s;
+    struct expr* value;
+};
+
+struct stmt_assign_member {
+    struct stmt s;
+    struct expr* target;
+    struct ostring member;
+    struct expr* value;
 };
 
 struct expr_none {

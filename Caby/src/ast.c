@@ -18,10 +18,20 @@ void dump_stmt(FILE* f, struct stmt* s, int spaces) {
         fprintf(f, " ");
     }
     switch (s->k) {
-    case STMT_VAR:
-        NOT_IMPLEMENTED();
+    case STMT_VAR: 
+    {
+        struct stmt_variable* var = AS(struct stmt_variable, s);
+        fprintf(f, "VARIABLE_DEF %s, mutable: %d\n", var->name.s, var->mutable);
+        dump_expr(f, var->value, spaces + 1);
+        break;
+    }
     case STMT_ASSIGN_VAR:
-        NOT_IMPLEMENTED();
+    {
+        struct stmt_assign_var* assign = AS(struct stmt_assign_var, s);
+        fprintf(f, "VARIABLE_ASSIGN %s\n", assign->name.s);
+        dump_expr(f, assign->value, spaces + 1);
+        break;
+    }
     case STMT_ASSIGN_LIST:
         NOT_IMPLEMENTED();
     case STMT_FUNCTION: 
@@ -41,7 +51,15 @@ void dump_stmt(FILE* f, struct stmt* s, int spaces) {
         break;
     }
     case STMT_CLASS:
-        NOT_IMPLEMENTED();
+    {
+        struct stmt_class* klass = AS(struct stmt_class, s);
+        fprintf(f, "CLASS_DEF %s\n", klass->name.s);
+
+        for (size_t i = 0; i < klass->stmts_len; ++i) {
+            dump_stmt(f, (struct stmt*)(klass->statements[i]), spaces + 1);
+        }
+        break;
+    }
     case STMT_TOP: {
         fprintf(f, "STMT_TOP:\n");
         struct stmt_top* t = AS(struct stmt_top, s);
@@ -51,15 +69,32 @@ void dump_stmt(FILE* f, struct stmt* s, int spaces) {
         break;
     }
     case STMT_WHILE:
-        NOT_IMPLEMENTED();
+    {
+        fprintf(f, "STMT_WHILE:\n");
+        struct stmt_while* w = AS(struct stmt_while, s);
+        dump_expr(f, w->cond, spaces + 1);
+        dump_expr(f, (struct expr*)w->body, spaces + 1);
+        break;
+    }
     case STMT_RETURN:
-        NOT_IMPLEMENTED();
+    {
+        fprintf(f, "STMT_RETURN:\n");
+        struct stmt_return* w = AS(struct stmt_return, s);
+        dump_expr(f, w->value, spaces + 1);
+        break;
+    }
     case STMT_EXPR:
         fprintf(f, "STMT_EXPR:\n");
         dump_expr(f, AS(struct stmt_expr, s)->e, spaces + 1);
         break;
     case STMT_ASSIGN_MEMBER:
-        NOT_IMPLEMENTED();
+    {
+        struct stmt_assign_member* w = AS(struct stmt_assign_member, s);
+        fprintf(f, "STMT_ASSIGN_MEMBER %s:\n", w->member.s);
+        dump_expr(f, w->target, spaces + 1);
+        dump_expr(f, w->value, spaces + 1);
+        break;
+    }
     }
 }
 
@@ -91,8 +126,6 @@ void dump_expr(FILE* f, struct expr* e, int spaces) {
     case EXPR_STRING:
         NOT_IMPLEMENTED();
     case EXPR_LIST:
-        NOT_IMPLEMENTED();
-    case EXPR_ACCESS_VAR:
         NOT_IMPLEMENTED();
     case EXPR_ACCESS_LIST:
         NOT_IMPLEMENTED();
