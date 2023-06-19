@@ -43,7 +43,7 @@ struct object_function* get_current_fun(vm_t* vm) {
     return vm->frames[vm->frame_len - 1].function;
 }
 
-static void runtime_error(vm_t* vm, const char* str, ...) {
+void runtime_error(vm_t* vm, const char* str, ...) {
     va_list args;
     va_start(args, str);
     struct object_function* f = get_current_fun(vm);
@@ -159,6 +159,7 @@ struct value interpret_string_concat(vm_t* vm, struct object* o1, struct object*
     return NEW_OBJECT(new_string_move(vm, new_char, size));
 }
 
+/// Deprecated; instead use print_native.
 enum interpret_result interpret_print(vm_t* vm) {
     u8 arg_cnt = READ_1B_IP(vm) - 1;
 
@@ -251,7 +252,7 @@ static enum interpret_result interpret_fun_call(vm_t* vm) {
             struct object_native* nat = as_native(v.object);
             DUMP_STACK(vm);
             struct value* args_offset = vm->op_stack + vm->stack_len - arity;
-            struct value res = nat->function(arity, args_offset);
+            struct value res = nat->function(vm, arity, args_offset);
             vm->stack_len -= arity;
             push(vm, res);
         }

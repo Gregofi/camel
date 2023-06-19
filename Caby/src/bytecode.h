@@ -63,12 +63,7 @@ size_t ins_size(enum opcode op);
 /// (begin is the lower address).
 size_t range_between(u8* begin, u8* end);
 
-struct loc {
-    u64 begin;
-    u64 end;
-};
-
-struct bc_chunk {
+typedef struct bc_chunk {
     u8* data;
     size_t len;
     size_t cap;
@@ -76,14 +71,14 @@ struct bc_chunk {
     struct loc* location;
     size_t location_len;
     size_t location_cap;
-};
+} bc_chunk_t;
 
-struct constant_pool {
+typedef struct constant_pool {
     /// An array of pointers to data
     struct object** data;
     size_t len;
     size_t cap;
-};
+} constant_pool_t;
 
 void init_bc_chunk(struct bc_chunk* c);
 
@@ -95,13 +90,16 @@ void write_word(struct bc_chunk* c, u16 word);
 
 void write_dword(struct bc_chunk* c, u32 dword);
 
+void write_qword(struct bc_chunk* c, u64 dword);
+
 void write_loc(struct bc_chunk* c, u64 begin, u64 end);
 
 void init_constant_pool(struct constant_pool* cp);
 
 void free_constant_pool(struct constant_pool* cp);
 
-void write_constant_pool(struct constant_pool* cp, struct object* object);
+/// Add item to constant pool and return its index.
+size_t write_constant_pool(struct constant_pool* cp, struct object* object);
 
 struct object* read_constant_pool(struct constant_pool* cp, u32 idx);
 

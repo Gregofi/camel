@@ -51,7 +51,7 @@ struct object_function {
     u32 name;
 };
 
-typedef struct value (*native_fn_t)(int arg_cnt, struct value* args);
+typedef struct value (*native_fn_t)(vm_t* vm, int arg_cnt, struct value* args);
 
 struct object_native {
     struct object object;

@@ -64,11 +64,6 @@ struct parse_rule {
     // Precedence prec;
 };
 
-struct loc {
-    int row;
-    int col;
-};
-
 struct stmt {
     struct loc l;
     enum StmtKind k;
@@ -195,6 +190,11 @@ struct expr_binary {
     struct expr* left;
     enum Operator op;
     struct expr* right;
+};
+
+struct expr_string {
+    struct expr e;
+    struct ostring s;
 };
 
 struct expr_id {

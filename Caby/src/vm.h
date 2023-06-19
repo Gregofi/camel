@@ -71,6 +71,8 @@ void push(vm_t* vm, struct value val);
 
 struct value pop(vm_t* vm);
 
+void runtime_error(vm_t* vm, const char* str, ...);
+
 /// Returns value that is 'p' behind the top.
 /// p = 0 returns top, p = 1 returns one behind top...
 struct value peek(vm_t* vm, size_t p);

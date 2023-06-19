@@ -27,16 +27,27 @@ add_executable(hashmap_test tests/hashmap_test.c src/dissasembler.c src/bytecode
                     src/serializer.c src/hashtable.c src/native.c
                     src/memory/block_alloc.c src/gc.c src/error.c
                     src/class.c)
-
 target_link_libraries(hashmap_test m)
 
 add_executable(blockalloc_test tests/blockalloc_test.c src/memory/block_alloc.c)
+
 add_executable(lexer_test tests/lexer_test.c src/lexer.c src/common.c)
+
 add_executable(parser_test tests/parser_test.c src/lexer.c src/ast.c src/parser.c src/common.c src/memory/arena_alloc.c)
+
 add_executable(galloc_test tests/galloc_test.c src/memory/arena_alloc.c)
+
+add_executable(compiler_test tests/compiler_test.c src/dissasembler.c
+                    src/common.c src/object.c src/memory.c src/vm.c
+                    src/parser.c src/lexer.c src/memory/arena_alloc.c
+                    src/serializer.c src/hashtable.c src/native.c
+                    src/memory/block_alloc.c src/gc.c src/error.c
+                    src/class.c src/bytecode.c src/compiler.c)
+target_link_libraries(compiler_test m)
 
 add_test(hashmap_test hashmap_test)
 add_test(blockalloc_test blockalloc_test)
 add_test(lexer_test lexer_test)
 add_test(parser_test parser_test)
 add_test(galloc_test galloc_test)
+add_test(compiler_test compiler_test)

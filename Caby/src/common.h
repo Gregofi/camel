@@ -16,6 +16,11 @@ typedef int16_t i16;
 typedef int32_t i32;
 typedef int64_t i64;
 
+struct loc {
+    u64 begin;
+    u64 end;
+};
+
 #define INIT_CAP 8
 
 size_t get_cap(size_t curr);

@@ -26,16 +26,16 @@ static char advance() {
     return *lexer.curr++;
 }
 
-char peek() {
+static char peek() {
     return *lexer.curr;
 }
 
-char next() {
+static char next() {
     lexer.col += 1;
     return *++lexer.curr;
 }
 
-bool input_end() {
+static bool input_end() {
     return peek() == '\0';
 }
 

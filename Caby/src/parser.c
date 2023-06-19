@@ -89,9 +89,10 @@ enum Precedence get_prec() {
 struct stmt* make_stmt(enum StmtKind kind, size_t size) {
     struct stmt* s = arena_push(ast_heap, size, alignof(max_align_t));
     memset(s, 0, size);
+    // TODO: Locations are TODO
     *s = (struct stmt){.k = kind,
-                       .l = (struct loc){.row = parser.current.row,
-                                         .col = parser.current.col}};
+                       .l = (struct loc){.begin = 0,
+                                         .end = 0}};
     return s;
 }
 
@@ -99,9 +100,10 @@ struct stmt* make_stmt(enum StmtKind kind, size_t size) {
 struct expr* make_expr(enum ExprKind kind, size_t size) {
     struct expr* e = arena_push(ast_heap, size, alignof(max_align_t));
     memset(e, 0, size);
+    // TODO: Locations are TODO
     *e = (struct expr){.k = kind,
-                       .l = (struct loc){.row = parser.current.row,
-                                         .col = parser.current.col}};
+                       .l = (struct loc){.begin = 0,
+                                         .end = 0}};
     return e;
 }
 
@@ -149,7 +151,12 @@ struct expr* expr_identifier() {
 }
 
 struct expr* expr_string() {
-    NOT_IMPLEMENTED();
+    MAKE_EXPR(EXPR_STRING, e, struct expr_string);
+    struct token tok = parser.previous;
+    tok.start += 1;
+    tok.length -= 2;
+    e->s = extract_string(&tok);
+    return EXPR_BASE(e);
 }
 
 struct expr* expr_call(struct expr* target) {

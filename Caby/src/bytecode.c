@@ -102,10 +102,18 @@ void write_dword(struct bc_chunk* c, u32 dword) {
     write_word(c, dword);
 }
 
+void write_qword(struct bc_chunk* c, u64 dword) {
+    write_dword(c, dword >> 32);
+    write_dword(c, dword);
+}
+
 void write_loc(struct bc_chunk* c, u64 begin, u64 end) {
+// TODO
+    /*
     c->location = handle_capacity(c->location, c->location_len, &c->location_cap, sizeof(*c->location));
     c->location[c->location_len].begin = begin;
     c->location[c->location_len++].end = end;
+    */
 }
 
 void init_constant_pool(struct constant_pool* cp) {
@@ -117,9 +125,10 @@ void free_constant_pool(struct constant_pool* cp) {
     init_constant_pool(cp);
 }
 
-void write_constant_pool(struct constant_pool* cp, struct object* object) {
+size_t write_constant_pool(struct constant_pool* cp, struct object* object) {
     cp->data = handle_capacity(cp->data, cp->len, &cp->cap, sizeof(*cp->data));
     cp->data[cp->len++] = object;
+    return cp->len - 1;
 }
 
 struct object* read_constant_pool(struct constant_pool* cp, u32 idx) {
