@@ -125,6 +125,12 @@ TEST(FunctionDef) {
     ASSERT_W(s != NULL);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
 
+    s = parse(
+"def foo(a) = a\n"
+"1 + foo()\n", &alloc);
+    ASSERT_W(s != NULL);
+    ASSERT_EQ((int)((struct stmt_top*)s)->len, 2);
+
     arena_done(&alloc);
     return 0;
 }

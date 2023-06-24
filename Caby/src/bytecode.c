@@ -126,6 +126,19 @@ void free_constant_pool(struct constant_pool* cp) {
 }
 
 size_t write_constant_pool(struct constant_pool* cp, struct object* object) {
+    // If the object is a string, try to intern it.
+    // TODO: This can of course be more efficient. Maybe save the strings
+    // to some hashmap also?
+    if (object->type == OBJECT_STRING) {
+        for (size_t i = 0; i < cp->len; ++i) {
+            if (cp->data[i]->type == OBJECT_STRING
+                    && strcmp(
+                        ((struct object_string*)cp->data[i])->data,
+                        ((struct object_string*)object)->data) == 0) {
+                return i;
+            }
+        }
+    }
     cp->data = handle_capacity(cp->data, cp->len, &cp->cap, sizeof(*cp->data));
     cp->data[cp->len++] = object;
     return cp->len - 1;

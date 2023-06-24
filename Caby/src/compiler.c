@@ -11,11 +11,13 @@ typedef struct environment {
 struct compiler {
     bc_chunk_t* current_chunk;
     environment_t* env;
-    constant_pool_t* cp;
+    vm_t* vm;
     /// Current count of active variables.
     u16 local_count;
     /// Maximum number of local slots needed by a function.
     u16 local_max;
+    /// Indicates whether the compiler is in the global environment.
+    bool global;
 } compiler;
 
 static void error(const char* s) {
@@ -37,12 +39,13 @@ void pop_env() {
 }
 
 void introduce_variable(const char* s) {
-    NOT_IMPLEMENTED();
+    struct value key = NEW_OBJECT(new_string(compiler.vm, s));
+    table_set(compiler.env->env, key, NEW_NONE());
 }
 
-static void init_compiler(struct constant_pool* cp) {
-    compiler.cp = cp;
-    push_env();
+static void init_compiler(vm_t* vm) {
+    compiler.vm = vm;
+    compiler.global = true;
 }
 
 static void write_u8(u8 data) {
@@ -91,6 +94,13 @@ void compile_expr_binary(struct expr_binary* e) {
     write_opcode(opcode);
 }
 
+void compile_expr_id(struct expr_id* id) {
+    write_opcode(OP_GET_GLOBAL);
+    struct object_string* var_name = new_string(compiler.vm, id->id.s);
+    u32 idx = write_constant_pool(&compiler.vm->const_pool, (struct object*)var_name);
+    write_dword(compiler.current_chunk, idx);
+}
+
 void compile_expr(struct expr* e, bool drop) {
     switch (e->k) {
     case EXPR_INTEGER:
@@ -125,7 +135,8 @@ void compile_expr(struct expr* e, bool drop) {
     case EXPR_COMPOUND:
         NOT_IMPLEMENTED();
     case EXPR_ID:
-        NOT_IMPLEMENTED();
+        compile_expr_id((struct expr_id*)e);
+        break;
     }
 }
 
@@ -143,10 +154,46 @@ void compile_stmt_expr(struct stmt_expr* e) {
     compile_expr(e->e, true);
 }
 
+void compile_stmt_var(struct stmt_variable* v) {
+    compile_expr(v->value, false); 
+
+    if (compiler.global) {
+        if (v->mutable) {
+            write_opcode(OP_VAR_GLOBAL);
+        } else {
+            write_opcode(OP_VAL_GLOBAL);
+        }
+
+        struct object_string* var_name = new_string(compiler.vm, v->name.s);
+        u32 idx = write_constant_pool(&compiler.vm->const_pool, (struct object*)var_name);
+        write_dword(compiler.current_chunk, idx);
+    } else {
+        NOT_IMPLEMENTED();
+    }
+}
+
+void compile_stmt_assign_var(struct stmt_assign_var* a) {
+    compile_expr(a->value, false);
+
+    if (compiler.global) {
+        write_opcode(OP_SET_GLOBAL);
+
+        struct object_string* var_name = new_string(compiler.vm, a->name.s);
+        u32 idx = write_constant_pool(&compiler.vm->const_pool, (struct object*)var_name);
+        write_dword(compiler.current_chunk, idx);
+    } else {
+        NOT_IMPLEMENTED();
+    }
+}
+
 void compile_stmt(struct stmt* s) {
     switch (s->k) {
-    case STMT_VAR: NOT_IMPLEMENTED();
-    case STMT_ASSIGN_VAR: NOT_IMPLEMENTED();
+    case STMT_VAR:
+        compile_stmt_var((struct stmt_variable*)s);
+        break;
+    case STMT_ASSIGN_VAR:
+        compile_stmt_assign_var((struct stmt_assign_var*)s);
+        break;
     case STMT_ASSIGN_LIST: NOT_IMPLEMENTED();
     case STMT_FUNCTION: NOT_IMPLEMENTED();
     case STMT_CLASS: NOT_IMPLEMENTED();
@@ -171,7 +218,7 @@ vm_t compile(struct stmt* top, u32* ep) {
 
     bc_chunk_t main_chunk;
     init_bc_chunk(&main_chunk);
-    init_compiler(&vm.const_pool);
+    init_compiler(&vm);
     compiler.current_chunk = &main_chunk;
 
     compile_stmt(top);

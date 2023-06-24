@@ -99,6 +99,7 @@ void init_constant_pool(struct constant_pool* cp);
 void free_constant_pool(struct constant_pool* cp);
 
 /// Add item to constant pool and return its index.
+/// Interns strings.
 size_t write_constant_pool(struct constant_pool* cp, struct object* object);
 
 struct object* read_constant_pool(struct constant_pool* cp, u32 idx);

@@ -6,19 +6,99 @@
 #include "src/compiler.h"
 #include <string.h>
 
-TEST(BasicCompilerTest) {
+vm_t run_program(const char* s_p) {
     struct ArenaAllocator alloc = arena_init();
-    struct stmt* program = parse("1", &alloc);
+    struct stmt* program = parse(s_p, &alloc);
+
     u32 ep;
     vm_t vm = compile(program, &ep); 
-    interpret(&vm, ep);
     arena_done(&alloc);
+
+    interpret(&vm, ep);
+    return vm;
+}
+
+TEST(BasicCompilerTest1) {
+    vm_t vm = run_program("1");
+    ASSERT_EQ(vm.op_stack->type, VAL_INT);
+    ASSERT_EQ(vm.op_stack->integer, 1);
+
+    free_vm_state(&vm);
+    return 0;
+}
+
+TEST(BasicCompilerTest2) {
+    vm_t vm = run_program("1 + 2");
+    ASSERT_EQ(vm.op_stack->type, VAL_INT);
+    ASSERT_EQ(vm.op_stack->integer, 3);
+
+    free_vm_state(&vm);
+    return 0;
+}
+
+TEST(CompoundStmt1) {
+    vm_t vm = run_program("{1}");
+    ASSERT_EQ(vm.op_stack->type, VAL_INT);
+    ASSERT_EQ(vm.op_stack->integer, 1);
+
+    free_vm_state(&vm);
+    return 0;
+}
+
+TEST(CompoundStmt2) {
+    vm_t vm = run_program("{1; 3}");
+    ASSERT_EQ(vm.op_stack->type, VAL_INT);
+    ASSERT_EQ(vm.op_stack->integer, 3);
+
+    free_vm_state(&vm);
+    return 0;
+}
+
+TEST(GlobalVars1) {
+    vm_t vm = run_program("val x = 3 x");
+    ASSERT_EQ(vm.op_stack->type, VAL_INT);
+    ASSERT_EQ(vm.op_stack->integer, 3);
+
+    free_vm_state(&vm);
+    return 0;
+}
+
+TEST(GlobalVars2) {
+    vm_t vm = run_program("var x = 5 x = 3 x");
+    ASSERT_EQ(vm.op_stack->type, VAL_INT);
+    ASSERT_EQ(vm.op_stack->integer, 3);
+
+    free_vm_state(&vm);
+    return 0;
+}
+
+TEST(FunctionCall1) {
+    vm_t vm = run_program("def foo() = 1 foo() + 2");
+    ASSERT_EQ(vm.op_stack->type, VAL_INT);
+    ASSERT_EQ(vm.op_stack->integer, 3);
+
+    free_vm_state(&vm);
+    return 0;
+}
+
+TEST(FunctionCall2) {
+    vm_t vm = run_program("def bar(a) = a + 1 bar(2)");
+    ASSERT_EQ(vm.op_stack->type, VAL_INT);
+    ASSERT_EQ(vm.op_stack->integer, 3);
+
     free_vm_state(&vm);
     return 0;
 }
 
 int main() {
     init_heap(1024 * 1024 * 1024);
-    BasicCompilerTest();
+    BasicCompilerTest1();
+    BasicCompilerTest2();
+    GlobalVars1();
+    GlobalVars2();
+    CompoundStmt1();
+    CompoundStmt2();
+    FunctionCall1();
+    FunctionCall2();
     done_heap();
 }
