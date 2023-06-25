@@ -39,10 +39,9 @@ void init_object(vm_t* vm, struct object* obj, enum object_type type) {
 
 struct object_string* new_string(vm_t* vm, const char* str) {
     struct object_string* n = vmalloc(vm, sizeof(*n));
-    size_t len = strlen(str);
-    n->size = len;
+    n->size = strlen(str);
     n->hash = hashString(str, n->size);
-    n->data = vmalloc(vm, len + 1);
+    n->data = vmalloc(vm, n->size + 1);
     memcpy(n->data, str, n->size);
     n->data[n->size] = '\0';
     init_object(vm, &n->object, OBJECT_STRING);

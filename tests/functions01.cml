@@ -1,5 +1,5 @@
 def fun() = {
-    print("Hello, World!\n")
-};
+    1
+}
 
-fun()
+assert(fun() == 1)

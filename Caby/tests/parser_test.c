@@ -103,9 +103,10 @@ TEST(CompoundStatements) {
     ASSERT_W(s != NULL);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
 
-    s = parse("{1; 2}", &alloc);
+    s = parse("{1; 2; 3}", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
+    dump_stmt(stderr, s, 0);
 
     s = parse("{1;}", &alloc);
     ASSERT_W(s != NULL);
@@ -154,7 +155,6 @@ TEST(ClassDecl) {
     s = parse("class foo { def bar() = 1 }", &alloc);
     ASSERT_W(s != NULL);
     ASSERT_EQ((int)((struct stmt_top*)s)->len, 1);
-    dump_stmt(stderr, s, 0);
 
     arena_done(&alloc);
     return 0;

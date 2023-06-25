@@ -1,6 +1,0 @@
-def bar() = foo();
-def foo() = 2;
-print("{}\n", bar());
-
-val PI = 3;
-print("{}\n", PI);

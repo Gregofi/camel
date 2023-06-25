@@ -8,6 +8,10 @@ void* handle_capacity(void* array, size_t cnt, size_t* cap, size_t len) {
     if (cnt >= *cap) {
         *cap = get_cap(*cap);
         array = realloc(array, *cap * len);
+        if (array == NULL) {
+            fprintf(stderr, "out of memory");
+            exit(-1);
+        }
     }
     return array;
 }

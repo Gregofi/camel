@@ -574,9 +574,9 @@ static enum interpret_result interpret_ins(vm_t* vm, u8 ins) {
         break;
     }
     default:
-        runtime_error(vm, "Unknown instruction 0x%x! Skipping...", ins);
+        fprintf(stderr, "Unknown bytecode instruction 0x%x! Skipping...\n", ins);
     }
-    // Some branches return when successfull (like print),
+    // Some branches return when successful (like print),
     // be careful if you add code here.
     return INTERPRET_CONTINUE;
 }
@@ -601,6 +601,8 @@ int interpret(vm_t* vm, u32 ep) {
 
     def_native(vm, "clock", clock_nat);
     def_native(vm, "pow", pow_nat);
+    def_native(vm, "print", print_nat);
+    def_native(vm, "assert", assert_nat);
 
     struct call_frame* entry = &vm->frames[vm->frame_len++];
     entry->function = (struct object_function*)vm->const_pool.data[ep];

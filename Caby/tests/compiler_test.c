@@ -36,6 +36,15 @@ TEST(BasicCompilerTest2) {
     return 0;
 }
 
+TEST(BasicCompilerTest3) {
+    vm_t vm = run_program("1 2 3 4 + 1 5");
+    ASSERT_EQ(vm.op_stack->type, VAL_INT);
+    ASSERT_EQ(vm.op_stack->integer, 5);
+
+    free_vm_state(&vm);
+    return 0;
+}
+
 TEST(CompoundStmt1) {
     vm_t vm = run_program("{1}");
     ASSERT_EQ(vm.op_stack->type, VAL_INT);
@@ -72,6 +81,30 @@ TEST(GlobalVars2) {
     return 0;
 }
 
+TEST(LocalVars1) {
+    vm_t vm = run_program(
+"var x = 5\n"
+"{var x = 4;x = 3;}\n"
+"x\n");
+    ASSERT_EQ(vm.op_stack->type, VAL_INT);
+    ASSERT_EQ(vm.op_stack->integer, 5);
+
+    free_vm_state(&vm);
+    return 0;
+}
+
+TEST(LocalVars2) {
+    vm_t vm = run_program(
+"var x = 5\n"
+"{var y = 4; x = y + 1;}\n"
+"x\n");
+    ASSERT_EQ(vm.op_stack->type, VAL_INT);
+    ASSERT_EQ(vm.op_stack->integer, 5);
+
+    free_vm_state(&vm);
+    return 0;
+}
+
 TEST(FunctionCall1) {
     vm_t vm = run_program("def foo() = 1 foo() + 2");
     ASSERT_EQ(vm.op_stack->type, VAL_INT);
@@ -94,10 +127,14 @@ int main() {
     init_heap(1024 * 1024 * 1024);
     BasicCompilerTest1();
     BasicCompilerTest2();
+    BasicCompilerTest3();
     GlobalVars1();
     GlobalVars2();
     CompoundStmt1();
     CompoundStmt2();
+    fprintf(stderr, "-----------------------------\n");
+    LocalVars1();
+    LocalVars2();
     FunctionCall1();
     FunctionCall2();
     done_heap();

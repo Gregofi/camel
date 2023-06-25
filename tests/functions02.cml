@@ -1,11 +1,9 @@
-
-
 def foo(a) = {
     var y = 5;
-    y + a
-};
+    a
+}
 
 {
     var x = 1;
-    print("{}\n", foo(x));
+    foo(x);
 }

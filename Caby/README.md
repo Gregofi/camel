@@ -60,7 +60,7 @@ Pop a value from the operand stack and write it into the given local frame
 Calls a function (not an object method) at the top of the stack.
 Pops arguments of an operand stack. First popped should be the first argument etc.
 
-- ret = 0x09  
+- return = 0x09  
 Exits the function.
 
 - label = 0x00  

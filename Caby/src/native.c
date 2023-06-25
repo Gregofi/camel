@@ -103,3 +103,17 @@ struct value print_nat(vm_t* vm, int arg_cnt, struct value* args) {
 
     return NEW_NONE();
 }
+
+struct value assert_nat(vm_t* vm, int arg_cnt, struct value* args) {
+    if (arg_cnt != 1 || args->type != VAL_BOOL) {
+        fprintf(stderr, "Assert expects 1 argument of type boolean.\n");
+        exit(1);
+    }
+
+    if (!args->boolean) {
+        fprintf(stderr, "Assertion failed!\n");
+        exit(2);
+    }
+
+    return NEW_NONE();
+}

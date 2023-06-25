@@ -39,6 +39,13 @@ enum Operator {
     OP_PLUS,
     OP_TIMES,
     OP_MINUS,
+    OP_DIV,
+    OP_EQUAL,
+    OP_NOT_EQUAL,
+    OP_LESS,
+    OP_GREATER,
+    OP_LEQ,
+    OP_GEQ,
 };
 
 enum Precedence {
@@ -168,6 +175,8 @@ struct expr_compound {
     struct expr e;
     struct stmt** stmts;
     size_t stmts_len;
+    /// The return value of the compound statement.
+    /// Shouldn't be NULL.
     struct expr* value;
 };
 

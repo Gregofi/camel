@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <assert.h>
 #include <stdalign.h>
 #include <stdbool.h>
 #include <string.h>
@@ -60,7 +61,16 @@ enum Operator tok_to_op(enum token_type tk) {
     case TOK_PLUS: return OP_PLUS;
     case TOK_MINUS: return OP_MINUS;
     case TOK_STAR: return OP_TIMES;
-    default: exit(-1); // TODO
+    case TOK_SLASH: return OP_DIV;
+    case TOK_EQ: return OP_EQUAL;
+    case TOK_NEQ: return OP_NOT_EQUAL;
+    case TOK_LE: return OP_LESS;
+    case TOK_LEQ: return OP_LEQ;
+    case TOK_GE: return OP_GREATER;
+    case TOK_GEQ: return OP_GEQ;
+    default:
+        fprintf(stderr, "Unsupported operator\n");
+        exit(-1);
     }
 }
 
@@ -256,6 +266,15 @@ struct expr* expr_primary() {
         advance();
         res = expr_number();
         break;
+    case TOK_TRUE:
+    case TOK_FALSE: {
+        bool value = parser.current.type == TOK_TRUE;
+        advance();
+        MAKE_EXPR(EXPR_BOOL, boolean_val, struct expr_bool);
+        boolean_val->val = value;
+        res = EXPR_BASE(boolean_val);
+        break;
+    }
     case TOK_ID:
         advance();
         if (CURTOK() == TOK_ASSIGN) {
@@ -278,6 +297,8 @@ struct expr* expr_primary() {
     default:
         return NULL;
     }
+
+    assert(res != NULL);
     return expr_postfix(res);
 }
 
@@ -465,6 +486,9 @@ struct stmt* top() {
     while (CURTOK() != TOK_EOF) {
         top->statements[top->len++] = stmt();
         arena_push(tmp_heap, sizeof(*top->statements), alignof(*top->statements));
+        if (CURTOK() == TOK_SEMICOLON) {
+            advance();
+        }
     }
 
     top->statements = arena_move(ast_heap, tmp_heap, bp);

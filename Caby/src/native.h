@@ -16,3 +16,5 @@ struct value clock_nat(vm_t* vm, int arg_cnt, struct value* args);
 struct value pow_nat(vm_t* vm, int arg_cnt, struct value* args);
 
 struct value print_nat(vm_t* vm, int arg_cnt, struct value* args);
+
+struct value assert_nat(vm_t* vm, int arg_cnt, struct value* args);

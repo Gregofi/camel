@@ -1,13 +1,13 @@
 
 {
     var x = 5;
-    print("{}\n", x);
+    assert(x == 5);
 };
 
 {
     var x = 6;
     var y = 7;
-    print("{} + {} = {}\n", x, y, x + y);
+    assert(x + y == 13);
 };
 
 {
@@ -15,7 +15,7 @@
     {
         var y = 10;
         y = 7;
-        print("{} + {} = {}\n", x, y, x + y);
+        assert(x + y == 12);
     }
 };
 
@@ -23,8 +23,9 @@
     var x = 3;
     {
         var x = x;
-        print("{} ", x);
+        assert(x == 3);
         x = 5;
+        assert(x == 5);
     };
-    print("{}\n", x)
+    assert(x == 3);
 }

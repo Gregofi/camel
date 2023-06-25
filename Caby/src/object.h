@@ -25,6 +25,7 @@ enum object_type {
  * functions and so on.
  */
 struct object {
+    /// The chain of all allocated objects, used for GC sweeping.
     struct object* next;
     enum object_type type;
     /// Internal data used for GC (ie. marked, generation and so on...)

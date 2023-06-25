@@ -16,7 +16,8 @@ add_executable(caby src/main.c src/dissasembler.c src/bytecode.c
                     src/common.c src/object.c src/memory.c src/vm.c
                     src/serializer.c src/hashtable.c src/native.c
                     src/memory/block_alloc.c src/gc.c src/error.c
-                    src/class.c)
+                    src/class.c src/memory/arena_alloc.c src/compiler.c
+                    src/parser.c src/lexer.c)
 
 target_link_libraries(caby m)
 

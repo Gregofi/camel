@@ -8,6 +8,14 @@ const char* op_to_string(enum Operator op) {
     case OP_PLUS: return "+";
     case OP_TIMES: return "*";
     case OP_MINUS: return "-";
+    case OP_DIV: return "/";
+    case OP_EQUAL: return "==";
+    case OP_NOT_EQUAL: return "!=";
+    case OP_LESS: return "<";
+    case OP_GREATER: return ">";
+    case OP_LEQ: return "<=";
+    case OP_GEQ: return ">=";
+      break;
     }
 }
 

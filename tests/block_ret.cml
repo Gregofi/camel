@@ -1,13 +1,13 @@
-print("{}\n", {
+assert({
     1
-});
+} == 1);
 
-print("{}\n", {
+assert({
     1;
     2
-});
+} == 2);
 
-print("{}\n", {
+assert({
     {
         1;
         2
@@ -18,6 +18,6 @@ print("{}\n", {
     }
 });
 
-print("{}\n", { });
-print("{}\n", {1;});
-print("{}\n", {{1};});
+assert({ } == none);
+assert({1;} == none);
+assert({{1};} == none);
