@@ -90,3 +90,7 @@ struct ocstring {
 /// s2 is expected to be of size s2_size and not necessarily
 /// null terminated.
 bool str_eq(const char* s1, const char* s2, size_t s2_size);
+
+void write_u8(u8* p, u8 data);
+void write_u16(u8* p, u16 data);
+void write_u32(u8* p, u32 data);

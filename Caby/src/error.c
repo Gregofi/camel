@@ -61,7 +61,7 @@ void print_error(const char* filename, struct loc location, const char* format, 
     for (size_t i = 0; i < linesize; ++ i) {
         if (i < location.begin) {
             fputc(' ', stderr);
-        } else if (i > location.end) {
+        } else if (i >= location.end) {
             fputc('\n', stderr);
             break;
         } else if (i == location.begin) {

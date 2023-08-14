@@ -2,6 +2,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include "compiler.h"
+#include "src/bytecode.h"
 #include "vm.h"
 #include "hashtable.h"
 
@@ -108,24 +109,42 @@ static void init_compiler(vm_t* vm) {
     compiler.local_count = compiler.local_max = 0;
 }
 
-static void write_u8(u8 data) {
+static void append_u8(u8 data) {
     write_byte(compiler.current_chunk, data);
 }
 
 static void write_opcode(u8 opcode) {
-    write_u8(opcode);
+    append_u8(opcode);
 }
 
-static void write_u16(u16 data) {
+static void append_u16(u16 data) {
     write_word(compiler.current_chunk, data);
 }
 
-static void write_u32(u32 data) {
+static void append_u32(u32 data) {
     write_dword(compiler.current_chunk, data);
 }
 
-static void write_u64(u64 data) {
+static void append_u64(u64 data) {
     write_qword(compiler.current_chunk, data);
+}
+
+/// Returns a place where next opcode or data will be written.
+/// Is primarily used for jump patching.
+static u32 next_ins_offset() {
+    return compiler.current_chunk->len;
+}
+
+/// Create an empty label that can later be patched.
+static size_t empty_label(u8 opcode) {
+    write_opcode(opcode);
+    size_t size = compiler.current_chunk->len;
+    append_u32(0x66666666);
+    return size;
+}
+
+static void patch_label(size_t at, u32 data) {
+    write_u32(&compiler.current_chunk->data[at], data);
 }
 
 void compile_expr(struct expr* e, bool drop);
@@ -138,7 +157,7 @@ void compile_expr_none(struct expr_none* e) {
 
 void compile_expr_int(struct expr_int* e) {
     write_opcode(OP_PUSH_INT);
-    write_u32(e->val);
+    append_u32(e->val);
 }
 
 void compile_expr_binary(struct expr_binary* e) {
@@ -168,17 +187,17 @@ void generate_global_access(const char* name) {
     write_opcode(OP_GET_GLOBAL);
     struct object_string* var_name = new_string(compiler.vm, name);
     u32 idx = write_constant_pool(&compiler.vm->const_pool, (struct object*)var_name);
-    write_u32(idx);
+    append_u32(idx);
 }
 
 void compile_expr_id(struct expr_id* id) {
     u16 local_idx;
     fprintf(stderr, "Fetching var %s\n", id->id.s);
     bool local = get_local_variable(id->id.s, &local_idx);
-    fprintf(stderr, "The bitch is not local!\n");
+    fprintf(stderr, "The var is not local!\n");
     if (local) {
         write_opcode(OP_GET_LOCAL);
-        write_u16(local_idx);
+        append_u16(local_idx);
     } else {
         generate_global_access(id->id.s);
     }
@@ -199,12 +218,30 @@ void compile_expr_call(struct expr_call* call) {
 
     compile_expr(call->target, false);
     write_opcode(OP_CALL_FUNC);
-    write_u8(call->args_len);
+    append_u8(call->args_len);
 }
 
 void compile_expr_bool(struct expr_bool* b) {
     write_opcode(OP_PUSH_BOOL);
-    write_u8(b->val);
+    append_u8(b->val);
+}
+
+void compile_expr_if(struct expr_if* iff) {
+    compile_expr(iff->cond, false);
+
+    size_t false_dest = empty_label(OP_BRANCH_FALSE);
+    compile_expr(iff->true_b, false);
+    size_t end_true = empty_label(OP_JMP);
+
+    if (iff->false_b != NULL) {
+        patch_label(false_dest, next_ins_offset());
+        compile_expr(iff->false_b, false);
+    }
+    patch_label(end_true, next_ins_offset());
+    // TODO: This guy probably isn't needed since there
+    // should always be some operation after if
+    // (even in the global scope there is a return).
+    write_opcode(OP_LABEL);
 }
 
 void compile_expr(struct expr* e, bool drop) {
@@ -234,7 +271,8 @@ void compile_expr(struct expr* e, bool drop) {
     case EXPR_ACCESS_MEMBER:
         NOT_IMPLEMENTED();
     case EXPR_IF:
-        NOT_IMPLEMENTED();
+        compile_expr_if((struct expr_if*)e);
+        break;
     case EXPR_OP:
         NOT_IMPLEMENTED();
     case EXPR_CALL:
@@ -281,12 +319,12 @@ void compile_stmt_var(struct stmt_variable* v) {
 
         struct object_string* var_name = new_string(compiler.vm, v->name.s);
         u32 idx = write_constant_pool(&compiler.vm->const_pool, (struct object*)var_name);
-        write_u32(idx);
+        append_u32(idx);
     } else {
         u16 idx = introduce_variable(v->name.s);
 
         write_opcode(OP_SET_LOCAL);
-        write_u16(idx);
+        append_u16(idx);
     }
 }
 
@@ -298,13 +336,13 @@ void compile_stmt_assign_var(struct stmt_assign_var* a) {
 
     if (local) {
         write_opcode(OP_SET_LOCAL);
-        write_u16(local_idx);
+        append_u16(local_idx);
     } else {
         write_opcode(OP_SET_GLOBAL);
 
         struct object_string* var_name = new_string(compiler.vm, a->name.s);
         u32 idx = write_constant_pool(&compiler.vm->const_pool, (struct object*)var_name);
-        write_u32(idx);
+        append_u32(idx);
     }
 }
 
@@ -326,7 +364,7 @@ void compile_stmt_function(struct stmt_function* f) {
         fprintf(stderr, "param: %s\n", f->parameters[i].s);
         introduce_variable(f->parameters[i].s);
         write_opcode(OP_SET_LOCAL);
-        write_u16(i);
+        append_u16(i);
     }
     
     compile_expr(f->body, false);
@@ -344,9 +382,9 @@ void compile_stmt_function(struct stmt_function* f) {
 
     // Define the actual function object as global immutable variable
     write_opcode(OP_PUSH_LITERAL);
-    write_u32(fun_idx);
+    append_u32(fun_idx);
     write_opcode(OP_VAL_GLOBAL);
-    write_u32(name_idx);
+    append_u32(name_idx);
 
     pop_env();
 

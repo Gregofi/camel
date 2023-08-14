@@ -34,7 +34,7 @@ add_executable(blockalloc_test tests/blockalloc_test.c src/memory/block_alloc.c)
 
 add_executable(lexer_test tests/lexer_test.c src/lexer.c src/common.c)
 
-add_executable(parser_test tests/parser_test.c src/lexer.c src/ast.c src/parser.c src/common.c src/memory/arena_alloc.c)
+add_executable(parser_test tests/parser_test.c src/lexer.c src/ast.c src/parser.c src/common.c src/error.c src/memory/arena_alloc.c)
 
 add_executable(galloc_test tests/galloc_test.c src/memory/arena_alloc.c)
 

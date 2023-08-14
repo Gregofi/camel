@@ -5,16 +5,20 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 #include "compiler.h"
 #include "common.h"
 #include "lexer.h"
 #include "ast.h"
+#include "error.h"
 #include "memory/arena_alloc.h"
 
 struct parser {
     struct token current;
     struct token previous;
+    /// A name of the sourcefile that is parser, is optional.
+    const char* sourcefile;
 };
 
 struct parser parser;
@@ -26,11 +30,22 @@ struct ArenaAllocator* tmp_heap;
 
 #define PREVTOK() (parser.previous.type)
 
-void error_at(const char* message) {
+void error_at(const char* message, ...) {
     fprintf(stderr, "Parser error: %s\n", message);
     fprintf(stderr, "Current token: %s\n", tok_to_string(CURTOK()));
+    va_list args;
+    va_start(args, message);
+    int curtok_offset = tok_offset(parser.current);
+    struct loc loc = {.begin = curtok_offset,
+                      .end = curtok_offset + parser.current.length};
+    if (parser.sourcefile != NULL) {
+        print_error(parser.sourcefile, loc, message, args);
+    } else {
+        fprintf(stderr, "Source file is not specified, unable to give detailed error message\n");
+    }
     arena_done(ast_heap);
     arena_done(tmp_heap);
+    va_end(args);
     exit(1);
     // TODO
 }
@@ -95,14 +110,23 @@ enum Precedence get_prec() {
     }
 }
 
+void set_location(struct expr* e, int begin, int end) {
+    e->l.begin = begin;
+    e->l.end = end;
+}
+
+void expr_set_location_to_prevtok(struct expr* e) {
+    e->l.begin = tok_offset(parser.previous);
+    e->l.end = tok_offset(parser.current);
+}
+
 #define MAKE_STMT(KIND, NAME, TYPE) TYPE* NAME = (TYPE*)make_stmt(KIND, sizeof(TYPE))
 struct stmt* make_stmt(enum StmtKind kind, size_t size) {
     struct stmt* s = arena_push(ast_heap, size, alignof(max_align_t));
     memset(s, 0, size);
-    // TODO: Locations are TODO
     *s = (struct stmt){.k = kind,
-                       .l = (struct loc){.begin = 0,
-                                         .end = 0}};
+                       .l = (struct loc){.begin = tok_offset(parser.previous),
+                                         .end = tok_offset(parser.current)}};
     return s;
 }
 
@@ -110,10 +134,9 @@ struct stmt* make_stmt(enum StmtKind kind, size_t size) {
 struct expr* make_expr(enum ExprKind kind, size_t size) {
     struct expr* e = arena_push(ast_heap, size, alignof(max_align_t));
     memset(e, 0, size);
-    // TODO: Locations are TODO
     *e = (struct expr){.k = kind,
-                       .l = (struct loc){.begin = 0,
-                                         .end = 0}};
+                       .l = (struct loc){.begin = tok_offset(parser.previous),
+                                         .end = tok_offset(parser.current)}};
     return e;
 }
 
@@ -202,6 +225,23 @@ struct expr* expr_member_access(struct expr* target) {
 
 struct expr* expr_indexate(struct expr* target) {
     NOT_IMPLEMENTED();
+}
+
+struct expr* expr_if() {
+    MAKE_EXPR(EXPR_IF, e, struct expr_if);
+
+    consume(TOK_LPAREN, "Expected opening '(' for if condition");
+    e->cond = expr();
+    consume(TOK_RPAREN, "Expected closing ')' for if condition");
+    e->true_b = expr();
+    if (CURTOK() == TOK_ELSE) {
+        advance();
+        e->false_b = expr();
+    } else {
+        MAKE_EXPR(EXPR_NONE, none, struct expr_none);
+        e->false_b = EXPR_BASE(none);
+    }
+    return EXPR_BASE(e);
 }
 
 struct expr* expr_postfix(struct expr* target) {
@@ -293,6 +333,10 @@ struct expr* expr_primary() {
         return expr_compound();
     case TOK_STR:
         res = expr_string();
+        break;
+    case TOK_IF:
+        advance();
+        res = expr_if();
         break;
     default:
         return NULL;
@@ -497,7 +541,8 @@ struct stmt* top() {
     return STMT_BASE(top);
 }
 
-struct stmt* parse(const char* source, struct ArenaAllocator* heap) {
+struct stmt* parse(const char* source, struct ArenaAllocator* heap, const char* sourcefile_opt) {
+    parser.sourcefile = sourcefile_opt;
     ast_heap = heap;
     struct ArenaAllocator _tmp_heap = arena_init();
     tmp_heap = &_tmp_heap;

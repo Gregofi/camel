@@ -31,3 +31,17 @@ bool str_eq(const char* s1, const char* s2, size_t s2_size) {
 
     return !strncmp(s1, s2, s2_size);
 }
+
+void write_u8(u8* p, u8 data) {
+    *p = data;
+}
+
+void write_u16(u8* p, u16 data) {
+    write_u8(p, data >> 8);
+    write_u8(p + 1, data);
+}
+
+void write_u32(u8* p, u32 data) {
+    write_u16(p, data >> 16);
+    write_u16(p + 2, data);
+}

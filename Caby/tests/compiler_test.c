@@ -8,7 +8,7 @@
 
 vm_t run_program(const char* s_p) {
     struct ArenaAllocator alloc = arena_init();
-    struct stmt* program = parse(s_p, &alloc);
+    struct stmt* program = parse(s_p, &alloc, NULL);
 
     u32 ep;
     vm_t vm = compile(program, &ep); 

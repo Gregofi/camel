@@ -49,5 +49,11 @@ struct token {
 };
 
 void init_lexer(const char* source);
+
 struct token next_token();
+
 const char* tok_to_string(enum token_type tk);
+
+/// Returns the number of characters that is before this token in the source
+/// file.
+int tok_offset(struct token tok);

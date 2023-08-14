@@ -6,8 +6,12 @@
 #include <string.h>
 
 struct lexer {
+    /// Beginning of the current token
     const char* begin;
+    /// The lookahead
     const char* curr;
+    /// The beginning of the analyzed string source
+    const char* source;
     int row;
     int col;
 };
@@ -17,6 +21,7 @@ struct lexer lexer;
 void init_lexer(const char* source) {
     lexer.begin = source;
     lexer.curr = source;
+    lexer.source = source;
     lexer.row = 1;
     lexer.col = 0;
 }
@@ -37,6 +42,10 @@ static char next() {
 
 static bool input_end() {
     return peek() == '\0';
+}
+
+int tok_offset(struct token tok) {
+    return tok.start - lexer.source;
 }
 
 struct token make_token(enum token_type type) {

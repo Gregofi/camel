@@ -114,7 +114,7 @@ int run(const char* sourcefile, const char* argv[]) {
     }
 
     struct ArenaAllocator alloc = arena_init();
-    struct stmt* program = parse(source, &alloc);
+    struct stmt* program = parse(source, &alloc, sourcefile);
 
     u32 ep;
     vm_t vm = compile(program, &ep); 
